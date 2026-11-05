@@ -67,3 +67,10 @@
 
 ## Логотип
 Монограмма «П» внутри круглой печати с зубчатым краем, цвет `--seal`. SVG делаем сами. **Не использовать** герб/логотип МГИМО и их элементы.
+
+## Реализация (T04)
+- **Шкала** — утилиты `text-caption` 12 · `text-small` 14 · `text-body` 16 · `text-lead` 18 · `text-h2` 22 · `text-h1` 28 · `text-display` 36 (rem, в `@theme`). Заголовок экрана — `PageHeader`: `text-h1`, на ≥ 1024 — `text-display`.
+- **Пары на `--brand-soft`:** текст только `--ink` или `--brand`. `--ink-muted` (4.29) и светлый `--ok` (4.28) на нём запрещены — это проверяет `tests/unit/contrast.test.ts` вместе со всеми остальными парами в обеих темах.
+- **Тема:** cookie `theme`, класс `.light`/`.dark` на `<html>` ставит сервер; переключатель «Светлая / Тёмная / Системная» — в сайдбаре и на «Ещё».
+- **Компоненты** (`src/components/`): `PageHeader`, `StatusChip` (тон + иконка + текст), `EmptyState`, `ErrorState`, skeleton-набор (`skeletons.tsx`), `ConceptBanner` в `SiteFooter`, `LogoSeal`, `BrandMark`, `ThemeSwitcher`, навигация в `nav/`. Витрина — `/dev/ui` (только `pnpm dev`).
+- **Кнопки** (`ui/button.tsx`): по умолчанию 44px, `lg` 48px; `sm`/`icon-sm` (36px) — только для плотных десктопных таблиц.

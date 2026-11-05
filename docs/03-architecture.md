@@ -13,6 +13,7 @@
 | Хеш паролей | argon2id (`@node-rs/argon2`) | Рекомендация OWASP |
 | ИИ-помощник | GigaChat API за серверным прокси, провайдер-абстракция | Доступен из РФ; ключ только на сервере; без ключа — режим «FAQ без ИИ» |
 | PDF справок | `@react-pdf/renderer` | Генерация на сервере. Кириллица — только через зарегистрированный TTF (`Font.register`, Inter), иначе текст не отрисуется |
+| Тема | cookie `theme` (`light`/`dark`, нет cookie — системная) → класс на `<html>` и `theme-color` ставит сервер | Нет мигания при загрузке и нет inline-скрипта в `<head>`, который запретила бы CSP (S6). Цена — корневой layout динамический; страницы студента и так динамические из-за сессии. Решение T04, 06.11 |
 | Тесты | Vitest + Playwright | e2e на десктопе и 360px; тесты изоляции данных |
 | Деплой | Docker Compose: app + postgres + caddy (HTTPS) на российском VPS | Открывается из РФ без VPN; одна команда |
 
@@ -180,9 +181,11 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 | `/requests`, `/requests/new`, `/requests/[number]` | STUDENT | заявки (по номеру, но поиск `WHERE studentId = ctx`) |
 | `/notifications` | STUDENT | уведомления |
 | `/profile` | STUDENT | профиль, безопасность (сменить пароль, выйти со всех устройств, перевыпустить ссылку календаря) |
+| `/more` | STUDENT | «Ещё» на мобильном: уведомления, профиль, помощник, тема |
 | `/assistant` | STUDENT | ИИ-помощник |
 | `/staff`, `/staff/requests/[number]`, `/staff/announcements` | STAFF | кабинет сотрудника |
 | `/verify/[token]` | публично | проверка справки |
+| `/dev/ui` | только `pnpm dev` | витрина компонентов; в прод-сборке 404 |
 | `/api/calendar/[token]` | по токену | подписка на расписание. Файл `route.ts`; ссылка вида `…/<token>.ics`, суффикс `.ics` отрезаем в обработчике (папка `[token].ics` — недопустимый динамический сегмент) |
 | `/api/assistant` | STUDENT | стрим ответа ИИ |
 
