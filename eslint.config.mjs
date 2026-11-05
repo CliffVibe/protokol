@@ -57,8 +57,15 @@ const eslintConfig = defineConfig([
     },
   },
   {
-    // Где работа с БД разрешена: репозитории, клиент, сид/миграции и интеграционные тесты
-    files: ["src/server/repos/**", "src/server/db.ts", "prisma/**", "tests/integration/**"],
+    // Где работа с БД разрешена: репозитории, клиент, сид/миграции и интеграционные тесты,
+    // а также security.spec.ts — тест 6 из 05-security проверяет хеши паролей прямо в БД
+    files: [
+      "src/server/repos/**",
+      "src/server/db.ts",
+      "prisma/**",
+      "tests/integration/**",
+      "tests/e2e/security.spec.ts",
+    ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },
   globalIgnores([

@@ -2,6 +2,13 @@
 // Проекты desktop (1280) и mobile-360 гоняют одни и те же тесты; различия — через isMobile.
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
+import { STORAGE } from "../../playwright.config";
+
+// T03: разделы студента открываются под сессией Алисы (по умолчанию в playwright.config.ts),
+// кабинет сотрудника — под Ириной.
+function useSessionFor(route: string) {
+  if (route.startsWith("/staff")) test.use({ storageState: STORAGE.irina });
+}
 
 const NOTICE =
   "Концепт для конкурса. Не является официальным сервисом МГИМО. Все данные вымышлены.";
@@ -52,21 +59,24 @@ async function seriousViolations(page: Page) {
 
 test.describe("каждый раздел", () => {
   for (const route of ALL_ROUTES) {
-    test(`${route}: плашка концепта, h1, без скролла вбок`, async ({ page }) => {
-      const res = await page.goto(route);
-      expect(res?.status()).toBe(200);
-      await expect(page.getByRole("note")).toHaveText(NOTICE);
-      await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
-      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
-    });
-
-    for (const scheme of ["light", "dark"] as const) {
-      test(`${route}: axe без serious/critical, тема ${scheme}`, async ({ page }) => {
-        await page.emulateMedia({ colorScheme: scheme });
-        await page.goto(route);
-        expect(await seriousViolations(page)).toEqual([]);
+    test.describe(route, () => {
+      useSessionFor(route);
+      test(`${route}: плашка концепта, h1, без скролла вбок`, async ({ page }) => {
+        const res = await page.goto(route);
+        expect(res?.status()).toBe(200);
+        await expect(page.getByRole("note")).toHaveText(NOTICE);
+        await expect(page.getByRole("heading", { level: 1 })).toHaveCount(1);
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       });
-    }
+
+      for (const scheme of ["light", "dark"] as const) {
+        test(`${route}: axe без serious/critical, тема ${scheme}`, async ({ page }) => {
+          await page.emulateMedia({ colorScheme: scheme });
+          await page.goto(route);
+          expect(await seriousViolations(page)).toEqual([]);
+        });
+      }
+    });
   }
 });
 
@@ -106,30 +116,33 @@ test.describe("навигация студента", () => {
     );
   });
 
-  test("цели касания ≥ 44×44", async ({ page }) => {
-    for (const route of ["/", "/more", "/staff"]) {
-      await page.goto(route);
-      const targets = page.locator("a:visible, button:visible, label:has(input):visible");
-      const boxes = await targets.evaluateAll((els) =>
-        // .sr-only (skip-ссылка до фокуса) — не цель касания: её не видно и в неё не попасть пальцем
-        els
-          .filter((el) => !el.matches(".sr-only"))
-          .map((el) => {
-            const r = el.getBoundingClientRect();
-            return {
-              text: (el.textContent ?? "").trim() || el.getAttribute("title"),
-              w: r.width,
-              h: r.height,
-            };
-          }),
-      );
-      expect(boxes.length).toBeGreaterThan(0);
-      for (const b of boxes) {
-        expect(b.h, `${route}: «${b.text}» высота`).toBeGreaterThanOrEqual(44);
-        expect(b.w, `${route}: «${b.text}» ширина`).toBeGreaterThanOrEqual(44);
-      }
-    }
-  });
+  for (const route of ["/", "/more", "/staff"]) {
+    test.describe(route, () => {
+      useSessionFor(route);
+      test(`цели касания ≥ 44×44: ${route}`, async ({ page }) => {
+        await page.goto(route);
+        const targets = page.locator("a:visible, button:visible, label:has(input):visible");
+        const boxes = await targets.evaluateAll((els) =>
+          // .sr-only (skip-ссылка до фокуса) — не цель касания: её не видно и в неё не попасть пальцем
+          els
+            .filter((el) => !el.matches(".sr-only"))
+            .map((el) => {
+              const r = el.getBoundingClientRect();
+              return {
+                text: (el.textContent ?? "").trim() || el.getAttribute("title"),
+                w: r.width,
+                h: r.height,
+              };
+            }),
+        );
+        expect(boxes.length).toBeGreaterThan(0);
+        for (const b of boxes) {
+          expect(b.h, `${route}: «${b.text}» высота`).toBeGreaterThanOrEqual(44);
+          expect(b.w, `${route}: «${b.text}» ширина`).toBeGreaterThanOrEqual(44);
+        }
+      });
+    });
+  }
 });
 
 test.describe("клавиатура", () => {
@@ -197,16 +210,16 @@ test.describe("тема", () => {
   });
 
   test("без мигания: класс темы и theme-color уже в HTML с сервера", async ({ request }) => {
-    const dark = await (await request.get("/", { headers: { cookie: "theme=dark" } })).text();
+    const dark = await (await request.get("/login", { headers: { cookie: "theme=dark" } })).text();
     expect(dark).toMatch(/<html[^>]*class="[^"]*\bdark\b/);
     expect(dark).toMatch(/<meta name="theme-color" content="#0A0D17"/);
 
-    const system = await (await request.get("/")).text();
+    const system = await (await request.get("/login")).text();
     expect(system).not.toMatch(/<html[^>]*class="[^"]*\b(dark|light)\b/);
     expect(system).toContain('media="(prefers-color-scheme: dark)"');
 
     const junk = await (
-      await request.get("/", { headers: { cookie: "theme=%3Cscript%3E" } })
+      await request.get("/login", { headers: { cookie: "theme=%3Cscript%3E" } })
     ).text();
     expect(junk).not.toMatch(/<html[^>]*(script|%3C)/i);
     expect(junk).not.toMatch(/<html[^>]*class="[^"]*\b(dark|light)\b/);
@@ -227,11 +240,14 @@ test.describe("служебные страницы", () => {
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 
-  test("кабинет сотрудника рендерится в своей оболочке", async ({ page }) => {
-    await page.goto("/staff");
-    await expect(page.getByRole("heading", { level: 1, name: "Очередь заявок" })).toBeVisible();
-    await expect(page.getByRole("navigation", { name: "Разделы кабинета" })).toBeVisible();
-    await expect(mainNav(page)).toHaveCount(0);
+  test.describe("сотрудник", () => {
+    useSessionFor("/staff");
+    test("кабинет сотрудника рендерится в своей оболочке", async ({ page }) => {
+      await page.goto("/staff");
+      await expect(page.getByRole("heading", { level: 1, name: "Очередь заявок" })).toBeVisible();
+      await expect(page.getByRole("navigation", { name: "Разделы кабинета" })).toBeVisible();
+      await expect(mainNav(page)).toHaveCount(0);
+    });
   });
 });
 
@@ -284,12 +300,15 @@ test.describe("шкала типографики в браузере", () => {
 
 test.describe("текст 200% без горизонтального скролла", () => {
   for (const route of ["/", "/requests", "/staff", "/more", "/no-such-page"]) {
-    test(`${route}`, async ({ page }) => {
-      await page.goto(route);
-      await page.evaluate(() => {
-        document.documentElement.style.fontSize = "200%";
+    test.describe(route, () => {
+      useSessionFor(route);
+      test(`${route}`, async ({ page }) => {
+        await page.goto(route);
+        await page.evaluate(() => {
+          document.documentElement.style.fontSize = "200%";
+        });
+        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       });
-      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
     });
   }
 });

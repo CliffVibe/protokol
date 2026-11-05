@@ -10,3 +10,4 @@ docs/
 .mcp.json
 *.md
 src/generated/
+tests/e2e/.auth/

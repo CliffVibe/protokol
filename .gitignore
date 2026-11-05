@@ -14,3 +14,6 @@ next-env.d.ts
 *.tsbuildinfo
 src/generated/
 docs/process/survey/raw/
+
+# Сессии e2e (storageState) — токены входа, не коммитим
+tests/e2e/.auth/
