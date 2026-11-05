@@ -10,6 +10,7 @@ export default function StudentError({ retry }: { retry: () => void }) {
   return (
     <ErrorState
       title="Не получилось загрузить раздел"
+      headingLevel={1}
       action={
         <Button onClick={() => retry()}>
           <RotateCw aria-hidden data-icon="inline-start" />

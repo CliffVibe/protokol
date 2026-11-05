@@ -3,7 +3,6 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CalendarDays, FileText, Plus, RotateCw, Search, Sunrise } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
-import { ConceptBanner } from "@/components/concept-banner";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
 import { LogoSeal } from "@/components/logo-seal";
@@ -25,6 +24,7 @@ export const metadata: Metadata = { title: "Витрина компоненто�
 
 // Витрина дизайн-системы — только для разработки и скриншотов в отчёт (scripts/screenshot-ui.mjs).
 // В прод-сборке — 404 (проверяет tests/e2e/shell.spec.ts). Данных здесь нет и не будет.
+// ConceptBanner показан в футере (SiteFooter) — второй экземпляр не дублируем.
 
 const TOKENS = [
   ["bg", "фон страницы"],
@@ -194,6 +194,7 @@ export default async function DevUiPage() {
               title="Справка об обучении"
               description="Заявка № 2026-0142 · подана сегодня"
               back={{ href: "/requests", label: "Все заявки" }}
+              titleLevel={2}
               action={<StatusChip tone="brand">В работе</StatusChip>}
             />
           </div>
@@ -240,10 +241,6 @@ export default async function DevUiPage() {
               </Panel>
             </div>
           </div>
-        </Section>
-
-        <Section title="Плашка концепта">
-          <ConceptBanner />
         </Section>
       </main>
 

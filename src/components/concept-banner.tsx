@@ -10,7 +10,7 @@ export function ConceptBanner({ className }: { className?: string }) {
     <p
       role="note"
       className={cn(
-        "rounded-xl border border-line bg-brand-soft px-4 py-3 text-sm text-ink",
+        "rounded-xl border border-line bg-brand-soft px-4 py-3 text-small text-ink",
         className,
       )}
     >
