@@ -22,10 +22,10 @@ export function SideNav({ unreadCount }: { unreadCount: number }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-body font-medium -outline-offset-2 transition-colors duration-150 ease-out",
+                  "relative flex min-h-11 items-center gap-3 rounded-lg px-3 text-base font-medium -outline-offset-2 transition-colors duration-150 ease-out",
                   // Активный — чернильная черта слева, как пометка на полях; не плашка
                   active
-                    ? "font-semibold text-brand before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-brand"
+                    ? "font-semibold text-brand before:absolute before:inset-y-2 before:left-0 before:w-[3px] before:rounded-full before:bg-brand forced-colors:before:bg-[CanvasText]"
                     : "text-ink-muted hover:bg-surface hover:text-ink",
                 )}
               >

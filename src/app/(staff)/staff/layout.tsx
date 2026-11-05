@@ -27,7 +27,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
                 <Link
                   href="/staff"
                   aria-current="page"
-                  className="relative flex min-h-11 items-center gap-2 rounded-lg px-3 text-body font-semibold text-brand before:absolute before:inset-x-3 before:-bottom-2 before:h-[3px] before:rounded-t-full before:bg-brand"
+                  className="relative flex min-h-11 items-center gap-2 rounded-lg px-3 text-base font-semibold text-brand before:absolute before:inset-x-3 before:-bottom-2 before:h-[3px] before:rounded-t-full before:bg-brand forced-colors:before:bg-[CanvasText]"
                 >
                   <Inbox aria-hidden className="size-5" />
                   Заявки

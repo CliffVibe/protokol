@@ -16,8 +16,8 @@ export function FormAlert({ title, children, className }: FormAlertProps) {
     <div role="alert" className={cn("flex gap-2.5 border-l-2 border-danger py-1 pl-3", className)}>
       <CircleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
       <div className="flex flex-col gap-0.5">
-        <p className="text-body font-semibold text-ink">{title}</p>
-        {children ? <div className="text-small text-ink-muted">{children}</div> : null}
+        <p className="text-base font-semibold text-ink">{title}</p>
+        {children ? <div className="text-sm text-ink-muted">{children}</div> : null}
       </div>
     </div>
   );

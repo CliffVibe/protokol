@@ -33,8 +33,8 @@ export function ErrorState({
         <CloudOff className="size-7" />
       </span>
       <div className="flex min-w-0 flex-col items-start gap-2 pt-1">
-        <Heading className="max-w-prose text-lead">{title}</Heading>
-        {description ? <p className="max-w-prose text-body text-ink-muted">{description}</p> : null}
+        <Heading className="max-w-prose text-lg">{title}</Heading>
+        {description ? <p className="max-w-prose text-base text-ink-muted">{description}</p> : null}
         {action ? <div className="mt-2">{action}</div> : null}
       </div>
     </section>

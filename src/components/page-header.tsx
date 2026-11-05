@@ -14,7 +14,7 @@ type PageHeaderProps = {
   className?: string;
 };
 
-// Заголовок экрана: единственный h1 на странице. На 360px — 28px (text-h1), на десктопе — 36px.
+// Заголовок экрана: единственный h1 на странице. На 360px — 28px (text-2xl), на десктопе — 36px.
 export function PageHeader({
   title,
   description,
@@ -29,7 +29,7 @@ export function PageHeader({
       {back ? (
         <Link
           href={back.href}
-          className="-ml-2 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg px-2 text-small font-medium text-brand hover:underline"
+          className="-ml-2 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg px-2 text-sm font-medium text-brand hover:underline"
         >
           <ChevronLeft aria-hidden className="size-4" />
           {back.label}
@@ -37,8 +37,8 @@ export function PageHeader({
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <Title className="text-h1 tracking-tight lg:text-display">{title}</Title>
-          {description ? <p className="text-body text-ink-muted">{description}</p> : null}
+          <Title className="text-2xl tracking-tight lg:text-3xl">{title}</Title>
+          {description ? <p className="text-base text-ink-muted">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}
       </div>

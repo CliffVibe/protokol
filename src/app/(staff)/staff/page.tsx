@@ -14,6 +14,7 @@ export default function StaffHomePage() {
         description="Заявки студентов ваших факультетов — по сроку и статусу."
       />
       <EmptyState
+        stampPlace
         title="Новых заявок нет"
         description="Когда студент закажет справку, она появится здесь — с ожидаемым сроком."
       />

@@ -45,13 +45,13 @@ const TOKENS = [
 ] as const;
 
 const TYPE_SCALE = [
-  ["text-display", "36 — заголовок экрана, десктоп", "font-heading font-bold"],
-  ["text-h1", "28 — заголовок экрана, мобильный", "font-heading font-bold"],
-  ["text-h2", "22 — заголовок блока", "font-heading font-bold"],
-  ["text-lead", "18 — подзаголовок", "font-heading font-semibold"],
-  ["text-body", "16 — основной текст", ""],
-  ["text-small", "14 — подписи", ""],
-  ["text-caption", "12 — мелкие пометки", ""],
+  ["text-3xl", "36 — заголовок экрана, десктоп", "font-heading font-bold"],
+  ["text-2xl", "28 — заголовок экрана, мобильный", "font-heading font-bold"],
+  ["text-xl", "22 — заголовок блока", "font-heading font-bold"],
+  ["text-lg", "18 — подзаголовок", "font-heading font-semibold"],
+  ["text-base", "16 — основной текст", ""],
+  ["text-sm", "14 — подписи", ""],
+  ["text-xs", "12 — мелкие пометки", ""],
 ] as const;
 
 const STATUSES: { tone: StatusTone; label: string }[] = [
@@ -66,7 +66,7 @@ const STATUSES: { tone: StatusTone; label: string }[] = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-h2">{title}</h2>
+      <h2 className="text-xl">{title}</h2>
       {children}
     </section>
   );
@@ -75,7 +75,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Panel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-small font-medium text-ink-muted">{label}</p>
+      <p className="text-sm font-medium text-ink-muted">{label}</p>
       {children}
     </div>
   );
@@ -123,8 +123,8 @@ export default async function DevUiPage() {
                   style={{ background: `var(--${token})` }}
                 />
                 <span className="flex min-w-0 flex-col">
-                  <code className="truncate text-small font-medium">--{token}</code>
-                  <span className="text-caption text-ink-muted">{purpose}</span>
+                  <code className="truncate text-sm font-medium">--{token}</code>
+                  <span className="text-xs text-ink-muted">{purpose}</span>
                 </span>
               </li>
             ))}
@@ -136,12 +136,12 @@ export default async function DevUiPage() {
             {TYPE_SCALE.map(([cls, note, extra]) => (
               <div key={cls} className="flex flex-col gap-0.5">
                 <span className={`${cls} ${extra}`}>Протокол: всё вовремя</span>
-                <span className="text-caption text-ink-muted">
+                <span className="text-xs text-ink-muted">
                   <code>{cls}</code>, {note}
                 </span>
               </div>
             ))}
-            <p className="text-body">
+            <p className="text-base">
               Цифры — моноширинные: <span className="tabular font-medium">10:10, 87/100</span>
             </p>
           </div>
@@ -183,9 +183,7 @@ export default async function DevUiPage() {
                   label="Логин"
                   hint="Как в студенческом билете, латиницей"
                 >
-                  {(p) => (
-                    <Input {...p} name="login" autoComplete="username" placeholder="ivanova.a" />
-                  )}
+                  {(p) => <Input {...p} name="login" autoComplete="username" />}
                 </FormField>
                 <FormField id="demo-password" label="Пароль">
                   {(p) => <PasswordInput {...p} name="password" />}
@@ -258,6 +256,7 @@ export default async function DevUiPage() {
               </Panel>
               <Panel label="Пусто с действием">
                 <EmptyState
+                  stampPlace
                   title="Заявок пока нет — закажите первую справку"
                   action={
                     <Button asChild>

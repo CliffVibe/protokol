@@ -38,7 +38,7 @@ export function StatusChip({ tone = "neutral", children, icon, className }: Stat
     <span
       data-tone={tone}
       className={cn(
-        "inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border bg-surface px-2.5 py-0.5 text-small leading-tight font-medium",
+        "inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border bg-surface px-2.5 py-0.5 text-sm leading-tight font-medium",
         toneClass,
         className,
       )}

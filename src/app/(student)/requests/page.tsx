@@ -14,6 +14,7 @@ export default function Page() {
         description="Справки и заявления — как заказ с доставкой: видно, на каком шаге."
       />
       <EmptyState
+        stampPlace
         title="Заявок пока нет"
         description="Скоро здесь можно будет заказать справку и следить за её статусом."
       />

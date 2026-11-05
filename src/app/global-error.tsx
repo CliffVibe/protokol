@@ -10,18 +10,21 @@ export default function GlobalError({ retry }: { retry: () => void }) {
     <html lang="ru">
       <body className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-bg px-4 text-center font-sans text-ink">
         <title>Ошибка · Протокол</title>
-        <h1 className="text-h2">Что-то пошло не так</h1>
-        <p className="max-w-sm text-body text-ink-muted">
+        <h1 className="text-xl">Что-то пошло не так</h1>
+        <p className="max-w-sm text-base text-ink-muted">
           Попробуйте ещё раз. Если не помогает — зайдите чуть позже.
         </p>
         <button
           type="button"
           onClick={() => retry()}
-          className="min-h-11 rounded-lg bg-brand px-4 text-small font-medium text-bg"
+          className="min-h-11 rounded-lg bg-brand px-4 text-sm font-medium text-bg"
         >
           Повторить
         </button>
-        <p role="note" className="max-w-md rounded-xl bg-brand-soft px-4 py-3 text-small text-ink">
+        <p
+          role="note"
+          className="max-w-md border-l-2 border-brand py-1 pl-3 text-left text-sm text-ink"
+        >
           {CONCEPT_NOTICE}
         </p>
       </body>

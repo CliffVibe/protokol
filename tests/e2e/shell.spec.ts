@@ -262,3 +262,22 @@ test.describe("крупный текст (200%)", () => {
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });
+
+test.describe("шкала типографики в браузере", () => {
+  test("подписи нижней панели 12px, кнопка «Повторить» и плашка — по шкале", async ({
+    page,
+    isMobile,
+  }) => {
+    test.skip(!isMobile, "нижняя панель — только на мобильном");
+    await page.goto("/schedule");
+    const sizes = await mainNav(page)
+      .getByRole("link")
+      .evaluateAll((links) =>
+        links.map((a) => getComputedStyle(a.querySelector("span:last-child")!).fontSize),
+      );
+    expect(sizes).toEqual(Array(5).fill("12px"));
+    expect(await page.getByRole("note").evaluate((el) => getComputedStyle(el).fontSize)).toBe(
+      "14px",
+    );
+  });
+});

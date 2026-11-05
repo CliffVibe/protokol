@@ -29,10 +29,10 @@ export function BottomNav({ unreadCount }: { unreadCount: number }) {
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "relative flex min-h-16 min-w-[44px] flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-caption -outline-offset-2",
+                  "relative flex min-h-16 min-w-[44px] flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-xs -outline-offset-2",
                   // Активный — чернильная черта по верхнему краю, как закладка в папке; не плашка
                   active
-                    ? "font-semibold text-brand before:absolute before:inset-x-2 before:top-0 before:h-[3px] before:rounded-b-full before:bg-brand"
+                    ? "font-semibold text-brand before:absolute before:inset-x-2 before:top-0 before:h-[3px] before:rounded-b-full before:bg-brand forced-colors:before:bg-[CanvasText]"
                     : "font-medium text-ink-muted hover:text-ink",
                 )}
               >

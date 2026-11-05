@@ -11,7 +11,7 @@ export function ConceptBanner({ className }: { className?: string }) {
       role="note"
       className={cn(
         // Как сноска в документе: чернильная черта слева, без плашки и заливки
-        "border-l-2 border-brand py-1 pl-3 text-small text-ink",
+        "border-l-2 border-brand py-1 pl-3 text-sm text-ink",
         className,
       )}
     >

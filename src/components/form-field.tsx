@@ -29,7 +29,7 @@ export function FormField({ id, label, hint, error, children, className }: FormF
 
   return (
     <div className={cn("flex flex-col gap-1.5", className)}>
-      <label htmlFor={id} className="text-small font-medium text-ink">
+      <label htmlFor={id} className="text-sm font-medium text-ink">
         {label}
       </label>
       {children({
@@ -38,13 +38,13 @@ export function FormField({ id, label, hint, error, children, className }: FormF
         ...(error ? { "aria-invalid": true as const } : {}),
       })}
       {error ? (
-        <p id={errorId} className="flex items-start gap-1.5 text-small font-medium text-danger">
+        <p id={errorId} className="flex items-start gap-1.5 text-sm font-medium text-danger">
           <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           {error}
         </p>
       ) : null}
       {hint ? (
-        <p id={hintId} className="text-small text-ink-muted">
+        <p id={hintId} className="text-sm text-ink-muted">
           {hint}
         </p>
       ) : null}

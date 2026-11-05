@@ -7,8 +7,8 @@ import { cn } from "@/lib/utils";
 
 type PasswordInputProps = Omit<React.ComponentProps<"input">, "type"> & { id: string };
 
-// Пароль с кнопкой «Показать / Скрыть». Кнопка — 44×44, внутри поля справа,
-// aria-pressed говорит скринридеру, виден ли пароль сейчас.
+// Пароль с кнопкой «Показать пароль» (переключатель, паттерн APG): подпись постоянная,
+// виден ли пароль сейчас — говорит aria-pressed («нажата»). Кнопка 44×44 внутри поля справа.
 export function PasswordInput({ className, id, ...props }: PasswordInputProps) {
   const [visible, setVisible] = useState(false);
   return (
@@ -27,7 +27,7 @@ export function PasswordInput({ className, id, ...props }: PasswordInputProps) {
         onClick={() => setVisible((v) => !v)}
         aria-pressed={visible}
         aria-controls={id}
-        aria-label={visible ? "Скрыть пароль" : "Показать пароль"}
+        aria-label="Показать пароль"
         className="absolute top-1/2 right-0.5 flex size-11 -translate-y-1/2 items-center justify-center rounded-md text-ink-muted transition-colors duration-150 ease-out hover:text-ink focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-ring"
       >
         {visible ? (

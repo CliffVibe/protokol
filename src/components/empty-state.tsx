@@ -8,6 +8,8 @@ type EmptyStateProps = {
   action?: React.ReactNode;
   /** Уровень заголовка: h2 внутри экрана с PageHeader; h1 — когда это весь экран (404). */
   headingLevel?: 1 | 2 | 3;
+  /** Знак «М.П.» — только там, где речь о справках и заявках: там метафора «ещё не заверено» точна. */
+  stampPlace?: boolean;
   className?: string;
 };
 
@@ -20,7 +22,7 @@ export function StampPlace({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cn(
-        "flex size-16 shrink-0 -rotate-6 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-muted/70 font-heading text-small font-bold tracking-wide text-ink-muted",
+        "flex size-16 shrink-0 -rotate-6 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-muted/70 font-heading text-sm font-bold tracking-wide text-ink-muted",
         className,
       )}
     >
@@ -35,15 +37,16 @@ export function EmptyState({
   description,
   action,
   headingLevel = 2,
+  stampPlace = false,
   className,
 }: EmptyStateProps) {
   const Heading = `h${headingLevel}` as const;
   return (
     <section className={cn("flex items-start gap-5 border-t border-line pt-6", className)}>
-      <StampPlace />
-      <div className="flex min-w-0 flex-col items-start gap-2 pt-1">
-        <Heading className="max-w-prose text-lead">{title}</Heading>
-        {description ? <p className="max-w-prose text-body text-ink-muted">{description}</p> : null}
+      {stampPlace ? <StampPlace /> : null}
+      <div className={cn("flex min-w-0 flex-col items-start gap-2", stampPlace && "pt-1")}>
+        <Heading className="max-w-prose text-lg">{title}</Heading>
+        {description ? <p className="max-w-prose text-base text-ink-muted">{description}</p> : null}
         {action ? <div className="mt-2">{action}</div> : null}
       </div>
     </section>

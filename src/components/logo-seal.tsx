@@ -47,7 +47,7 @@ export function LogoSeal({ className, label, variant = "mark" }: LogoSealProps) 
   return (
     <svg
       viewBox="0 0 120 120"
-      className={cn("size-32 shrink-0 text-seal", className)}
+      className={cn("size-40 shrink-0 text-seal", className)}
       fill="none"
       stroke="currentColor"
       {...a11y}
@@ -74,7 +74,7 @@ export function LogoSeal({ className, label, variant = "mark" }: LogoSealProps) 
             type="fractalNoise"
             baseFrequency="1.7"
             numOctaves="1"
-            seed="11"
+            seed="23"
             result="grain"
           />
           <feColorMatrix

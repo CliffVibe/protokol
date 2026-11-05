@@ -13,7 +13,7 @@ export function UnreadBadge({ count, className }: { count: number; className?: s
   return (
     <span
       className={cn(
-        "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-caption leading-none font-semibold text-bg tabular",
+        "inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-brand px-1.5 text-xs leading-none font-semibold text-bg tabular",
         className,
       )}
     >
