@@ -27,10 +27,10 @@ describe("тема", () => {
     ]);
   });
 
-  it("цвета theme-color совпадают с --surface в globals.css (цвет шапок)", () => {
+  it("цвета theme-color совпадают с --bg в globals.css (шапки на бумаге)", () => {
     const css = readFileSync("src/app/globals.css", "utf8").toLowerCase();
-    const light = css.match(/:root\s*\{[^}]*--surface:\s*(#[0-9a-f]{6})/)?.[1];
-    const dark = css.match(/\n\.dark\s*\{[^}]*--surface:\s*(#[0-9a-f]{6})/)?.[1];
+    const light = css.match(/:root\s*\{[^}]*--bg:\s*(#[0-9a-f]{6})/)?.[1];
+    const dark = css.match(/\n\.dark\s*\{[^}]*--bg:\s*(#[0-9a-f]{6})/)?.[1];
     expect(THEME_COLORS.light.toLowerCase()).toBe(light);
     expect(THEME_COLORS.dark.toLowerCase()).toBe(dark);
   });

@@ -39,7 +39,7 @@ const TEXT_PAIRS: [string, string, string][] = [
       [fg, "surface", "текст на карточке, StatusChip"],
     ],
   ),
-  ["ink", "brand-soft", "ConceptBanner"],
+  ["ink", "brand-soft", "текст на акцентной плашке"],
   ["brand", "brand-soft", "активный пункт навигации, иконка EmptyState"],
   ["bg", "brand", "кнопка default, UnreadBadge"],
   ["danger", "surface", "кнопка destructive"],
