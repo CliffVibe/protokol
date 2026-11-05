@@ -13,6 +13,19 @@ services:
     expose:
       - "3000"
 
+  # Миграции и пересев демо (запускается вручную или по cron, в обычном `up` не стартует):
+  #   docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy
+  #   docker compose -f docker-compose.prod.yml run --rm tools pnpm db:reset-demo
+  tools:
+    image: ghcr.io/cliffvibe/protokol:${TOOLS_TAG:-tools}
+    profiles: ["tools"]
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:?}:${POSTGRES_PASSWORD:?}@db:5432/${POSTGRES_DB:?}
+    depends_on:
+      db:
+        condition: service_healthy
+
   db:
     image: postgres:16-alpine
     restart: unless-stopped

@@ -203,6 +203,10 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 - Docker Hub с российских VPS бывает недоступен: в `/etc/docker/daemon.json` прописываем `"registry-mirrors": ["https://mirror.gcr.io"]` и в первый же день проверяем `docker pull postgres:16`.
 - Домен: недорогой `.ru`, либо поддомен вида `<ip>.sslip.io` на время разработки.
 - Секреты — в `.env` на сервере (не в репо). `.env.example` — в репо.
+- **Миграции и демо-данные** — отдельный образ `:tools` (цель `tools` в `Dockerfile`: Prisma CLI + tsx; в приложение не входит, ~1,7 ГБ):
+  - после каждого деплоя: `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy`;
+  - ночной пересев демо (06-seed-data → «Демо-режим»), crontab на VPS: `CRON_TZ=Europe/Moscow` + `0 4 * * * cd /opt/protokol && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:reset-demo >> /var/log/protokol-reset.log 2>&1`.
+- `/api/health` → `{ ok, db }` (503, если БД недоступна) — его же проверяет Docker healthcheck.
 - Бэкап: `pg_dump` по cron раз в сутки.
 - Проверка «из РФ без VPN» — открыть с мобильного интернета без VPN.
 

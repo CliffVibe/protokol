@@ -21,6 +21,14 @@ COPY . .
 # Клиент Prisma генерируется заново из схемы (src/generated не копируется — см. .dockerignore)
 RUN pnpm db:generate && pnpm build
 
+# Инструменты для прода: миграции и пересев демо — `docker compose run --rm tools pnpm db:deploy | db:reset-demo`.
+# Полные node_modules (Prisma CLI, tsx); в приложение не входит. Публикуется как :tools (image.yml).
+FROM build AS tools
+ENV NODE_ENV=production
+USER node
+CMD ["pnpm", "db:deploy"]
+
+# Приложение (цель по умолчанию — последняя стадия)
 FROM node:24-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
