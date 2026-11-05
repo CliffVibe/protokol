@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Manrope } from "next/font/google";
-import { ConceptBanner } from "@/components/concept-banner";
+import { themeClass, themeColorFor } from "@/lib/theme";
+import { getThemePreference } from "@/lib/theme-server";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
@@ -19,24 +20,23 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-export const viewport: Viewport = {
-  width: "device-width",
-  initialScale: 1,
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#F7F5F0" },
-    { media: "(prefers-color-scheme: dark)", color: "#111315" },
-  ],
-};
+export async function generateViewport(): Promise<Viewport> {
+  return {
+    width: "device-width",
+    initialScale: 1,
+    // viewportFit: cover — чтобы нижняя навигация могла отступить на safe-area iPhone
+    viewportFit: "cover",
+    themeColor: themeColorFor(await getThemePreference()),
+  };
+}
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+// Класс темы ставится на сервере по cookie: первый кадр сразу в выбранной теме (src/lib/theme.ts).
+// Плашка концепта — в оболочках (SiteFooter) и на странице входа, а не здесь.
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const theme = await getThemePreference();
   return (
-    <html lang="ru" className={cn(inter.variable, manrope.variable)}>
-      <body className="flex min-h-dvh flex-col font-sans antialiased">
-        <div className="flex-1">{children}</div>
-        <footer className="mx-auto w-full max-w-[1120px] px-4 pb-6 md:px-6">
-          <ConceptBanner />
-        </footer>
-      </body>
+    <html lang="ru" className={cn(inter.variable, manrope.variable, themeClass(theme))}>
+      <body className="min-h-dvh font-sans antialiased">{children}</body>
     </html>
   );
 }
