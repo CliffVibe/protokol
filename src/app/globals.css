@@ -22,6 +22,7 @@
  * имя `--muted` в shadcn занято фоном. Переменные shadcn ниже — только ссылки на наши токены.
  *
  * Палитра «Бланк» (решение человека 06.11): холодная бумага бланка, чернила, фиолетовая штемпельная печать.
+ * Тёмная тема «Чернила ночью»: глубокий чернильно-синий, бумажно-белый текст; темнее, но контраст выше светлой.
  * Контраст текста ≥ 4.5:1 для всех пар, включая текст на --brand-soft, проверяет tests/unit/contrast.test.ts.
  */
 :root {
@@ -41,33 +42,33 @@
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --bg: #111412;
-    --surface: #1a1e1b;
-    --ink: #e7ebe5;
-    --ink-muted: #9aa39b;
-    --line: #2a302b;
-    --brand: #9cb2ec;
-    --brand-soft: #1e2638;
-    --ok: #5cc48a;
-    --warn: #f0b14a;
-    --danger: #f2867e;
-    --seal: #d59be4;
+    --bg: #0a0d17;
+    --surface: #121726;
+    --ink: #e9ecf4;
+    --ink-muted: #a4acc0;
+    --line: #2a3350;
+    --brand: #8dbdf0;
+    --brand-soft: #18213d;
+    --ok: #62c893;
+    --warn: #f2b655;
+    --danger: #f48c84;
+    --seal: #b98bff;
     color-scheme: dark;
   }
 }
 
 .dark {
-  --bg: #111412;
-  --surface: #1a1e1b;
-  --ink: #e7ebe5;
-  --ink-muted: #9aa39b;
-  --line: #2a302b;
-  --brand: #9cb2ec;
-  --brand-soft: #1e2638;
-  --ok: #5cc48a;
-  --warn: #f0b14a;
-  --danger: #f2867e;
-  --seal: #d59be4;
+  --bg: #0a0d17;
+  --surface: #121726;
+  --ink: #e9ecf4;
+  --ink-muted: #a4acc0;
+  --line: #2a3350;
+  --brand: #8dbdf0;
+  --brand-soft: #18213d;
+  --ok: #62c893;
+  --warn: #f2b655;
+  --danger: #f48c84;
+  --seal: #b98bff;
   color-scheme: dark;
 }
 
