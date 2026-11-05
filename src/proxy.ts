@@ -5,7 +5,12 @@
 //     запрос можно выдать только здесь; статический CSP в next.config.ts сломал бы inline-скрипты Next.
 // Остальные заголовки S6 — в next.config.ts.
 import { NextResponse, type NextRequest } from "next/server";
-import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS, SESSION_TTL_MS } from "@/server/auth/tokens";
+import {
+  SESSION_COOKIE,
+  SESSION_COOKIE_OPTIONS,
+  SESSION_TTL_MS,
+  isWellFormedToken,
+} from "@/server/auth/tokens";
 
 /** Пути, открытые без входа (кроме статики — её отсекает matcher). */
 const PUBLIC_PATHS = [/^\/login\/?$/, /^\/verify\//, /^\/api\/calendar\//, /^\/api\/health\/?$/];
@@ -53,7 +58,12 @@ export function proxy(request: NextRequest) {
 
   // «Продление при активности» (S3): обновляем срок cookie на переходах по страницам.
   // Срок в БД продлевает getSession(); недействительный токен отсюда всё равно никуда не пустит.
-  if (token && request.method === "GET" && !request.headers.has("next-router-prefetch")) {
+  // Мусор вместо токена не продлеваем (security-reviewer, T03)
+  if (
+    isWellFormedToken(token) &&
+    request.method === "GET" &&
+    !request.headers.has("next-router-prefetch")
+  ) {
     response.cookies.set(SESSION_COOKIE, token, {
       ...SESSION_COOKIE_OPTIONS,
       maxAge: SESSION_TTL_MS / 1000,

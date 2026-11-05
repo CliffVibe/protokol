@@ -57,6 +57,38 @@ const eslintConfig = defineConfig([
     },
   },
   {
+    // repos/auth.ts принимает голые login/userId (ctx ещё нет): звать его можно только из входа и guards,
+    // иначе в T05+ легко написать loadStudentCtx(params.id) (security-reviewer, T03)
+    files: ["src/**"],
+    ignores: [
+      "src/server/auth/**",
+      "src/server/services/auth.ts",
+      "src/server/services/sessions.ts",
+      "src/server/repos/**",
+    ],
+    rules: {
+      "no-restricted-imports": [
+        "error",
+        {
+          patterns: [
+            {
+              group: ["**/repos/auth", "**/repos/auth.ts"],
+              message:
+                "repos/auth — только для src/server/auth и services/{auth,sessions}. Контекст пользователя — из requireStudent()/requireStaff().",
+            },
+          ],
+          paths: [
+            {
+              name: "@/server/repos/auth",
+              message:
+                "repos/auth — только для src/server/auth и services/{auth,sessions}. Контекст пользователя — из requireStudent()/requireStaff().",
+            },
+          ],
+        },
+      ],
+    },
+  },
+  {
     // Где работа с БД разрешена: репозитории, клиент, сид/миграции и интеграционные тесты,
     // а также security.spec.ts — тест 6 из 05-security проверяет хеши паролей прямо в БД
     files: [

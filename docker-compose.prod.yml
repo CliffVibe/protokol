@@ -10,6 +10,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+    # Порт app наружу НЕ открывать (только expose, не ports): IP для блокировки входа берётся
+    # из X-Forwarded-For, который ставит Caddy; напрямую его подделал бы любой (security-reviewer, T03)
     expose:
       - "3000"
 

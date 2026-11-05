@@ -13,9 +13,12 @@ import { SESSION_COOKIE, SESSION_COOKIE_OPTIONS } from "./tokens";
 // Сессия в cookie __Host-session (S3). Ставить и удалять cookie можно только в Server Action
 // или route handler; читать — где угодно на сервере.
 
+/** Новая сессия. Прежняя из cookie (общий компьютер: А не вышел, Б вошёл поверх) удаляется из БД. */
 export async function createSession(userId: string): Promise<void> {
+  const store = await cookies();
+  await endSession(store.get(SESSION_COOKIE)?.value);
   const { token, expiresAt } = await startSession(userId, new Date());
-  (await cookies()).set(SESSION_COOKIE, token, { ...SESSION_COOKIE_OPTIONS, expires: expiresAt });
+  store.set(SESSION_COOKIE, token, { ...SESSION_COOKIE_OPTIONS, expires: expiresAt });
 }
 
 /** Текущий пользователь по cookie. cache(): один запрос к БД на рендер, сколько бы guard ни звали. */
