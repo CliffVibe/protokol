@@ -184,7 +184,7 @@ test.describe("тема", () => {
     expect(cookie?.value).toBe("dark");
     await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute(
       "content",
-      "#111315",
+      "#1A1D20",
     );
 
     await page.reload();
@@ -199,7 +199,7 @@ test.describe("тема", () => {
   test("без мигания: класс темы и theme-color уже в HTML с сервера", async ({ request }) => {
     const dark = await (await request.get("/", { headers: { cookie: "theme=dark" } })).text();
     expect(dark).toMatch(/<html[^>]*class="[^"]*\bdark\b/);
-    expect(dark).toMatch(/<meta name="theme-color" content="#111315"/);
+    expect(dark).toMatch(/<meta name="theme-color" content="#1A1D20"/);
 
     const system = await (await request.get("/")).text();
     expect(system).not.toMatch(/<html[^>]*class="[^"]*\b(dark|light)\b/);
@@ -232,5 +232,33 @@ test.describe("служебные страницы", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Очередь заявок" })).toBeVisible();
     await expect(page.getByRole("navigation", { name: "Разделы кабинета" })).toBeVisible();
     await expect(mainNav(page)).toHaveCount(0);
+  });
+});
+
+test.describe("крупный текст (200%)", () => {
+  test("все пункты нижней панели и «Ещё» остаются на экране", async ({ page, isMobile }) => {
+    test.skip(!isMobile, "нижняя панель — только на мобильном");
+    await page.goto("/more");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+    const width = page.viewportSize()!.width;
+    const navLinks = mainNav(page).getByRole("link");
+    await expect(navLinks).toHaveCount(5);
+    for (const link of await navLinks.all()) {
+      const box = (await link.boundingBox())!;
+      expect(box.x, await link.innerText()).toBeGreaterThanOrEqual(0);
+      expect(box.x + box.width, await link.innerText()).toBeLessThanOrEqual(width);
+    }
+    const moreLinks = page.getByRole("navigation", { name: "Другие разделы" }).getByRole("link");
+    for (const link of await moreLinks.all()) {
+      const fits = await link.evaluate((el) =>
+        [...el.querySelectorAll("span, svg")].every(
+          (child) => child.getBoundingClientRect().right <= el.getBoundingClientRect().right + 0.5,
+        ),
+      );
+      expect(fits, await link.innerText()).toBe(true);
+    }
+    expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
 });
