@@ -23,7 +23,8 @@ const eslintConfig = defineConfig([
           ],
           patterns: [
             {
-              group: ["**/server/db"],
+              // **/db — ещё и `../db` из src/server/services и т. п. (иначе обход репозиториев)
+              group: ["**/server/db", "**/db", "./db"],
               message:
                 "Prisma — только в src/server/repos/** и src/server/db.ts. Добавь функцию в репозиторий с ctx.",
             },
@@ -49,7 +50,7 @@ const eslintConfig = defineConfig([
         "error",
         {
           selector:
-            "ImportExpression[source.value=/server\\/db|generated\\/prisma|^@prisma\\/|^pg$/]",
+            "ImportExpression[source.value=/server\\/db|(^|\\/)db$|generated\\/prisma|^@prisma\\/|^pg$/]",
           message: "Prisma и драйвер БД — только в src/server/repos/** (динамический import тоже).",
         },
       ],

@@ -24,7 +24,10 @@ if (tool !== "Bash") {
   if (/prisma\/seed/.test(path) && /password\s*[:=]\s*["'][^"'$]{4,}["']/i.test(text))
     block("Пароли тестовых аккаунтов берутся из process.env (SEED_PASSWORD_*), не из кода.");
   // S1: prisma только в src/server/repos
-  if (/^.*\/src\/(?!server\/repos\/|server\/db\.ts)/.test(path) && /from ["']@\/server\/db["']/.test(text))
+  // Статический `from "…server/db"` и динамический `import("…server/db")`, с алиасом @/ или относительным путём
+  // (включая `../db` из соседней папки src/server/*)
+  const dbImport = /(?:\bfrom\s*|\bimport\s*\(\s*)["'](?:@\/|(?:\.\.?\/)+(?:src\/)?|src\/)?(?:server\/)?db(?:\.ts)?["']/;
+  if (/^.*\/src\/(?!server\/repos\/|server\/db\.ts)/.test(path) && dbImport.test(text))
     block("Импорт @/server/db разрешён только в src/server/repos/**. Добавь функцию в репозиторий с ctx.");
   // S5
   if (/dangerouslySetInnerHTML/.test(text) && !/sanitize/i.test(text))
