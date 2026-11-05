@@ -29,6 +29,6 @@ test("axe: нет серьёзных нарушений доступности",
 test("/api/health отвечает и не кэшируется", async ({ request }) => {
   const res = await request.get("/api/health");
   expect(res.status()).toBe(200);
-  expect(await res.json()).toEqual({ ok: true });
+  expect(await res.json()).toEqual({ ok: true, db: true });
   expect(res.headers()["cache-control"]).toContain("no-store");
 });

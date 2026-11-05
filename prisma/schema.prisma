@@ -1,0 +1,328 @@
+// Модель данных «Протокола». Эскиз и смысл сущностей — docs/03-architecture.md.
+// Все данные вымышленные (docs/06-seed-data.md). Доступ к БД — только из src/server/repos/** с ctx.
+// Prisma 7: строка подключения — в prisma.config.ts, клиент генерируется в src/generated/prisma.
+
+generator client {
+  provider     = "prisma-client"
+  output       = "../src/generated/prisma"
+  moduleFormat = "esm"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Role {
+  STUDENT
+  STAFF
+}
+
+enum LessonKind {
+  LECTURE
+  SEMINAR
+  LANGUAGE
+  EXAM
+  CONSULTATION
+}
+
+enum ChangeKind {
+  NONE
+  MOVED
+  CANCELLED
+  ROOM_CHANGED
+  TEACHER_CHANGED
+}
+
+enum AssessmentKind {
+  EXAM
+  CREDIT
+  GRADED_CREDIT
+  COURSEWORK
+}
+
+enum RequestStatus {
+  SUBMITTED
+  ACCEPTED
+  IN_PROGRESS
+  READY
+  ISSUED
+  REJECTED
+}
+
+enum NotificationKind {
+  ANNOUNCEMENT
+  SCHEDULE_CHANGE
+  DEADLINE
+  REQUEST_STATUS
+}
+
+// ── Пользователи и сессии ────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  login        String    @unique
+  passwordHash String // только argon2id (S2)
+  role         Role
+  failedLogins Int       @default(0)
+  lockedUntil  DateTime?
+  createdAt    DateTime  @default(now())
+
+  student       Student?
+  staff         Staff?
+  sessions      Session[]
+  requestEvents RequestEvent[] @relation("RequestEventActor")
+}
+
+/// Храним sha256(token); сам токен — только в cookie __Host-session (S3).
+model Session {
+  id        String   @id
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// ── Структура вуза ───────────────────────────────────────────────────────
+
+model Faculty {
+  id       String    @id @default(cuid())
+  code     String    @unique // ФМО, МЭО, … (открытые названия)
+  name     String
+  programs Program[]
+}
+
+model Program {
+  id        String  @id @default(cuid())
+  name      String
+  facultyId String
+  faculty   Faculty @relation(fields: [facultyId], references: [id])
+  groups    Group[]
+
+  @@index([facultyId])
+}
+
+model Group {
+  id        String    @id @default(cuid())
+  name      String    @unique // «2МО-3»
+  course    Int
+  programId String
+  program   Program   @relation(fields: [programId], references: [id])
+  students  Student[]
+  lessons   Lesson[]
+
+  @@index([programId])
+}
+
+model LanguageGroup {
+  id       String                 @id @default(cuid())
+  language String // «Английский»
+  level    String // «B2»
+  name     String                 @unique // «Англ. B2-4»
+  members  StudentLanguageGroup[]
+  lessons  Lesson[]
+}
+
+model StudentLanguageGroup {
+  studentId       String
+  languageGroupId String
+  student         Student       @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  languageGroup   LanguageGroup @relation(fields: [languageGroupId], references: [id], onDelete: Cascade)
+
+  @@id([studentId, languageGroupId])
+  @@index([languageGroupId])
+}
+
+model Student {
+  id             String                 @id @default(cuid())
+  userId         String                 @unique
+  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastName       String
+  firstName      String
+  middleName     String?
+  recordBookNo   String                 @unique // вымышленный; не показывать на /verify (S7)
+  groupId        String
+  group          Group                  @relation(fields: [groupId], references: [id])
+  /// Токен .ics-подписки (S7): перевыпускается из профиля
+  calendarToken  String                 @unique
+  languageGroups StudentLanguageGroup[]
+  grades         Grade[]
+  requests       Request[]
+  notifications  Notification[]
+
+  @@index([groupId])
+}
+
+model Staff {
+  id            String         @id @default(cuid())
+  userId        String         @unique
+  user          User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName      String
+  /// Видит заявки только этих факультетов (S1)
+  facultyIds    String[]
+  announcements Announcement[]
+}
+
+// ── Учёба ────────────────────────────────────────────────────────────────
+
+model Teacher {
+  id       String   @id @default(cuid())
+  fullName String // вымышленный
+  lessons  Lesson[]
+  grades   Grade[]
+}
+
+model Discipline {
+  id      String   @id @default(cuid())
+  name    String
+  credits Int
+  lessons Lesson[]
+  grades  Grade[]
+}
+
+model Lesson {
+  id               String         @id @default(cuid())
+  disciplineId     String
+  discipline       Discipline     @relation(fields: [disciplineId], references: [id])
+  teacherId        String
+  teacher          Teacher        @relation(fields: [teacherId], references: [id])
+  kind             LessonKind
+  startsAt         DateTime
+  endsAt           DateTime
+  building         String
+  room             String
+  /// Либо академическая группа, либо языковая
+  groupId          String?
+  group            Group?         @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  languageGroupId  String?
+  languageGroup    LanguageGroup? @relation(fields: [languageGroupId], references: [id], onDelete: Cascade)
+  change           ChangeKind     @default(NONE)
+  changeNote       String?
+  originalStartsAt DateTime?
+
+  @@index([groupId, startsAt])
+  @@index([languageGroupId, startsAt])
+}
+
+model Grade {
+  id           String         @id @default(cuid())
+  studentId    String
+  student      Student        @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  disciplineId String
+  discipline   Discipline     @relation(fields: [disciplineId], references: [id])
+  /// Экзаменатор — для деталей дисциплины (T07). Дополнение к эскизу 03
+  teacherId    String?
+  teacher      Teacher?       @relation(fields: [teacherId], references: [id])
+  semester     Int
+  kind         AssessmentKind
+  ratingPoints Int? // 0..100, текущий рейтинг
+  finalMark    Int? // 2..5
+  passed       Boolean? // для зачёта
+  examDate     DateTime?
+
+  @@unique([studentId, disciplineId, semester])
+  @@index([studentId, semester])
+}
+
+// ── Заявки и справки ─────────────────────────────────────────────────────
+
+model RequestType {
+  id          String    @id @default(cuid())
+  code        String    @unique
+  title       String
+  description String
+  /// «виза», «военкомат»… — для мастера «Зачем нужна справка?» (T10)
+  purposeTags String[]
+  languages   String[] // ["ru","en"]
+  slaDays     Int
+  /// Описание доп. полей формы; zod-схема строится из него на сервере (T08)
+  fields      Json
+  requests    Request[]
+}
+
+model Request {
+  id        String          @id @default(cuid())
+  /// Порядковый номер для человекочитаемого number без гонок. Дополнение к эскизу 03
+  seq       Int             @unique @default(autoincrement())
+  number    String          @unique // «С-2026-00042»
+  studentId String
+  student   Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  typeId    String
+  type      RequestType     @relation(fields: [typeId], references: [id])
+  language  String          @default("ru")
+  payload   Json
+  status    RequestStatus   @default(SUBMITTED)
+  events    RequestEvent[]
+  document  IssuedDocument?
+  createdAt DateTime        @default(now())
+  updatedAt DateTime        @updatedAt
+
+  @@index([studentId, createdAt])
+  @@index([status])
+}
+
+model RequestEvent {
+  id          String        @id @default(cuid())
+  requestId   String
+  request     Request       @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  status      RequestStatus
+  comment     String?
+  actorUserId String
+  actor       User          @relation("RequestEventActor", fields: [actorUserId], references: [id])
+  createdAt   DateTime      @default(now())
+
+  @@index([requestId, createdAt])
+}
+
+model IssuedDocument {
+  id          String    @id @default(cuid())
+  requestId   String    @unique
+  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  /// 128 бит случайности, в QR (S7)
+  verifyToken String    @unique
+  issuedAt    DateTime
+  validUntil  DateTime?
+  revoked     Boolean   @default(false)
+}
+
+// ── Объявления и уведомления ─────────────────────────────────────────────
+
+/// audience: { facultyCodes?: string[], courses?: number[], groupNames?: string[] }; пустой объект — всем
+model Announcement {
+  id          String   @id @default(cuid())
+  title       String
+  body        String
+  audience    Json
+  authorId    String
+  author      Staff    @relation(fields: [authorId], references: [id])
+  publishedAt DateTime
+  pinned      Boolean  @default(false)
+
+  @@index([publishedAt])
+}
+
+model Deadline {
+  id       String   @id @default(cuid())
+  title    String
+  dueAt    DateTime
+  audience Json
+  link     String?
+
+  @@index([dueAt])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  studentId String
+  student   Student          @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  kind      NotificationKind
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime         @default(now())
+
+  @@index([studentId, readAt])
+  @@index([studentId, createdAt])
+}

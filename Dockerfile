@@ -9,14 +9,17 @@ RUN npm install -g pnpm@11.28.10 && apk add --no-cache libc6-compat
 WORKDIR /app
 
 FROM base AS deps
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml ./
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml prisma.config.ts ./
+# schema.prisma нужна postinstall-скрипту (prisma generate)
+COPY prisma/schema.prisma ./prisma/schema.prisma
 RUN --mount=type=cache,id=pnpm-store,target=/root/.local/share/pnpm/store \
     pnpm install --frozen-lockfile
 
 FROM base AS build
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-RUN pnpm build
+# Клиент Prisma генерируется заново из схемы (src/generated не копируется — см. .dockerignore)
+RUN pnpm db:generate && pnpm build
 
 FROM node:24-alpine AS runner
 WORKDIR /app

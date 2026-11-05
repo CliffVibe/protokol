@@ -81,7 +81,7 @@ Next.js 16 кладёт 474 файла документации, совпада�
 |---|---|---|
 | next | **16.4.5** | Не ниже 16.0.7: уязвимость React2Shell (CVE-2025-55182, RCE в Server Components) и последующие DoS-CVE исправлены. В 16 `middleware.ts` → **`proxy.ts`** |
 | react / react-dom | 19.3.1 | Не ниже 19.2.8 / 19.1.9 (CVE-2026-44907) |
-| prisma / @prisma/client | **7.10.1** | ⚠️ npm-тег `latest` у `prisma` указывает на **8.0.0-rc.30** (релиз-кандидат). Ставить строго `prisma@7.10.1` |
+| prisma / @prisma/client / @prisma/adapter-pg | **7.9.0** | ⚠️ npm-тег `latest` у `prisma` — **8.0.0-rc.30**. 7.10.0–7.10.1 CLI опубликованы токеном `prismabot` без provenance (у 7.9.0 и 8.0-rc — GitHub Actions + SLSA) → `trustPolicy` отклонил; взяли 7.9.0 целиком (решение человека 06.11). Изменение 7.10 «Prisma Studio security hardening» нас не касается: Studio не используем |
 | @node-rs/argon2 | 2.2.2 | Готовые бинарники, install-скриптов нет |
 | @react-pdf/renderer | 4.9.0 | |
 
