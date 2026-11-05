@@ -13,7 +13,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
-      <header className="border-b border-line bg-surface">
+      <header className="border-b border-line bg-bg">
         <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 md:px-6">
           <div className="w-full md:w-auto">
             <BrandMark href="/staff" subtitle="Кабинет деканата" />
@@ -27,7 +27,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
                 <Link
                   href="/staff"
                   aria-current="page"
-                  className="flex min-h-11 items-center gap-2 rounded-lg bg-brand-soft px-3 text-body font-medium text-brand"
+                  className="relative flex min-h-11 items-center gap-2 rounded-lg px-3 text-body font-semibold text-brand before:absolute before:inset-x-3 before:-bottom-2 before:h-[3px] before:rounded-t-full before:bg-brand"
                 >
                   <Inbox aria-hidden className="size-5" />
                   Заявки

@@ -37,7 +37,7 @@ export function PageHeader({
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <Title className="text-h1 lg:text-display">{title}</Title>
+          <Title className="text-h1 tracking-tight lg:text-display">{title}</Title>
           {description ? <p className="text-body text-ink-muted">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}

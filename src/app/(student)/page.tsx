@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { Sunrise } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { formatLongDay } from "@/lib/dates";
 
 export const metadata: Metadata = { title: "Сейчас" };
 
@@ -9,15 +9,11 @@ export const metadata: Metadata = { title: "Сейчас" };
 // TODO(T03): requireStudent() — первой строкой, до любых данных.
 export default function NowPage() {
   return (
-    <div className="flex flex-col gap-6">
-      <PageHeader
-        title="Сейчас"
-        description="Ближайшая пара, переносы и дедлайны — на одном экране."
-      />
+    <div className="flex flex-col gap-8">
+      <PageHeader title="Сейчас" description={formatLongDay(new Date())} />
       <EmptyState
-        icon={Sunrise}
         title="Здесь появится ваш день"
-        description="Покажем, какая пара следующая, сколько до неё и что изменилось в расписании."
+        description="Какая пара следующая, сколько до неё и что изменилось в расписании."
       />
     </div>
   );

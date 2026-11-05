@@ -20,14 +20,14 @@ export default async function MorePage() {
     <div className="flex flex-col gap-6">
       <PageHeader title="Ещё" />
       <nav aria-label="Другие разделы">
-        <ul className="flex flex-col divide-y divide-line overflow-hidden rounded-xl border border-line bg-surface">
-          {MORE_ITEMS.map(({ href, label, icon: Icon, badge }) => (
+        {/* Как оглавление документа: строки с тонкими линиями на бумаге, без карточки */}
+        <ul className="flex flex-col divide-y divide-line border-y border-line">
+          {MORE_ITEMS.map(({ href, label, badge }) => (
             <li key={href}>
               <Link
                 href={href}
-                className="flex min-h-14 items-center gap-3 px-4 text-body font-medium -outline-offset-2 hover:bg-bg"
+                className="flex min-h-14 items-center gap-3 px-1 text-lead font-medium -outline-offset-2 hover:text-brand"
               >
-                <Icon aria-hidden className="size-5 shrink-0 text-brand" />
                 <span className="min-w-0 flex-1 py-2 break-words hyphens-auto">{label}</span>
                 {badge ? <UnreadBadge count={unreadCount} /> : null}
                 <ChevronRight aria-hidden className="size-5 shrink-0 text-ink-muted" />
@@ -36,7 +36,7 @@ export default async function MorePage() {
           ))}
         </ul>
       </nav>
-      <section className="rounded-xl border border-line bg-surface p-4">
+      <section className="max-w-sm">
         <h2 className="sr-only">Настройки</h2>
         <ThemeSwitcher value={theme} />
       </section>

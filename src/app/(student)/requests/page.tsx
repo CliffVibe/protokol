@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { FileText } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 
@@ -15,7 +14,6 @@ export default function Page() {
         description="Справки и заявления — как заказ с доставкой: видно, на каком шаге."
       />
       <EmptyState
-        icon={FileText}
         title="Заявок пока нет"
         description="Скоро здесь можно будет заказать справку и следить за её статусом."
       />

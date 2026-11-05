@@ -18,7 +18,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
     <div className="flex min-h-dvh">
       <SkipLink />
 
-      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 border-r border-line bg-surface px-4 py-5 lg:flex">
+      <aside className="sticky top-0 hidden h-dvh w-64 shrink-0 flex-col gap-6 border-r border-line bg-bg px-4 py-5 lg:flex">
         <BrandMark href="/" subtitle="Цифровой деканат" className="px-1" />
         <div className="flex-1 overflow-y-auto">
           <SideNav unreadCount={unreadCount} />
@@ -27,7 +27,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col pb-bottom-nav lg:pb-0">
-        <header className="border-b border-line bg-surface px-4 lg:hidden">
+        <header className="border-b border-line bg-bg px-4 lg:hidden">
           <BrandMark href="/" className="h-14" />
         </header>
         <main

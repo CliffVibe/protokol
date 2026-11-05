@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { CalendarDays } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 
@@ -15,7 +14,6 @@ export default function Page() {
         description="Пары на сегодня и неделю — основная группа и языковые в одной ленте."
       />
       <EmptyState
-        icon={CalendarDays}
         title="Расписание скоро появится"
         description="Покажем аудиторию, корпус, преподавателя и подсветим переносы."
       />

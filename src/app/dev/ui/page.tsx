@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { CalendarDays, FileText, Plus, RotateCw, Search, Sunrise } from "lucide-react";
+import { Plus, RotateCw, Search } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { EmptyState } from "@/components/empty-state";
 import { ErrorState } from "@/components/error-state";
@@ -98,7 +98,7 @@ export default async function DevUiPage() {
 
         <Section title="Логотип">
           <div className="flex flex-wrap items-end gap-6 rounded-xl border border-line bg-surface p-4">
-            <LogoSeal className="size-24" label="Протокол" />
+            <LogoSeal variant="stamp" className="size-40 -rotate-6" label="Печать «Протокол»" />
             <LogoSeal className="size-12" />
             <LogoSeal className="size-8" />
             <LogoSeal className="size-4" />
@@ -133,12 +133,12 @@ export default async function DevUiPage() {
               <div key={cls} className="flex flex-col gap-0.5">
                 <span className={`${cls} ${extra}`}>Протокол: всё вовремя</span>
                 <span className="text-caption text-ink-muted">
-                  <code>{cls}</code> · {note}
+                  <code>{cls}</code>, {note}
                 </span>
               </div>
             ))}
             <p className="text-body">
-              Цифры — моноширинные: <span className="tabular font-medium">10:10 · 87/100</span>
+              Цифры — моноширинные: <span className="tabular font-medium">10:10, 87/100</span>
             </p>
           </div>
         </Section>
@@ -192,7 +192,7 @@ export default async function DevUiPage() {
           <div className="rounded-xl border border-line bg-bg p-4">
             <PageHeader
               title="Справка об обучении"
-              description="Заявка № 2026-0142 · подана сегодня"
+              description="Заявка № 2026-0142, подана сегодня"
               back={{ href: "/requests", label: "Все заявки" }}
               titleLevel={2}
               action={<StatusChip tone="brand">В работе</StatusChip>}
@@ -212,11 +212,10 @@ export default async function DevUiPage() {
             </Panel>
             <div className="flex flex-col gap-4">
               <Panel label="Пусто">
-                <EmptyState icon={Sunrise} title="Сегодня пар нет. Можно выдохнуть" />
+                <EmptyState title="Сегодня пар нет. Можно выдохнуть" />
               </Panel>
               <Panel label="Пусто с действием">
                 <EmptyState
-                  icon={FileText}
                   title="Заявок пока нет — закажите первую справку"
                   action={
                     <Button asChild>
@@ -237,7 +236,7 @@ export default async function DevUiPage() {
                 />
               </Panel>
               <Panel label="Пусто без пояснения">
-                <EmptyState icon={CalendarDays} title="На этой неделе изменений нет" />
+                <EmptyState title="На этой неделе изменений нет" />
               </Panel>
             </div>
           </div>

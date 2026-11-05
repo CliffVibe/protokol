@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Bot } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 
@@ -12,7 +11,6 @@ export default function Page() {
     <div className="flex flex-col gap-6">
       <PageHeader title="Помощник" description="Ответит на вопросы о регламентах и ваших данных." />
       <EmptyState
-        icon={Bot}
         title="Помощник скоро появится"
         description="Можно будет спросить, когда следующий экзамен или какую справку взять для военкомата."
       />

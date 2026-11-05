@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Inbox } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 
@@ -15,7 +14,6 @@ export default function StaffHomePage() {
         description="Заявки студентов ваших факультетов — по сроку и статусу."
       />
       <EmptyState
-        icon={Inbox}
         title="Новых заявок нет"
         description="Когда студент закажет справку, она появится здесь — с ожидаемым сроком."
       />
