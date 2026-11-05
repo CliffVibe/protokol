@@ -4,12 +4,13 @@ on:
   pull_request:
 permissions:
   contents: read
+# Actions закреплены по SHA (версия — в комментарии); обновляет Dependabot. См. docs/07-tooling.md
 jobs:
   test:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine
         env: { POSTGRES_USER: protokol, POSTGRES_PASSWORD: protokol, POSTGRES_DB: protokol }
         ports: ["5432:5432"]
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
@@ -21,16 +22,19 @@ jobs:
       SEED_PASSWORD_IRINA: ci-only-irina
       NEXT_TELEMETRY_DISABLED: "1"
     steps:
-      - uses: actions/checkout@v4
-      - uses: pnpm/action-setup@v4
-      - uses: actions/setup-node@v4
-        with: { node-version: 22, cache: pnpm }
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: pnpm/action-setup@ea17c68df8912ef543352723c149a84f56e3d413 # v6.1.0 (версия pnpm — из packageManager)
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with: { node-version: 24, cache: pnpm }
       - run: pnpm install --frozen-lockfile
+      - run: node --test .claude/hooks/guard.test.mjs
       - run: pnpm lint && pnpm typecheck
-      - run: pnpm exec prisma migrate deploy && pnpm db:seed
+      # Prisma появляется в T02 — до этого шаг пропускается
+      - if: hashFiles('prisma/schema.prisma') != ''
+        run: pnpm exec prisma migrate deploy && pnpm db:seed
       - run: pnpm test
-      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm exec playwright install --with-deps --only-shell chromium
       - run: pnpm test:e2e
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: failure()
         with: { name: playwright-report, path: playwright-report }
