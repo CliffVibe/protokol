@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { Plus, RotateCw, Search } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
 import { EmptyState } from "@/components/empty-state";
+import { FormAlert } from "@/components/form-alert";
+import { FormField } from "@/components/form-field";
+import { PasswordInput } from "@/components/password-input";
 import { ErrorState } from "@/components/error-state";
 import { LogoSeal } from "@/components/logo-seal";
 import { UnreadBadge } from "@/components/nav/unread-badge";
@@ -18,6 +21,7 @@ import {
 import { StatusChip, type StatusTone } from "@/components/status-chip";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { getThemePreference } from "@/lib/theme-server";
 
 export const metadata: Metadata = { title: "Витрина компонентов" };
@@ -168,6 +172,44 @@ export default async function DevUiPage() {
               <Button disabled>Недоступна</Button>
             </div>
           </Panel>
+        </Section>
+
+        <Section title="Формы">
+          <div className="grid gap-8 lg:grid-cols-2">
+            <Panel label="Вход: обычное состояние">
+              <div className="flex max-w-sm flex-col gap-4">
+                <FormField
+                  id="demo-login"
+                  label="Логин"
+                  hint="Как в студенческом билете, латиницей"
+                >
+                  {(p) => (
+                    <Input {...p} name="login" autoComplete="username" placeholder="ivanova.a" />
+                  )}
+                </FormField>
+                <FormField id="demo-password" label="Пароль">
+                  {(p) => <PasswordInput {...p} name="password" />}
+                </FormField>
+                <Button className="w-full">Войти</Button>
+              </div>
+            </Panel>
+            <Panel label="Вход: ошибка и отправка">
+              <div className="flex max-w-sm flex-col gap-4">
+                <FormAlert title="Неверный логин или пароль">
+                  Проверьте раскладку клавиатуры и попробуйте ещё раз.
+                </FormAlert>
+                <FormField id="demo-login-err" label="Логин" error="Введите логин">
+                  {(p) => <Input {...p} name="login" />}
+                </FormField>
+                <FormField id="demo-password-err" label="Пароль">
+                  {(p) => <PasswordInput {...p} name="password" defaultValue="пароль" />}
+                </FormField>
+                <Button className="w-full" loading>
+                  Входим…
+                </Button>
+              </div>
+            </Panel>
+          </div>
         </Section>
 
         <Section title="Статусы">
