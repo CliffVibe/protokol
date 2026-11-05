@@ -1,0 +1,145 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+/* Тёмная тема: по системной настройке; ручной переключатель (класс .dark / .light на <html>) — в T04 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * Токены — строго из docs/04-design.md. Новые цвета не добавлять.
+ * Токен `--muted` из дизайна (вторичный текст) реализован как `--ink-muted`:
+ * имя `--muted` в shadcn занято фоном. Переменные shadcn ниже — только ссылки на наши токены.
+ */
+:root {
+  --bg: #f7f5f0;
+  --surface: #ffffff;
+  --ink: #16181d;
+  --ink-muted: #6b6f76;
+  --line: #e6e2d9;
+  --brand: #1f3a5f;
+  --brand-soft: #e7edf5;
+  --ok: #2e7d4f;
+  --warn: #b26a00;
+  --danger: #b3261e;
+  --seal: #8c2f39;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not(.light) {
+    --bg: #111315;
+    --surface: #1a1d20;
+    --ink: #eceae4;
+    --ink-muted: #9a9ea5;
+    --line: #2a2e33;
+    --brand: #8fb3e0;
+    --brand-soft: #1d2a3a;
+    --ok: #5cc48a;
+    --warn: #f0b14a;
+    --danger: #f2867e;
+    --seal: #d9707b;
+    color-scheme: dark;
+  }
+}
+
+.dark {
+  --bg: #111315;
+  --surface: #1a1d20;
+  --ink: #eceae4;
+  --ink-muted: #9a9ea5;
+  --line: #2a2e33;
+  --brand: #8fb3e0;
+  --brand-soft: #1d2a3a;
+  --ok: #5cc48a;
+  --warn: #f0b14a;
+  --danger: #f2867e;
+  --seal: #d9707b;
+  color-scheme: dark;
+}
+
+/* Слой совместимости для компонентов shadcn/ui → наши токены */
+:root {
+  --background: var(--bg);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--brand);
+  --primary-foreground: var(--bg);
+  --secondary: var(--brand-soft);
+  --secondary-foreground: var(--ink);
+  --muted: var(--bg);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--brand-soft);
+  --accent-foreground: var(--ink);
+  --destructive: var(--danger);
+  --border: var(--line);
+  --input: var(--line);
+  --ring: var(--brand);
+  /* Радиусы из 04-design: кнопки 12, карточки 16 */
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-brand: var(--brand);
+  --color-brand-soft: var(--brand-soft);
+  --color-ok: var(--ok);
+  --color-warn: var(--warn);
+  --color-danger: var(--danger);
+  --color-seal: var(--seal);
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.33);
+  --radius-2xl: calc(var(--radius) * 1.8);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-heading: var(--font-manrope), var(--font-inter), system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
