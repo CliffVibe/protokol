@@ -85,6 +85,16 @@ Next.js 16 кладёт 474 файла документации, совпада�
 | @node-rs/argon2 | 2.2.2 | Готовые бинарники, install-скриптов нет |
 | @react-pdf/renderer | 4.9.0 | |
 
+### Что защита цепочки поставок поймала на T01 (05.11.2026) — для отчёта
+| Что сработало | На чём | Что сделали |
+|---|---|---|
+| `minimumReleaseAge` | `next@16.4.5` (48 ч), `semver@6.3.2` | Стартовали на 16.4.4; установку dev-зависимостей отложили на час, пока `semver` не «созрел». Обход флагом запрещён и хуком, и `deny` |
+| `trustPolicy: no-downgrade` | `undici-types@6.21.0` (нет provenance, у более ранних по дате — есть) | Политику не ослабляли: перешли на Node 24 и `@types/node@24` |
+| `trustPolicy` | `eslint-import-resolver-typescript@3.10.1`, `semver@6.3.1` | pnpm сам выбрал соседние версии с provenance |
+| peer-зависимости | ESLint 10 не поддерживают плагины `eslint-config-next` | ESLint 9.39.5 (помечен deprecated как прошлая мажорная ветка; уязвимостей нет) |
+| `pnpm dlx` + `minimumReleaseAge` | `shadcn@4.23.0` собрал несовместимый набор (`@modelcontextprotocol/server` без `core`) | `shadcn init` через закэшированный `npx shadcn@4.23.0`; зависимости проекта всё равно ставит pnpm с проверками |
+| Docker Hub | недоступен с машины разработчика (TLS timeout) | Зеркало `mirror.gcr.io` в настройках Docker Desktop (с разрешения человека) |
+
 ---
 
 ## ⚠️ Условно (не включено по умолчанию; включаем на конкретном этапе)

@@ -5,7 +5,8 @@
 | Решение | Выбор | Почему |
 |---|---|---|
 | Фреймворк | **Next.js 16.4.5, App Router** | Фронт и бэк в одном репо — проще для ИИ-агента; Server Components = данные не утекают в браузер; SSR быстро на телефоне |
-| Язык | TypeScript strict | Агент ловит свои ошибки компилятором |
+| Язык | TypeScript 6 strict (+ `noUncheckedIndexedAccess`, typedRoutes) | Агент ловит свои ошибки компилятором. Не TS 7: нативный компилятор без tsserver, совместимость с LSP и Next не проверена |
+| Рантайм | **Node.js 24 LTS** (локально, CI, образ `node:24-alpine`) | `@types/node@22` тянет `undici-types@6.21.0` без provenance — его отклоняет `trustPolicy`; для Node 24 типы подписаны. Решение T01, 05.11 |
 | БД | **PostgreSQL 16** + Prisma 7.10.1 | Надёжно, индексы, миграции; масштабируется на тысячи студентов |
 | Стили | Tailwind v4 + shadcn/ui | Цельный дизайн из коробки, доступные компоненты (Radix) |
 | Вход | **Свои сессии** в БД + cookie httpOnly | Прозрачно объяснить жюри «простыми словами»; без сторонних сервисов |
@@ -210,8 +211,15 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 | Что | Лицензия |
 |---|---|
 | Next.js, React, Prisma, zod, Tailwind | MIT / Apache-2.0 |
-| shadcn/ui, Radix | MIT |
+| shadcn/ui (CLI `shadcn`, dev), `radix-ui`, `cn` (shadcn-ui/cn) | MIT |
+| class-variance-authority | Apache-2.0 |
+| tw-animate-css | MIT |
 | lucide-react | ISC |
+| TypeScript | Apache-2.0 |
+| ESLint, eslint-config-next, Prettier, Vitest (dev) | MIT |
+| @playwright/test (dev) | Apache-2.0 |
+| Docker-образы: `node` (MIT), `postgres` (PostgreSQL License), `caddy` (Apache-2.0) | свободные |
+| GitHub Actions: `actions/*`, `pnpm/action-setup` (MIT), `docker/*` (Apache-2.0), `gitleaks-action` (бесплатно для личного репо) | см. `docs/07-tooling.md` |
 | Шрифты Manrope, Inter (Google Fonts, self-host через next/font) | OFL |
 | @node-rs/argon2 | MIT |
 | @axe-core/playwright (dev) | MPL-2.0 |
