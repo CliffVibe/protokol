@@ -16,6 +16,8 @@ jobs:
         options: --health-cmd pg_isready --health-interval 5s --health-retries 10
     env:
       DATABASE_URL: postgresql://protokol:protokol@localhost:5432/protokol
+      # Интеграционные тесты сида (tests/integration) — на той же одноразовой базе CI
+      TEST_DATABASE_URL: postgresql://protokol:protokol@localhost:5432/protokol
       SEED_PASSWORD_ALISA: ci-only-alisa
       SEED_PASSWORD_TIMUR: ci-only-timur
       SEED_PASSWORD_VERA: ci-only-vera

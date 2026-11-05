@@ -6,7 +6,9 @@ export default defineConfig({
     alias: { "@": fileURLToPath(new URL("./src", import.meta.url)) },
   },
   test: {
-    include: ["tests/unit/**/*.test.ts"],
+    // tests/integration — только при TEST_DATABASE_URL (см. сам файл); без него пропускаются
+    include: ["tests/unit/**/*.test.ts", "tests/integration/**/*.test.ts"],
+    fileParallelism: false,
     environment: "node",
   },
 });
