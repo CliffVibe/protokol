@@ -1,17 +1,20 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { SessionActions } from "@/components/logout-button";
 import { MORE_ITEMS } from "@/components/nav/nav-items";
 import { UnreadBadge } from "@/components/nav/unread-badge";
 import { PageHeader } from "@/components/page-header";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getThemePreference } from "@/lib/theme-server";
+import { requireStudent } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: "Ещё" };
 
 // «Ещё» на мобильном: разделы, которые не влезли в нижнюю панель, и настройки.
-// TODO(T03): requireStudent() — первой строкой, до любых данных.
+// Доступ — requireStudent() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
 export default async function MorePage() {
+  await requireStudent();
   const theme = await getThemePreference();
   // TODO(T09): число непрочитанных текущего студента.
   const unreadCount = 0;
@@ -40,6 +43,7 @@ export default async function MorePage() {
         <h2 className="sr-only">Настройки</h2>
         <ThemeSwitcher value={theme} />
       </section>
+      <SessionActions className="max-w-xl" />
     </div>
   );
 }

@@ -1,0 +1,95 @@
+import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { ConceptBanner } from "@/components/concept-banner";
+import { LogoSeal } from "@/components/logo-seal";
+import { Button } from "@/components/ui/button";
+import { DEMO_ACCOUNTS, DEMO_SCENARIOS } from "@/lib/demo-accounts";
+import { demoLogin } from "@/server/actions/auth";
+import { homeFor } from "@/server/auth/guards";
+import { getSession } from "@/server/auth/session";
+import { isDemoMode } from "@/server/services/auth";
+import { LoginForm } from "./login-form";
+
+export const metadata: Metadata = { title: "Вход" };
+
+// Экран входа. Уже вошли — сразу в свой кабинет. Демо-блок — только при DEMO_MODE=1 (решает сервер).
+export default async function LoginPage() {
+  const session = await getSession();
+  if (session) redirect(homeFor(session.role));
+  const demo = isDemoMode();
+
+  return (
+    <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
+      <section aria-labelledby="login-title" className="flex w-full flex-col gap-6 lg:max-w-md">
+        <div className="flex items-center gap-4">
+          <LogoSeal variant="stamp" className="size-24 lg:size-32" />
+          <div className="flex min-w-0 flex-col gap-1">
+            <h1 id="login-title" className="font-heading text-2xl font-bold text-ink lg:text-3xl">
+              Вход в Протокол
+            </h1>
+            <p className="text-base text-ink-muted">Цифровой деканат: учёба, справки и связь.</p>
+          </div>
+        </div>
+
+        <ConceptBanner />
+
+        <LoginForm />
+
+        <p className="text-sm text-ink-muted">
+          Тестовые аккаунты — в описании работы.
+          {demo ? " Или войдите в один клик — в блоке «Демо-режим»." : null}
+        </p>
+      </section>
+
+      {demo ? <DemoPanel /> : null}
+    </div>
+  );
+}
+
+function DemoPanel() {
+  return (
+    <section
+      aria-labelledby="demo-title"
+      className="flex w-full flex-col gap-6 border-t border-line pt-8 lg:max-w-xl lg:border-t-0 lg:border-l lg:pt-0 lg:pl-16"
+    >
+      <div className="flex flex-col gap-2">
+        <h2 id="demo-title" className="font-heading text-xl font-bold text-ink">
+          Демо-режим
+        </h2>
+        <p className="text-base text-ink-muted">
+          Для жюри: вход без пароля. Все данные вымышленные и каждую ночь возвращаются к исходным.
+        </p>
+      </div>
+
+      <ul className="flex flex-col gap-3">
+        {DEMO_ACCOUNTS.map((a) => (
+          <li key={a.login}>
+            <form action={demoLogin} className="flex flex-wrap items-center gap-x-4 gap-y-1">
+              <input type="hidden" name="login" value={a.login} />
+              <Button type="submit" variant="outline" className="min-w-44">
+                Войти как {a.name}
+              </Button>
+              <span className="text-sm text-ink-muted">{a.about}</span>
+            </form>
+          </li>
+        ))}
+      </ul>
+
+      <div className="flex flex-col gap-3">
+        <h2 className="font-heading text-xl font-bold text-ink">6 сценариев для проверки</h2>
+        <ol className="flex flex-col divide-y divide-line border-y border-line">
+          {DEMO_SCENARIOS.map((s, i) => (
+            <li key={s.title} className="flex gap-3 py-3">
+              <span aria-hidden className="w-5 shrink-0 text-base font-bold text-brand">
+                {i + 1}
+              </span>
+              <p className="text-base text-ink">
+                <span className="font-bold">{s.title}.</span> {s.how}
+              </p>
+            </li>
+          ))}
+        </ol>
+      </div>
+    </section>
+  );
+}

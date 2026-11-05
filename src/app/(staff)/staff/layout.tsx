@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { Inbox } from "lucide-react";
 import { BrandMark } from "@/components/brand-mark";
+import { LogoutButton } from "@/components/logout-button";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
@@ -35,7 +36,10 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               </li>
             </ul>
           </nav>
-          <ThemeSwitcher value={theme} compact className="ml-auto w-[9.5rem]" />
+          <div className="ml-auto flex items-center gap-2">
+            <ThemeSwitcher value={theme} compact className="w-[9.5rem]" />
+            <LogoutButton />
+          </div>
         </div>
       </header>
       <main

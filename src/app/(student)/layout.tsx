@@ -2,6 +2,7 @@
 // проверки доступа здесь НЕТ и быть не должно: layout не перерисовывается при клиентской навигации,
 // guard requireStudent() вызывает каждая page (CLAUDE.md → «Железные правила», T03).
 import { BrandMark } from "@/components/brand-mark";
+import { LogoutButton } from "@/components/logout-button";
 import { BottomNav } from "@/components/nav/bottom-nav";
 import { SideNav } from "@/components/nav/side-nav";
 import { SiteFooter } from "@/components/site-footer";
@@ -24,6 +25,7 @@ export default async function StudentLayout({ children }: { children: React.Reac
           <SideNav unreadCount={unreadCount} />
         </div>
         <ThemeSwitcher value={theme} compact />
+        <LogoutButton className="-mt-3" />
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col pb-bottom-nav lg:pb-0">
