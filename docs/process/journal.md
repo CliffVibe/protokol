@@ -54,3 +54,23 @@
 **Вручную:** решения по всем 7 пунктам разбора и одобрение плана T01; разрешение на правку `.claude/settings.json`; принял лицензию Docker Desktop; разрешил зеркало Docker; сам поправил строку в `05-security.md` (закрыт хуком для агента); положил исходное ТЗ; сообщил дедлайн (22.11); решил арендовать VPS позже и тестировать на localhost, начать T04 параллельно с T02–T03.
 **Скриншоты (снять):** screenshots/02-env-table.png (таблица окружения); screenshots/03-critique-7-points.png (разбор каркаса); screenshots/04-plan-t01.png (план T01 в plan mode); screenshots/05-supply-chain-blocks.png (вывод pnpm с `ERR_PNPM_TRUST_DOWNGRADE` / `NO_MATURE_MATCHING_VERSION`); screenshots/06-classifier-block.png (блокировка self-modification); screenshots/07-stub-390-light-dark.png (заглушка на 390px в двух темах); screenshots/08-e2e-8-passed.png.
 **Время:** ~5 ч (вместе с ожиданием, пока версии «созреют» по `minimumReleaseAge`)
+
+### 06.11 — T02. Схема БД и сид (параллельно с T04 в отдельной сессии)
+**Инструмент:** Claude Code (Opus 5.5); субагенты `web-fetch` (официальная документация Prisma 7), `security-reviewer`; параллельная сессия Claude Code для T04 в своей ветке.
+**Задача (промпт):** > «T02 здесь, T04 отдельно» — после предложения вести дизайн-систему параллельно в отдельной сессии. План T02 — в plan mode, одобрен человеком.
+**Что сделал ИИ:**
+- Сверил Prisma 7 по prisma.io (не по памяти): генератор `prisma-client` с `output`, URL в `prisma.config.ts`, обязательный драйвер-адаптер `@prisma/adapter-pg`, ESM, ручной `generate` и сид.
+- `prisma/schema.prisma` по эскизу 03 + связи; дополнения записаны в 03 (`Grade.teacherId`, `Request.seq`, `CANCELLED`). Две миграции.
+- `src/server/db.ts` (синглтон, `server-only`), `repos/system.ts` → `/api/health` с проверкой БД (503 при падении).
+- `hashPassword/verifyPassword` на argon2id (OWASP) — общий для сида и будущего входа.
+- `buildSeed(now)` — детерминированная чистая функция: 8 факультетов, 10 групп, 716 пар на 5 недель, переносы/отмены по 06, Алиса/Тимур/Вера/Ирина + 5 фоновых студентов для очереди сотрудника. «Сегодня» всегда учебный день, ничего не датировано будущим. Пароли только из `SEED_PASSWORD_*`, токены .ics и QR — `crypto.randomBytes`.
+- Тесты: 41 юнит (детерминизм; будни, суббота, воскресенье, 04:00) + 7 интеграционных на PostgreSQL (argon2id в БД, видимость факультетов для Ирины, токены, seq, `reset-demo`).
+- Прод: образ `:tools` (Prisma CLI + tsx) для миграций и ночного пересева демо по cron; standalone-образ проверен с реальной БД.
+**Проблемы и исправления:**
+- `trustPolicy` отклонил `prisma@7.10.1`: CLI 7.10.x опубликован токеном без provenance, а соседние версии — через GitHub Actions с SLSA. ИИ собрал доказательства и предложил выбор; **человек выбрал 7.9.0 целиком** — политику не ослабляли.
+- Prisma 7 сам заблокировал `migrate reset` от ИИ-агента и потребовал согласия человека. ИИ не стал сбрасывать базу, а проверил «с нуля» на временной пустой базе.
+- ESLint и `tsc` зашли в рабочую копию параллельной сессии (`.claude/worktrees`) — исключили `.claude/`.
+- `security-reviewer`: блокеров нет; 4 правки внесены сразу (динамический `import()` Prisma, общий пароль базы в CI для e2e, 128 бит у QR-токенов, минимальная длина паролей, `CANCELLED` + запрет каскада для выданной справки), остальное разложено по T03/T08/T09/T13/T14. Ошибки ИИ — в `ai-errors.md` (3 записи).
+**Вручную:** решение по версии Prisma (7.9.0); решение «T04 в отдельной сессии». Ждёт человека: создать `.env` из `.env.example` с паролями жюри; одобрить правку `/deploy` под образ `:tools`.
+**Скриншоты (снять):** screenshots/09-prisma-trust-downgrade.png (вопрос про prisma@7.10.1 и выбор); screenshots/10-prisma-ai-guard.png (Prisma блокирует reset от ИИ); screenshots/11-two-sessions.png (две параллельные сессии T02 и T04); screenshots/12-tests-48.png.
+**Время:** ~2,5 ч
