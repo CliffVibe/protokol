@@ -18,7 +18,7 @@
 - Страница-заглушка с `ConceptBanner`.
 - Скрипты в package.json из CLAUDE.md.
 
-## Ручные шаги (человек)
+## Ручные шаги (человек) — после локальной части, не позже 10 ноября
 - Купить/поднять VPS (российский провайдер), направить домен или использовать `<ip>.sslip.io`.
 - На VPS: Docker Engine, `registry-mirrors: ["https://mirror.gcr.io"]` в `/etc/docker/daemon.json`, swap 2 ГБ, проверка `docker pull postgres:16`.
 - Склонировать, положить `.env`, `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`.
