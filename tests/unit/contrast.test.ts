@@ -32,21 +32,18 @@ function contrast(a: string, b: string): number {
 }
 
 // [текст, фон, где используется]
+// Палитра «Бланк» (06.11) закрыла прежние исключения: --ink-muted и --ok на --brand-soft тоже ≥ 4.5,
+// поэтому все цвета текста проверяются на всех трёх фонах — запрещённых пар больше нет.
 const TEXT_PAIRS: [string, string, string][] = [
   ...["ink", "ink-muted", "brand", "ok", "warn", "danger", "seal"].flatMap(
     (fg): [string, string, string][] => [
       [fg, "bg", "текст на фоне страницы"],
-      [fg, "surface", "текст на карточке, StatusChip"],
+      [fg, "surface", "текст на карточке, поле, StatusChip"],
+      [fg, "brand-soft", "текст на акцентной плашке, выбранная тема"],
     ],
   ),
-  ["ink", "brand-soft", "текст на акцентной плашке"],
-  ["brand", "brand-soft", "активный пункт навигации, иконка EmptyState"],
   ["bg", "brand", "кнопка default, UnreadBadge"],
-  ["danger", "surface", "кнопка destructive"],
 ];
-
-// Документированные исключения (04-design, хвосты T01): на brand-soft эти цвета для текста запрещены.
-const FORBIDDEN_ON_BRAND_SOFT = ["ink-muted", "ok"];
 
 describe.each(Object.entries(THEMES))("контраст, тема %s", (theme, tokens) => {
   it("все 11 токенов дизайна на месте", () => {
@@ -69,28 +66,15 @@ describe.each(Object.entries(THEMES))("контраст, тема %s", (theme, t
   });
 });
 
-describe("запрещённые пары на --brand-soft", () => {
-  it.each(FORBIDDEN_ON_BRAND_SOFT)("светлый --%s на --brand-soft действительно < 4.5", (fg) => {
-    expect(contrast(THEMES.light[fg]!, THEMES.light["brand-soft"]!)).toBeLessThan(4.5);
-  });
-
-  it("компоненты не ставят эти цвета текста на bg-brand-soft", () => {
-    const files = [
-      "src/components/concept-banner.tsx",
-      "src/components/empty-state.tsx",
-      "src/components/nav/side-nav.tsx",
-      "src/components/nav/bottom-nav.tsx",
-    ];
-    for (const file of files) {
-      const src = readFileSync(file, "utf8");
-      // Проверяем каждый строковый литерал с классами: в одном литерале фон и цвет текста встречаются вместе
-      for (const literal of src.match(/"[^"]*bg-brand-soft[^"]*"/g) ?? []) {
-        for (const fg of FORBIDDEN_ON_BRAND_SOFT) {
-          expect(literal, `${file}: text-${fg} на bg-brand-soft`).not.toMatch(
-            new RegExp(`(^|[\\s"])text-${fg}(\\s|"|$)`),
-          );
-        }
-      }
-    }
+describe("различимость смысловых цветов", () => {
+  // Печать («Выдана») не должна сливаться с ошибкой: в прежней палитре винный --seal был
+  // почти неотличим от --danger (расстояние 48 / 33), «Выдана» рисковала читаться как сбой.
+  const distance = (a: string, b: string) =>
+    Math.hypot(
+      ...[1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16)),
+    );
+  it.each(Object.entries(THEMES))("%s: --seal далеко от --danger и от --brand", (_, t) => {
+    expect(distance(t.seal!, t.danger!)).toBeGreaterThan(80);
+    expect(distance(t.seal!, t.brand!)).toBeGreaterThan(55);
   });
 });
