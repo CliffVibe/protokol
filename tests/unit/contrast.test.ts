@@ -66,15 +66,43 @@ describe.each(Object.entries(THEMES))("контраст, тема %s", (theme, t
   });
 });
 
-describe("различимость смысловых цветов", () => {
-  // Печать («Выдана») не должна сливаться с ошибкой: в прежней палитре винный --seal был
-  // почти неотличим от --danger (расстояние 48 / 33), «Выдана» рисковала читаться как сбой.
-  const distance = (a: string, b: string) =>
-    Math.hypot(
-      ...[1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16)),
-    );
-  it.each(Object.entries(THEMES))("%s: --seal далеко от --danger и от --brand", (_, t) => {
-    expect(distance(t.seal!, t.danger!)).toBeGreaterThan(80);
-    expect(distance(t.seal!, t.brand!)).toBeGreaterThan(55);
+describe("различимость смысловых цветов (ΔE в OKLab — ближе к восприятию, чем RGB)", () => {
+  // Печать («Выдана») не должна сливаться ни с ошибкой, ни с акцентом («В работе»).
+  // Прежние провалы: винная печать ≈ --danger (крем-палитра), розоватая печать ≈ --brand в тёмной «Бланка» (ΔE ≈ 9).
+  const linear = (hex: string) =>
+    [1, 3, 5].map((i) => {
+      const v = parseInt(hex.slice(i, i + 2), 16) / 255;
+      return v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4;
+    }) as [number, number, number];
+  const oklab = (hex: string): [number, number, number] => {
+    const [r, g, b] = linear(hex);
+    const l = Math.cbrt(0.4122214708 * r + 0.5363325363 * g + 0.0514459929 * b);
+    const m = Math.cbrt(0.2119034982 * r + 0.6806995451 * g + 0.1073969566 * b);
+    const s = Math.cbrt(0.0883024619 * r + 0.2817188376 * g + 0.6299787005 * b);
+    return [
+      0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+      1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+      0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+    ];
+  };
+  const deltaE = (a: string, b: string) => {
+    const [x, y] = [oklab(a), oklab(b)];
+    return Math.hypot(x[0] - y[0], x[1] - y[1], x[2] - y[2]) * 100;
+  };
+
+  it("ΔE считается верно: белый–чёрный = 100", () => {
+    expect(deltaE("#ffffff", "#000000")).toBeCloseTo(100, 0);
+  });
+
+  it.each(Object.entries(THEMES))(
+    "%s: --seal далеко от --danger (≥ 15) и от --brand (≥ 10)",
+    (_, t) => {
+      expect(deltaE(t.seal!, t.danger!)).toBeGreaterThanOrEqual(15);
+      expect(deltaE(t.seal!, t.brand!)).toBeGreaterThanOrEqual(10);
+    },
+  );
+
+  it("прежняя тёмная печать #D59BE4 у акцента #9CB2EC тест бы не прошла", () => {
+    expect(deltaE("#d59be4", "#9cb2ec")).toBeLessThan(10);
   });
 });
