@@ -1,12 +1,14 @@
 import type { Metadata } from "next";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
+import { requireStaff } from "@/server/auth/guards";
 
 export const metadata: Metadata = { title: "Кабинет деканата" };
 
 // Заглушка T04: очередь заявок — в T08.
-// TODO(T03): requireStaff() — первой строкой, до любых данных.
-export default function StaffHomePage() {
+// Доступ — requireStaff() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
+export default async function StaffHomePage() {
+  await requireStaff();
   return (
     <div className="flex flex-col gap-6">
       <PageHeader
