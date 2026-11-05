@@ -26,7 +26,7 @@
 
 ## Стек (не менять без обсуждения)
 
-Next.js **16.4.5** (App Router, Server Components, Server Actions) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui · lucide-react ·
+Next.js **16.4.5** (до 06.11 21:02 МСК — 16.4.4, см. `02-plan.md`) (App Router, Server Components, Server Actions) · React 19.3 · TypeScript strict · Tailwind CSS v4 · shadcn/ui · lucide-react ·
 PostgreSQL 16 · Prisma **7.10.1** · zod · @node-rs/argon2 · Vitest · Playwright · Docker Compose + Caddy · pnpm 11.
 
 Версии зафиксированы точно (без `^`). ⚠️ `prisma@latest` на npm — это релиз-кандидат 8.0, ставить только `prisma@7.10.1 @prisma/client@7.10.1`.
