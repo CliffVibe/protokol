@@ -22,11 +22,13 @@ export function SideNav({ unreadCount }: { unreadCount: number }) {
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   "flex min-h-11 items-center gap-3 rounded-lg px-3 text-body font-medium -outline-offset-2 transition-colors duration-150 ease-out",
-                  active ? "bg-brand-soft text-brand" : "text-ink-muted hover:bg-bg hover:text-ink",
+                  active
+                    ? "bg-brand-soft font-semibold text-brand"
+                    : "text-ink-muted hover:bg-bg hover:text-ink",
                 )}
               >
                 <Icon aria-hidden className="size-5 shrink-0" strokeWidth={active ? 2.25 : 1.75} />
-                <span className="flex-1 truncate">{item.label}</span>
+                <span className="min-w-0 flex-1 break-words">{item.label}</span>
                 {item.badge ? <UnreadBadge count={unreadCount} /> : null}
               </Link>
             </li>

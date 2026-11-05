@@ -89,7 +89,8 @@
   --accent-foreground: var(--ink);
   --destructive: var(--danger);
   --border: var(--line);
-  --input: var(--line);
+  /* Рамка полей ввода ≥ 3:1 на --surface (у --line ≈ 1.2:1) — ux-reviewer T04 */
+  --input: var(--ink-muted);
   --ring: var(--brand);
   /* Радиусы из 04-design: кнопки 12, карточки 16 */
   --radius: 0.75rem;
@@ -170,6 +171,23 @@
   }
   body {
     @apply bg-background text-foreground;
+  }
+  /* Фокус не уходит под нижнюю навигацию (WCAG 2.4.11): браузер докручивает с запасом */
+  html:has([data-bottom-nav]) {
+    scroll-padding-bottom: calc(var(--spacing-bottom-nav) + 1rem);
+  }
+  @media (width >= 64rem) {
+    html:has([data-bottom-nav]) {
+      scroll-padding-bottom: 0;
+    }
+  }
+  a,
+  button,
+  label,
+  input,
+  [role="button"] {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
   }
   h1,
   h2,

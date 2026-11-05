@@ -13,26 +13,29 @@ export function BottomNav({ unreadCount }: { unreadCount: number }) {
   return (
     <nav
       aria-label="Основная навигация"
+      data-bottom-nav
       className="fixed inset-x-0 bottom-0 z-40 border-t border-line bg-surface pb-[env(safe-area-inset-bottom)] lg:hidden"
     >
-      {/* flex-auto: ширина колонки = ширина подписи + поровну остаток — «Расписание» не обрезается на 360px */}
+      {/* flex-auto: ширина колонки = ширина подписи + поровну остаток — «Расписание» не обрезается на 360px.
+          min-w-0 + перенос: при тексте 200% колонки сжимаются, подписи переносятся — все 5 пунктов на экране.
+          Минимум цели — в px (44), а не в rem: rem растёт вместе с текстом и выталкивает пункты за экран. */}
       <ul className="mx-auto flex max-w-[560px] px-1">
         {BOTTOM_NAV.map((item) => {
           const active = isActive(item, pathname);
           const Icon = item.icon;
           return (
-            <li key={item.href} className="flex-auto">
+            <li key={item.href} className="min-w-0 flex-auto">
               <Link
                 href={item.href}
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "flex h-16 min-w-11 flex-col items-center justify-center gap-1 rounded-lg px-1 text-caption font-medium -outline-offset-2",
-                  active ? "text-brand" : "text-ink-muted hover:text-ink",
+                  "flex min-h-16 min-w-[44px] flex-col items-center justify-center gap-1 rounded-lg px-1 py-1.5 text-caption -outline-offset-2",
+                  active ? "font-semibold text-brand" : "font-medium text-ink-muted hover:text-ink",
                 )}
               >
                 <span
                   className={cn(
-                    "relative flex h-7 w-12 items-center justify-center rounded-full",
+                    "relative flex h-7 w-full max-w-12 shrink-0 items-center justify-center rounded-full",
                     active && "bg-brand-soft",
                   )}
                 >
@@ -41,7 +44,9 @@ export function BottomNav({ unreadCount }: { unreadCount: number }) {
                     <UnreadBadge count={unreadCount} className="absolute -top-1 -right-1" />
                   ) : null}
                 </span>
-                <span className="whitespace-nowrap">{item.label}</span>
+                <span className="max-w-full text-center leading-tight break-words hyphens-auto">
+                  {item.label}
+                </span>
               </Link>
             </li>
           );

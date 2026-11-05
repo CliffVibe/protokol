@@ -71,15 +71,16 @@ export function ThemeSwitcher({ value, compact = false, className }: ThemeSwitch
       <legend className={cn("mb-2 text-small font-medium text-ink-muted", compact && "sr-only")}>
         Тема
       </legend>
-      <div className="grid grid-cols-3 gap-1 rounded-xl border border-line bg-bg p-1">
+      <div className="grid grid-cols-3 gap-0.5 rounded-xl border border-line bg-bg p-1">
         {OPTIONS.map(({ value: option, label, icon: Icon }) => (
           <label
             key={option}
             title={compact ? label : undefined}
             className={cn(
-              "flex min-h-11 cursor-pointer items-center justify-center rounded-lg px-1 text-center text-small font-medium text-ink-muted transition-colors duration-150 ease-out",
+              "flex min-h-11 min-w-0 cursor-pointer items-center justify-center rounded-lg border border-transparent px-0.5 text-center text-small font-medium text-ink-muted transition-colors duration-150 ease-out",
               compact ? "gap-1.5" : "min-h-14 flex-col gap-1 py-1.5",
-              "hover:text-ink has-checked:bg-surface has-checked:text-ink has-checked:shadow-sm",
+              // Выбранный — рамка --brand (≥ 3:1 на --bg) + плашка brand-soft + цвет: видно и без цвета, и в тёмной теме
+              "hover:text-ink has-checked:border-brand has-checked:bg-brand-soft has-checked:text-brand",
               "has-focus-visible:outline-2 has-focus-visible:outline-ring",
             )}
           >
@@ -92,7 +93,9 @@ export function ThemeSwitcher({ value, compact = false, className }: ThemeSwitch
               className="sr-only"
             />
             <Icon aria-hidden className="size-4 shrink-0" />
-            <span className={cn(compact && "sr-only")}>{label}</span>
+            <span className={cn("max-w-full break-words hyphens-auto", compact && "sr-only")}>
+              {label}
+            </span>
           </label>
         ))}
       </div>
