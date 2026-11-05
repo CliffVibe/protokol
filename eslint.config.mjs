@@ -44,12 +44,21 @@ const eslintConfig = defineConfig([
           ],
         },
       ],
+      // То же для динамического `await import(...)` — no-restricted-imports его не видит (security-reviewer, T02)
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "ImportExpression[source.value=/server\\/db|generated\\/prisma|^@prisma\\/|^pg$/]",
+          message: "Prisma и драйвер БД — только в src/server/repos/** (динамический import тоже).",
+        },
+      ],
     },
   },
   {
     // Где работа с БД разрешена: репозитории, клиент, сид/миграции и интеграционные тесты
     files: ["src/server/repos/**", "src/server/db.ts", "prisma/**", "tests/integration/**"],
-    rules: { "@typescript-eslint/no-restricted-imports": "off" },
+    rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },
   globalIgnores([
     ".next/**",

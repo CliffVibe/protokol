@@ -47,6 +47,8 @@ enum RequestStatus {
   READY
   ISSUED
   REJECTED
+  /// Отменена студентом (пока SUBMITTED). Заявки не удаляем никогда — только меняем статус (security-reviewer, T02)
+  CANCELLED
 }
 
 enum NotificationKind {
@@ -278,7 +280,8 @@ model RequestEvent {
 model IssuedDocument {
   id          String    @id @default(cuid())
   requestId   String    @unique
-  request     Request   @relation(fields: [requestId], references: [id], onDelete: Cascade)
+  /// Restrict: выданную справку нельзя потерять каскадом — /verify должен показать «отозвана», а не «не найдена»
+  request     Request   @relation(fields: [requestId], references: [id], onDelete: Restrict)
   /// 128 бит случайности, в QR (S7)
   verifyToken String    @unique
   issuedAt    DateTime

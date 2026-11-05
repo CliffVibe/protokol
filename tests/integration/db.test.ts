@@ -12,9 +12,10 @@ const url = process.env.TEST_DATABASE_URL;
 
 describe.skipIf(!url)("сид в PostgreSQL", () => {
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
-  // Пароли генерируем на лету: тест не знает и не хранит настоящих паролей жюри
+  // Пароли — те же, что в окружении (в CI — ci-only-*), чтобы e2e после этого теста могли войти
+  // (security-reviewer, T02). Если в окружении нет — случайные: тест не хранит настоящих паролей.
   const passwords = Object.fromEntries(
-    SEED_PASSWORD_ENVS.map((n) => [n, randomBytes(12).toString("hex")]),
+    SEED_PASSWORD_ENVS.map((n) => [n, process.env[n] ?? randomBytes(12).toString("hex")]),
   );
 
   beforeAll(async () => {
@@ -59,6 +60,13 @@ describe.skipIf(!url)("сид в PostgreSQL", () => {
     const tokens = students.map((s) => s.calendarToken);
     expect(new Set(tokens).size).toBe(tokens.length);
     for (const t of tokens) expect(Buffer.from(t, "base64url").length).toBe(32);
+  });
+
+  it("токены QR-проверки справок — 128 бит, уникальны (S7)", async () => {
+    const docs = await prisma.issuedDocument.findMany({ select: { verifyToken: true } });
+    expect(docs.length).toBeGreaterThan(0);
+    expect(new Set(docs.map((d) => d.verifyToken)).size).toBe(docs.length);
+    for (const d of docs) expect(Buffer.from(d.verifyToken, "base64url").length).toBe(16);
   });
 
   it("новая заявка получает следующий seq без конфликта с сидом", async () => {

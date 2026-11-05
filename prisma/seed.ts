@@ -62,6 +62,14 @@ export async function runSeed(prisma: PrismaClient, options: SeedOptions = {}) {
       `Не заданы пароли тестовых аккаунтов: ${missing.join(", ")}. Добавьте их в .env (шаблон — .env.example).`,
     );
   }
+  // Пароли жюри публикуются, но не должны подбираться за секунды: минимум 8 символов, на проде — 12
+  const minLength = process.env.NODE_ENV === "production" ? 12 : 8;
+  const short = SEED_PASSWORD_ENVS.filter((name) => passwords[name]!.length < minLength);
+  if (short.length > 0) {
+    throw new Error(
+      `Слишком короткие пароли (нужно ≥ ${minLength} символов): ${short.join(", ")}.`,
+    );
+  }
 
   const users = await Promise.all(
     data.users.map(async ({ passwordEnv, ...user }) => ({
