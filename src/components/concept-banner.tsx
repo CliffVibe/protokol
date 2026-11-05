@@ -10,7 +10,8 @@ export function ConceptBanner({ className }: { className?: string }) {
     <p
       role="note"
       className={cn(
-        "rounded-xl border border-line bg-brand-soft px-4 py-3 text-sm text-ink",
+        // Как сноска в документе: чернильная черта слева, без плашки и заливки
+        "border-l-2 border-brand py-1 pl-3 text-sm text-ink",
         className,
       )}
     >
