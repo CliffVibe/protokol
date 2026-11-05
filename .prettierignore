@@ -1,0 +1,11 @@
+pnpm-lock.yaml
+.next/
+node_modules/
+playwright-report/
+test-results/
+docs/
+.claude/skills/
+# Каркас и правила агента — не переформатируем (человек ревьюит .claude/ глазами)
+.claude/
+.mcp.json
+*.md
