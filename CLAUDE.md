@@ -50,10 +50,12 @@ PostgreSQL 16 · Prisma **7.9.0** · zod · @node-rs/argon2 · Vitest · Playwri
 ```bash
 pnpm dev                 # локальная разработка (нужен docker compose up db)
 pnpm db:migrate          # prisma migrate dev
-pnpm db:seed             # вымышленные данные + тестовые аккаунты
-pnpm db:reset            # снести и пересоздать БД с сидом
-pnpm lint && pnpm typecheck
-pnpm test                # Vitest (юнит)
+pnpm db:seed             # вымышленные данные + тестовые аккаунты (пароли — SEED_PASSWORD_* из .env)
+pnpm db:reset            # снести и пересоздать БД с сидом (только локальная БД)
+pnpm db:reset-demo       # полный пересев демо (на проде — ночной cron через образ :tools)
+pnpm db:reseed-schedule  # только пары, от сегодняшней даты
+pnpm format:check && pnpm lint && pnpm typecheck
+pnpm test                # Vitest (юнит); + интеграция с БД при TEST_DATABASE_URL (база пересеивается!)
 pnpm test:e2e            # Playwright: десктоп + мобильный 360px + проверки доступа + axe
 node --test .claude/hooks/guard.test.mjs   # тесты хука-охранника
 docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d   # прод (образ собирает CI → GHCR)
@@ -74,12 +76,16 @@ src/
   server/
     auth/                    # сессии, хеширование, guards
     repos/                   # ВСЕ запросы к БД. Каждая функция принимает ctx с текущим пользователем
+                             #   (единственное исключение — repos/system.ts → pingDb(): данных пользователей не трогает)
+    db.ts                    # единственный PrismaClient (Prisma 7 + @prisma/adapter-pg); импорт — только из repos/
+  generated/prisma/          # сгенерированный клиент (не в git; `pnpm db:generate`)
     services/                # бизнес-логика (статусы заявок, расчёт успеваемости, ИИ)
   components/ui/             # shadcn
   components/                # наши компоненты
   lib/                       # утилиты без доступа к БД
-prisma/schema.prisma  prisma/seed.ts
-tests/unit/  tests/e2e/
+prisma.config.ts             # Prisma 7: строка подключения, путь миграций, команда сида
+prisma/schema.prisma  prisma/seed.ts  prisma/seed-data.ts (чистая функция buildSeed, без БД и секретов)
+tests/unit/  tests/integration/  tests/e2e/
 ```
 
 ## Железные правила

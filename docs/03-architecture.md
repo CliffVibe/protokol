@@ -150,6 +150,12 @@ model Staff        { id String @id @default(cuid()) userId String @unique  user 
 
 Агенту: это эскиз. Дополни связи (`@relation`) и `StudentLanguageGroup` при реализации T02, но не меняй смысл сущностей без записи в журнал.
 
+**Реализовано в T02** (`prisma/schema.prisma`, Prisma 7: генератор `prisma-client` → `src/generated/prisma`, URL — в `prisma.config.ts`). Дополнения к эскизу, смысл сущностей не менялся:
+- `Grade.teacherId` — экзаменатор (детали дисциплины в T07);
+- `Request.seq` (`autoincrement`, unique) — основа для номера `С-ГГГГ-NNNNN` без гонок (T08); `Request.language`, `Request.updatedAt`;
+- `RequestType.description`; `RequestEvent.actor` → `User`; `Announcement.author` → `Staff`;
+- формат `audience` (объявления, дедлайны): `{ facultyCodes?, courses?, groupNames? }`, пустой объект — всем.
+
 ## Слои и поток запроса
 
 ```
