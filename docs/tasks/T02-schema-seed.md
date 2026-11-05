@@ -1,0 +1,16 @@
+# T02. Схема БД и сид
+
+**Цель:** полная модель данных и живые вымышленные данные.
+
+## Сделать
+- `prisma/schema.prisma` по эскизу из `docs/03-architecture.md` (дополнить связи, `StudentLanguageGroup`).
+- Миграция. `src/server/db.ts` (singleton PrismaClient).
+- `prisma/seed.ts` по `docs/06-seed-data.md`: даты от текущего дня (Europe/Moscow), пароли из env, хеш argon2id.
+- Скрипт `db:reseed-schedule` — пересоздаёт только пары относительно сегодня.
+- ESLint `no-restricted-imports`: `@/server/db` можно импортировать только из `src/server/repos/**` и `prisma/**`.
+
+## Приёмка
+- [ ] `pnpm db:reset` поднимает всё с нуля без ошибок
+- [ ] У Алисы сегодня есть пары и 1 перенос; у Веры нет заявок и оценок
+- [ ] Ни одной строки с паролем в коде; `passwordHash` начинается с `$argon2id$`
+- [ ] Юнит-тест: сид детерминирован при фиксированной дате

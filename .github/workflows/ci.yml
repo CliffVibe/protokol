@@ -1,0 +1,36 @@
+name: CI
+on:
+  push: { branches: [main] }
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env: { POSTGRES_USER: protokol, POSTGRES_PASSWORD: protokol, POSTGRES_DB: protokol }
+        ports: ["5432:5432"]
+        options: --health-cmd pg_isready --health-interval 5s --health-retries 10
+    env:
+      DATABASE_URL: postgresql://protokol:protokol@localhost:5432/protokol
+      SEED_PASSWORD_ALISA: ci-only-alisa
+      SEED_PASSWORD_TIMUR: ci-only-timur
+      SEED_PASSWORD_VERA: ci-only-vera
+      SEED_PASSWORD_IRINA: ci-only-irina
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 22, cache: pnpm }
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm lint && pnpm typecheck
+      - run: pnpm exec prisma migrate deploy && pnpm db:seed
+      - run: pnpm test
+      - run: pnpm exec playwright install --with-deps chromium
+      - run: pnpm test:e2e
+      - uses: actions/upload-artifact@v4
+        if: failure()
+        with: { name: playwright-report, path: playwright-report }

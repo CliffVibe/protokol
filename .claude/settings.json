@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "enableAllProjectMcpServers": false,
+  "enabledMcpjsonServers": ["playwright", "shadcn"],
+  "enabledPlugins": {
+    "security-guidance@claude-plugins-official": false,
+    "frontend-design@claude-plugins-official": true,
+    "typescript-lsp@claude-plugins-official": true,
+    "pr-review-toolkit@claude-plugins-official": true,
+    "claude-security@claude-plugins-official": true
+  },
+  "permissions": {
+    "disableBypassPermissionsMode": "disable",
+    "allow": [
+      "Bash(pnpm dev)",
+      "Bash(pnpm lint *)",
+      "Bash(pnpm lint)",
+      "Bash(pnpm typecheck)",
+      "Bash(pnpm test *)",
+      "Bash(pnpm test)",
+      "Bash(pnpm test:e2e *)",
+      "Bash(pnpm test:e2e)",
+      "Bash(pnpm build)",
+      "Bash(pnpm db:migrate)",
+      "Bash(pnpm db:seed)",
+      "Bash(pnpm exec prisma generate)",
+      "Bash(pnpm exec prisma format)",
+      "Bash(pnpm exec prisma validate)",
+      "Bash(pnpm exec playwright test *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)"
+    ],
+    "ask": [
+      "Bash(pnpm add *)",
+      "Bash(pnpm install *)",
+      "Bash(pnpm dlx *)",
+      "Bash(npx *)",
+      "Bash(pnpm db:reset)",
+      "Bash(pnpm exec prisma migrate reset *)",
+      "Bash(git push *)",
+      "Bash(docker *)",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(curl *)",
+      "Bash(wget *)",
+      "WebFetch"
+    ],
+    "deny": [
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)",
+      "Edit(./.env)",
+      "Edit(./.env.*)",
+      "Read(~/.ssh/**)",
+      "Read(~/.aws/**)",
+      "Read(~/.config/gh/**)",
+      "Bash(git push --force *)",
+      "Bash(git push -f *)",
+      "Bash(rm -rf *)",
+      "Bash(* --ignore-min-release-age*)",
+      "Bash(pnpm publish *)",
+      "Bash(npm publish *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit|Bash",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/guard.mjs\"", "timeout": 10 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write|MultiEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/format.mjs\"", "timeout": 60 }
+        ]
+      }
+    ]
+  }
+}

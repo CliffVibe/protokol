@@ -1,0 +1,19 @@
+# T03. Вход, сессии, изоляция
+
+> Перед началом человек включает security-guidance на время задачи (см. `docs/07-tooling.md`).
+
+**Цель:** безопасный вход и гарантия «студент видит только свои данные». Перечитай `docs/05-security.md` целиком.
+
+## Сделать
+- `src/server/auth/`: `hashPassword`, `verifyPassword`, `createSession`, `getSession`, `destroySession`, `destroyAllSessions`.
+- `requireUser()`, `requireStudent()` → `ctx { userId, studentId, groupIds, languageGroupIds }`, `requireStaff()` → `ctx { userId, staffId, facultyIds }`.
+- `proxy.ts` (так в Next 16 называется middleware; см. `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md`): без cookie → `/login` (кроме `/login`, `/verify/*`, `/api/calendar/*`, статики).
+- Страница `/login`: логин, пароль, показать/скрыть пароль, ошибки, блокировка после 5 попыток, `ConceptBanner`, подсказка «Тестовые аккаунты — в описании работы».
+- Выход; после входа STAFF → `/staff`, STUDENT → `/`.
+- Заголовки безопасности (S6) в `next.config.ts`.
+- `tests/e2e/security.spec.ts` — все 8 тестов из `05-security.md` (те, что пока нельзя — `test.fixme` с пометкой задачи).
+
+## Приёмка
+- [ ] Все тесты безопасности, доступные на этом этапе, зелёные
+- [ ] `security-reviewer` и security-guidance не нашли блокеров; `/security-review` чистый (вывод → журнал)
+- [ ] Вход и выход работают на 360px

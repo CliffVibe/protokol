@@ -1,0 +1,21 @@
+{
+  "mcpServers": {
+    "playwright": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@playwright/mcp@0.0.84",
+        "--isolated",
+        "--headless",
+        "--browser", "chromium",
+        "--viewport-size", "390x844",
+        "--allowed-origins", "http://localhost:3000;http://127.0.0.1:3000",
+        "--output-dir", "docs/process/screenshots/mcp"
+      ]
+    },
+    "shadcn": {
+      "command": "npx",
+      "args": ["-y", "shadcn@4.23.0", "mcp"]
+    }
+  }
+}
