@@ -30,6 +30,8 @@ const TABLES = [
   "Program",
   "Faculty",
   "Session",
+  // Счётчики входа: ночной пересев снимает и блокировки (security-reviewer, T03)
+  "LoginThrottle",
   "User",
 ] as const;
 

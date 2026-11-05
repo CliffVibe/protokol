@@ -23,6 +23,7 @@ describe.skipIf(!url)("вход и сессии в PostgreSQL", async () => {
   let userId = "";
   const ip = `198.51.100.${Math.floor(Math.random() * 200) + 1}`;
   const t0 = new Date();
+  const keysToClean: string[] = [];
 
   beforeAll(async () => {
     const u = await prisma.user.create({
@@ -34,7 +35,11 @@ describe.skipIf(!url)("вход и сессии в PostgreSQL", async () => {
   afterAll(async () => {
     await prisma.user.deleteMany({ where: { login } });
     await prisma.loginThrottle.deleteMany({
-      where: { key: { in: [auth.throttleKey(login, ip), auth.throttleKey(login, "other-ip")] } },
+      where: {
+        key: {
+          in: [auth.throttleKey(login, ip), auth.throttleKey(login, "other-ip"), ...keysToClean],
+        },
+      },
     });
     await prisma.$disconnect();
   });
@@ -97,5 +102,51 @@ describe.skipIf(!url)("вход и сессии в PostgreSQL", async () => {
     expect(await prisma.loginThrottle.count({ where: { key: auth.throttleKey(login, ip) } })).toBe(
       0,
     );
+  });
+
+  it("20 параллельных неверных попыток — пароль проверяют не больше пяти (гонка, security-reviewer T03)", async () => {
+    const raceIp = `race-${suffix}`;
+    keysToClean.push(auth.throttleKey(login, raceIp));
+    const o = { now: t0, failureDelayMs: 0 };
+    const results = await Promise.all(
+      Array.from({ length: 20 }, (_, i) =>
+        auth.authenticate({ login, password: `wrong-${i}` }, raceIp, o),
+      ),
+    );
+    const reasons = results.map((r) => (r.ok ? "ok" : r.reason));
+    // Попытки 1–4 — «неверно», 5-я блокирует, 6–20 отклонены без проверки пароля
+    expect(reasons.filter((r) => r === "invalid")).toHaveLength(auth.MAX_FAILURES - 1);
+    expect(reasons.filter((r) => r === "locked")).toHaveLength(20 - (auth.MAX_FAILURES - 1));
+    // И верный пароль сразу после — тоже отказ
+    expect(await auth.authenticate({ login, password }, raceIp, o)).toEqual({
+      ok: false,
+      reason: "locked",
+    });
+  });
+
+  it("окно 15 минут считает SQL: неудачи с разницей больше окна не копятся", async () => {
+    const winIp = `window-${suffix}`;
+    keysToClean.push(auth.throttleKey(login, winIp));
+    const o = (now: Date) => ({ now, failureDelayMs: 0 });
+    for (let i = 0; i < auth.MAX_FAILURES - 1; i++) {
+      await auth.authenticate({ login, password: "wrong" }, winIp, o(t0));
+    }
+    const later = new Date(t0.getTime() + auth.FAILURE_WINDOW_MS + 60_000);
+    expect(await auth.authenticate({ login, password: "wrong" }, winIp, o(later))).toEqual({
+      ok: false,
+      reason: "invalid",
+    });
+  });
+
+  it("старые счётчики подчищаются при неудачах", async () => {
+    const staleKey = `stale-${suffix}`;
+    const old = new Date(t0.getTime() - 2 * 3600 * 1000);
+    await prisma.loginThrottle.create({
+      data: { key: staleKey, failures: 3, windowStart: old, updatedAt: old },
+    });
+    const pruneIp = `prune-${suffix}`;
+    keysToClean.push(auth.throttleKey(login, pruneIp));
+    await auth.authenticate({ login, password: "wrong" }, pruneIp, { now: t0, failureDelayMs: 0 });
+    expect(await prisma.loginThrottle.count({ where: { key: staleKey } })).toBe(0);
   });
 });

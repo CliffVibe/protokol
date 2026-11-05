@@ -10,15 +10,30 @@ const store = vi.hoisted(() => ({
   throttle: new Map<string, Throttle>(),
 }));
 
+// Та же логика, что в SQL repos/auth.ts → reserveAttempt (атомарность проверяет интеграционный тест)
 vi.mock("@/server/repos/auth", () => ({
   findLoginCandidate: vi.fn(async (login: string) => store.users.get(login) ?? null),
   findUserByLogin: vi.fn(async (login: string) => {
     const u = store.users.get(login);
     return u ? { id: u.id, role: u.role } : null;
   }),
-  findThrottle: vi.fn(async (key: string) => store.throttle.get(key) ?? null),
-  saveThrottle: vi.fn(async (key: string, s: Throttle) => void store.throttle.set(key, { ...s })),
+  reserveAttempt: vi.fn(async (key: string, now: Date, windowMs: number) => {
+    const t = store.throttle.get(key);
+    const lockOver = !!t?.lockedUntil && t.lockedUntil <= now;
+    const windowOver = !!t && !t.lockedUntil && t.windowStart.getTime() < now.getTime() - windowMs;
+    const next: Throttle =
+      !t || lockOver || windowOver
+        ? { failures: 1, windowStart: now, lockedUntil: null }
+        : { ...t, failures: t.failures + 1 };
+    store.throttle.set(key, next);
+    return { attempt: next.failures, lockedUntil: next.lockedUntil };
+  }),
+  lockThrottle: vi.fn(async (key: string, until: Date) => {
+    const t = store.throttle.get(key);
+    if (t) t.lockedUntil = until;
+  }),
   clearThrottle: vi.fn(async (key: string) => void store.throttle.delete(key)),
+  pruneThrottles: vi.fn(async () => {}),
 }));
 
 const verifySpy = vi.hoisted(() => ({ calls: [] as string[] }));

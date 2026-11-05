@@ -6,9 +6,10 @@ import { demoLoginSchema, loginFieldsSchema, loginLimitsSchema } from "@/server/
 import {
   clearThrottle,
   findLoginCandidate,
-  findThrottle,
   findUserByLogin,
-  saveThrottle,
+  lockThrottle,
+  pruneThrottles,
+  reserveAttempt,
 } from "@/server/repos/auth";
 
 // Проверка логина и пароля (docs/05-security.md → S2).
@@ -16,6 +17,10 @@ import {
 // Блокировка считается по паре «логин + IP», а не по аккаунту (решение T03 по security-ревью T02):
 // логины жюри публичные, и блокировка на аккаунт позволила бы любому постороннему запереть их вход.
 // Перебор с одного IP по-прежнему упирается в 5 попыток за 15 минут на логин → 5 минут блокировки.
+//
+// Попытка «занимается» атомарно ДО проверки пароля (repos/auth.ts → reserveAttempt): параллельные
+// запросы получают номера 1, 2, 3…, и пароль проверяют только первые пять (security-reviewer, T03).
+// Ограничения решения — в docs/03-architecture.md → «Вход и сессии».
 
 export const MAX_FAILURES = 5;
 export const LOCK_MS = 5 * 60 * 1000;
@@ -74,57 +79,34 @@ export async function authenticate(
   const { password } = fields.data;
   const key = throttleKey(login, ip);
 
-  // Слишком длинный ввод — сразу общий ответ, без argon2. В счётчик тоже идёт: это неудачная попытка.
-  const withinLimits = loginLimitsSchema.safeParse({ login, password }).success;
-
-  const throttle = await findThrottle(key);
-  if (throttle?.lockedUntil && throttle.lockedUntil.getTime() > now.getTime()) {
+  // 1. Занять попытку — атомарно, до argon2. Блокировка действует или попытка сверх лимита — отказ сразу.
+  const slot = await reserveAttempt(key, now, FAILURE_WINDOW_MS);
+  if (slot.lockedUntil && slot.lockedUntil.getTime() > now.getTime()) {
+    return { ok: false, reason: "locked" };
+  }
+  if (slot.attempt > MAX_FAILURES) {
+    await lockThrottle(key, new Date(now.getTime() + LOCK_MS));
     return { ok: false, reason: "locked" };
   }
 
-  let userId: string | null = null;
-  let role: Role | null = null;
+  // 2. Проверить пароль. Слишком длинный ввод — без argon2 (DoS), это просто неудачная попытка.
+  //    Нет логина — проверяем фиктивным хешем: время ответа то же, что у неверного пароля.
+  const withinLimits = loginLimitsSchema.safeParse({ login, password }).success;
   if (withinLimits) {
     const user = await findLoginCandidate(login);
-    // Нет логина — всё равно проверяем пароль, но с фиктивным хешем: время ответа одинаковое.
     const valid = await verifyPassword(user?.passwordHash ?? (await getDummyHash()), password);
     if (user && valid) {
-      userId = user.id;
-      role = user.role;
+      await clearThrottle(key);
+      return { ok: true, userId: user.id, role: user.role };
     }
   }
 
-  if (userId && role) {
-    if (throttle) await clearThrottle(key);
-    return { ok: true, userId, role };
-  }
-
-  const locked = await registerFailure(key, throttle, now);
+  // 3. Неудача: на пятой попытке в окне — блокировка на 5 минут; старые счётчики подчищаем.
+  const locked = slot.attempt >= MAX_FAILURES;
+  if (locked) await lockThrottle(key, new Date(now.getTime() + LOCK_MS));
+  await pruneThrottles(new Date(now.getTime() - FAILURE_WINDOW_MS - LOCK_MS), now);
   if (failureDelayMs > 0) await new Promise((r) => setTimeout(r, failureDelayMs));
   return locked ? { ok: false, reason: "locked" } : { ok: false, reason: "invalid" };
-}
-
-/** +1 неудача; на 5-й в окне — блокировка на 5 минут. Возвращает true, если только что заблокировали. */
-async function registerFailure(
-  key: string,
-  prev: Awaited<ReturnType<typeof findThrottle>>,
-  now: Date,
-): Promise<boolean> {
-  const windowExpired =
-    !prev || now.getTime() - prev.windowStart.getTime() > FAILURE_WINDOW_MS || !!prev.lockedUntil;
-  const failures = windowExpired ? 1 : prev.failures + 1;
-  const windowStart = windowExpired ? now : prev.windowStart;
-
-  if (failures >= MAX_FAILURES) {
-    await saveThrottle(key, {
-      failures: 0,
-      windowStart: now,
-      lockedUntil: new Date(now.getTime() + LOCK_MS),
-    });
-    return true;
-  }
-  await saveThrottle(key, { failures, windowStart, lockedUntil: null });
-  return false;
 }
 
 // ── Демо-вход «Войти как…» (docs/06-seed-data.md) ─────────────────────────
