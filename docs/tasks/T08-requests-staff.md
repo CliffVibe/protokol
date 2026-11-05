@@ -16,6 +16,11 @@
 - Каждая смена статуса → `RequestEvent` + `Notification` студенту.
 - Кнопка «Сбросить демо» (только при `DEMO_MODE=1`) → `db:reset-demo`-логика через Server Action с проверкой роли STAFF.
 
+## Из security-ревью T02 (06.11) — учесть здесь
+- Отмена заявки — смена статуса на `CANCELLED` (добавлен в схему), заявки **не удаляем никогда**. У `IssuedDocument` теперь `onDelete: Restrict`.
+- Любая мутация — `updateMany/deleteMany({ where: { id, studentId: ctx.studentId } })` с проверкой `count === 1`, а не `update({ where: { id } })`.
+- Очередь сотрудника: явный `select` только нужных полей студента (ФИО, группа) — без `recordBookNo`, `calendarToken`, `passwordHash`.
+
 ## Приёмка
 - [ ] Полный сценарий: Алиса подала → Ирина приняла → «Готова» → Алиса видит уведомление (e2e)
 - [ ] Тесты 1–3 из `05-security.md` зелёные; сотрудник не видит заявки студентов МЖ

@@ -94,6 +94,8 @@ Next.js 16 кладёт 474 файла документации, совпада�
 | peer-зависимости | ESLint 10 не поддерживают плагины `eslint-config-next` | ESLint 9.39.5 (помечен deprecated как прошлая мажорная ветка; уязвимостей нет) |
 | `pnpm dlx` + `minimumReleaseAge` | `shadcn@4.23.0` собрал несовместимый набор (`@modelcontextprotocol/server` без `core`) | `shadcn init` через закэшированный `npx shadcn@4.23.0`; зависимости проекта всё равно ставит pnpm с проверками |
 | Docker Hub | недоступен с машины разработчика (TLS timeout) | Зеркало `mirror.gcr.io` в настройках Docker Desktop (с разрешения человека) |
+| `trustPolicy` (T02, 06.11) | `prisma@7.10.1` CLI — опубликован токеном `prismabot` без provenance, у 7.9.0 и 8.0-rc — GitHub Actions + SLSA. У пакета есть install-скрипт, и он в `allowBuilds` | Не ослабляли: весь набор Prisma 7.9.0 (решение человека) |
+| Защита Prisma от ИИ-агентов (T02) | `prisma migrate reset` распознаёт запуск из Claude Code и требует явного согласия человека | Агент не сбрасывал базу: проверил «поднимается с нуля» на временной пустой базе (`createdb` → `db:deploy` → `db:seed` → `dropdb`). `pnpm db:reset` человек запускает сам |
 
 ---
 
