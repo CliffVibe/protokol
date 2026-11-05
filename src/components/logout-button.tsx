@@ -35,7 +35,11 @@ export function SessionActions({ className }: { className?: string }) {
           </Button>
         </form>
         <form action={logoutEverywhere}>
-          <Button type="submit" variant="ghost">
+          <Button
+            type="submit"
+            variant="ghost"
+            className="h-auto min-h-11 py-2 text-left whitespace-normal"
+          >
             Выйти на всех устройствах
           </Button>
         </form>
