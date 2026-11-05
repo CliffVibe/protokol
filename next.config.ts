@@ -6,6 +6,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   // Ссылки на несуществующие маршруты ловит TypeScript
   typedRoutes: true,
+  // `next dev` не создаёт AGENTS.md: правило «читай node_modules/next/dist/docs/» уже в CLAUDE.md
+  // (решение человека 06.11)
+  agentRules: false,
   // Заголовки безопасности (S6 из docs/05-security.md) — в T03
 };
 
