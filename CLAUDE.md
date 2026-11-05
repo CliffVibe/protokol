@@ -55,7 +55,7 @@ pnpm lint && pnpm typecheck
 pnpm test                # Vitest (юнит)
 pnpm test:e2e            # Playwright: десктоп + мобильный 360px + проверки доступа + axe
 node --test .claude/hooks/guard.test.mjs   # тесты хука-охранника
-docker compose -f docker-compose.prod.yml up -d --build   # прод
+docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d   # прод (образ собирает CI → GHCR)
 ```
 
 ## Структура
@@ -64,10 +64,10 @@ docker compose -f docker-compose.prod.yml up -d --build   # прод
 src/
   app/
     (auth)/login/            # вход
-    (student)/               # всё, что видит студент; layout проверяет роль STUDENT
+    (student)/               # всё, что видит студент; КАЖДАЯ page вызывает requireStudent(), layout — только оболочка
       page.tsx               # «Сейчас» — главная лента
       schedule/  grades/  requests/  notifications/  profile/  assistant/
-    (staff)/staff/           # кабинет сотрудника деканата; layout проверяет роль STAFF
+    (staff)/staff/           # кабинет сотрудника деканата; КАЖДАЯ page вызывает requireStaff()
     verify/[token]/          # публичная проверка подлинности справки (без входа)
     api/                     # только то, что не ложится в Server Actions (ics-фид, ассистент-стрим)
   server/
@@ -84,6 +84,9 @@ tests/unit/  tests/e2e/
 ## Железные правила
 
 > Проверка доступа — на сервере (`requireStudent`, репозитории). `proxy.ts` — только редирект для удобства.
+> `requireStudent()` / `requireStaff()` обёрнуты в React `cache()` и вызываются **в каждой** page, Server Action и route handler.
+> Проверка в layout не защищает: layout не перерисовывается при клиентской навигации и рендерится параллельно со страницей.
+> Тест-страж (`tests/unit/guards.test.ts`) падает, если `page.tsx` в `(student)`/`(staff)` не вызывает guard.
 
 **Безопасность** (подробно — `docs/05-security.md`):
 - Данные студента читаются ТОЛЬКО через `src/server/repos/*` с `ctx.userId` из сессии. ID студента никогда не берётся из URL, формы или query.

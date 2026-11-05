@@ -6,7 +6,9 @@
 
 ## Сделать
 - `src/server/auth/`: `hashPassword`, `verifyPassword`, `createSession`, `getSession`, `destroySession`, `destroyAllSessions`.
-- `requireUser()`, `requireStudent()` → `ctx { userId, studentId, groupIds, languageGroupIds }`, `requireStaff()` → `ctx { userId, staffId, facultyIds }`.
+- `requireUser()`, `requireStudent()` → `ctx { userId, studentId, groupIds, languageGroupIds }`, `requireStaff()` → `ctx { userId, staffId, facultyIds }`. Все обёрнуты в React `cache()` и вызываются в каждой page / Server Action / route handler, не в layout.
+- `tests/unit/guards.test.ts` — тест-страж: каждый `page.tsx` в `(student)` вызывает `requireStudent`, в `(staff)` — `requireStaff`.
+- Демо-вход (при `DEMO_MODE=1`, см. `06-seed-data.md`): кнопки «Войти как…» для фиксированного списка демо-логинов, плашка «демо-режим», блок «6 сценариев для проверки».
 - `proxy.ts` (так в Next 16 называется middleware; см. `node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/proxy.md`): без cookie → `/login` (кроме `/login`, `/verify/*`, `/api/calendar/*`, статики).
 - Страница `/login`: логин, пароль, показать/скрыть пароль, ошибки, блокировка после 5 попыток, `ConceptBanner`, подсказка «Тестовые аккаунты — в описании работы».
 - Выход; после входа STAFF → `/staff`, STUDENT → `/`.

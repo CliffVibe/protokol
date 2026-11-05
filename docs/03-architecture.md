@@ -11,7 +11,7 @@
 | Вход | **Свои сессии** в БД + cookie httpOnly | Прозрачно объяснить жюри «простыми словами»; без сторонних сервисов |
 | Хеш паролей | argon2id (`@node-rs/argon2`) | Рекомендация OWASP |
 | ИИ-помощник | GigaChat API за серверным прокси, провайдер-абстракция | Доступен из РФ; ключ только на сервере; без ключа — режим «FAQ без ИИ» |
-| PDF справок | `@react-pdf/renderer` | Генерация на сервере |
+| PDF справок | `@react-pdf/renderer` | Генерация на сервере. Кириллица — только через зарегистрированный TTF (`Font.register`, Inter), иначе текст не отрисуется |
 | Тесты | Vitest + Playwright | e2e на десктопе и 360px; тесты изоляции данных |
 | Деплой | Docker Compose: app + postgres + caddy (HTTPS) на российском VPS | Открывается из РФ без VPN; одна команда |
 
@@ -154,14 +154,17 @@ model Staff        { id String @id @default(cuid()) userId String @unique  user 
 ```
 Браузер ──cookie──▶ proxy.ts (есть cookie? нет → /login)   ← только удобство, НЕ защита
                      ▼
-               layout (student) ─ requireStudent() → ctx { userId, studentId, groupIds[] }
+               layout (student) ─ только оболочка (навигация); защиты здесь НЕТ
                      ▼
-               page (Server Component) → repos.schedule.forWeek(ctx, week)
+               page (Server Component) ─ requireStudent() → ctx { userId, studentId, groupIds[] }   ← cache(), в каждой page
+                     ▼
+               repos.schedule.forWeek(ctx, week)
                                                   └─ WHERE groupId IN ctx.groupIds   ← изоляция здесь
 Server Action → zod.parse → requireRole → service → repo(ctx) → revalidatePath
 ```
 
 Защита — в `requireStudent()`/`requireStaff()` и в репозиториях, а не в `proxy.ts`: история CVE-2025-29927 (обход middleware через заголовок) показывает, что полагаться только на прокси нельзя.
+И не в layout: в App Router layout не перерисовывается при клиентской навигации и рендерится параллельно со страницей, а `ctx` из layout в page не передать. Поэтому guard вызывается в каждой page, Server Action и route handler; `cache()` убирает повторные запросы к БД в рамках одного рендера.
 
 Правило: `repos/*` — единственное место с `prisma.*`. Каждая функция первым аргументом получает `ctx`. ESLint-правило `no-restricted-imports` запрещает импорт `@/server/db` вне `repos/`.
 
@@ -179,7 +182,7 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 | `/assistant` | STUDENT | ИИ-помощник |
 | `/staff`, `/staff/requests/[number]`, `/staff/announcements` | STAFF | кабинет сотрудника |
 | `/verify/[token]` | публично | проверка справки |
-| `/api/calendar/[token].ics` | по токену | подписка на расписание |
+| `/api/calendar/[token]` | по токену | подписка на расписание. Файл `route.ts`; ссылка вида `…/<token>.ics`, суффикс `.ics` отрезаем в обработчике (папка `[token].ics` — недопустимый динамический сегмент) |
 | `/api/assistant` | STUDENT | стрим ответа ИИ |
 
 ## ИИ-помощник (если дойдём до T12)
@@ -187,12 +190,16 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 - Сервер собирает контекст **только текущего студента** (ближайшие пары, оценки, заявки) + вымышленную базу FAQ (`content/faq/*.md`).
 - Модель возвращает текст + опциональные «действия» (`open:/requests/new?type=visa_en`) — клиент рисует кнопки. Модель ничего не меняет сама.
 - Ключ `GIGACHAT_AUTH_KEY` только в env сервера. Лимит запросов на пользователя. Без ключа — поиск по FAQ.
+- TLS GigaChat подписан «Russian Trusted Root CA» (Минцифры): сертификат кладём в образ и указываем в `NODE_EXTRA_CA_CERTS`. Проверку TLS не отключаем.
+- Ключ получает человек через Sber ID — заранее, это может занять время.
 - Логи запросов без персональных данных.
 
 ## Деплой
 
 - `docker-compose.prod.yml`: `app` (Next standalone), `db` (postgres:16, volume), `caddy` (автоматический HTTPS Let's Encrypt).
-- VPS у российского провайдера (Timeweb Cloud / Selectel / Yandex Cloud), 1–2 vCPU, 2 ГБ RAM.
+- **Образ собирается в GitHub Actions** (`.github/workflows/image.yml`) и лежит в GHCR (`ghcr.io/cliffvibe/protokol`). VPS только скачивает его: `next build` на 2 ГБ RAM рядом с Postgres и Caddy может упасть по памяти.
+- VPS у российского провайдера (Timeweb Cloud / Selectel / Yandex Cloud), 1–2 vCPU, 2 ГБ RAM + **swap 2 ГБ**.
+- Docker Hub с российских VPS бывает недоступен: в `/etc/docker/daemon.json` прописываем `"registry-mirrors": ["https://mirror.gcr.io"]` и в первый же день проверяем `docker pull postgres:16`.
 - Домен: недорогой `.ru`, либо поддомен вида `<ip>.sslip.io` на время разработки.
 - Секреты — в `.env` на сервере (не в репо). `.env.example` — в репо.
 - Бэкап: `pg_dump` по cron раз в сутки.

@@ -7,10 +7,13 @@
 - Миграция. `src/server/db.ts` (singleton PrismaClient).
 - `prisma/seed.ts` по `docs/06-seed-data.md`: даты от текущего дня (Europe/Moscow), пароли из env, хеш argon2id.
 - Скрипт `db:reseed-schedule` — пересоздаёт только пары относительно сегодня.
-- ESLint `no-restricted-imports`: `@/server/db` можно импортировать только из `src/server/repos/**` и `prisma/**`.
+- Скрипт `db:reset-demo` — полный пересев демо-данных (см. «Демо-режим» в `06-seed-data.md`); на проде — ночной cron.
+- Скрипты `db:migrate`, `db:seed`, `db:reset` в package.json.
+- (ESLint `no-restricted-imports` для `@/server/db` уже настроен в T01 — проверить, что правило срабатывает.)
 
 ## Приёмка
 - [ ] `pnpm db:reset` поднимает всё с нуля без ошибок
 - [ ] У Алисы сегодня есть пары и 1 перенос; у Веры нет заявок и оценок
 - [ ] Ни одной строки с паролем в коде; `passwordHash` начинается с `$argon2id$`
 - [ ] Юнит-тест: сид детерминирован при фиксированной дате
+- [ ] `db:reset-demo` возвращает Алисе «Готовую» заявку и непрочитанные уведомления после того, как их изменили
