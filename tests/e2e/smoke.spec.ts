@@ -6,7 +6,7 @@ const NOTICE =
 
 test("главная открывается и показывает плашку концепта", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Протокол" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Сейчас" })).toBeVisible();
   await expect(page.getByRole("note")).toHaveText(NOTICE);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 });
