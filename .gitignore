@@ -13,3 +13,4 @@ test-results/
 next-env.d.ts
 *.tsbuildinfo
 src/generated/
+docs/process/survey/raw/
