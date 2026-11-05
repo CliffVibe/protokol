@@ -5,16 +5,17 @@ type ErrorStateProps = {
   /** «Не получилось загрузить расписание» — без технических подробностей и стектрейсов. */
   title?: string;
   description?: React.ReactNode;
-  /** Обычно кнопка «Повторить» (reset() из error.tsx). */
+  /** Обычно кнопка «Повторить» (retry() из error.tsx). */
   action?: React.ReactNode;
-  /** Уровень заголовка: h2 внутри экрана с PageHeader; h1 — когда это весь экран (404, ошибка). */
+  /** Уровень заголовка: h2 внутри экрана с PageHeader; h1 — когда это весь экран (ошибка). */
   headingLevel?: 1 | 2 | 3;
   className?: string;
 };
 
+// Та же раскладка, что у EmptyState, но круг сплошной и цвета --danger: это не «пока пусто», а сбой.
 export function ErrorState({
   title = "Не получилось загрузить данные",
-  description = "Проверьте интернет и попробуйте ещё раз. Если не помогает — зайдите чуть позже.",
+  description = "Проверьте интернет и нажмите «Повторить». Если не помогает — зайдите через несколько минут.",
   action,
   headingLevel = 2,
   className,
@@ -23,17 +24,19 @@ export function ErrorState({
   return (
     <section
       role="alert"
-      className={cn(
-        "flex flex-col items-center gap-3 rounded-xl border border-line bg-surface px-4 py-10 text-center",
-        className,
-      )}
+      className={cn("flex items-start gap-5 border-t border-danger/40 pt-6", className)}
     >
-      <span className="flex size-14 items-center justify-center rounded-full border border-danger/40 text-danger">
-        <CloudOff aria-hidden className="size-7" />
+      <span
+        aria-hidden
+        className="flex size-16 shrink-0 items-center justify-center rounded-full border-[1.5px] border-danger text-danger"
+      >
+        <CloudOff className="size-7" />
       </span>
-      <Heading className="max-w-sm text-lead">{title}</Heading>
-      {description ? <p className="max-w-sm text-small text-ink-muted">{description}</p> : null}
-      {action ? <div className="mt-1">{action}</div> : null}
+      <div className="flex min-w-0 flex-col items-start gap-2 pt-1">
+        <Heading className="max-w-prose text-lead">{title}</Heading>
+        {description ? <p className="max-w-prose text-body text-ink-muted">{description}</p> : null}
+        {action ? <div className="mt-2">{action}</div> : null}
+      </div>
     </section>
   );
 }
