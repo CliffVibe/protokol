@@ -65,8 +65,6 @@ model User {
   login        String    @unique
   passwordHash String // только argon2id (S2)
   role         Role
-  failedLogins Int       @default(0)
-  lockedUntil  DateTime?
   createdAt    DateTime  @default(now())
 
   student       Student?
@@ -84,6 +82,17 @@ model Session {
   createdAt DateTime @default(now())
 
   @@index([userId])
+}
+
+/// Счётчик неудачных входов по паре «логин + IP» (S2; решение T03 — посторонний с другого IP
+/// не блокирует публичные аккаунты жюри). key = sha256(логин в нижнем регистре + IP): ни логина, ни IP в открытом виде.
+/// Запись есть и для несуществующих логинов — по блокировке не понять, существует ли логин.
+model LoginThrottle {
+  key         String    @id
+  failures    Int       @default(0)
+  windowStart DateTime
+  lockedUntil DateTime?
+  updatedAt   DateTime  @updatedAt
 }
 
 // ── Структура вуза ───────────────────────────────────────────────────────
