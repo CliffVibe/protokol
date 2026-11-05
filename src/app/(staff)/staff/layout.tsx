@@ -14,10 +14,14 @@ export default async function StaffLayout({ children }: { children: React.ReactN
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <header className="border-b border-line bg-surface">
-        <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center gap-x-6 gap-y-2 px-4 py-2 md:px-6">
-          <BrandMark href="/staff" subtitle="Кабинет деканата" />
+        <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 md:px-6">
+          <div className="w-full md:w-auto">
+            <BrandMark href="/staff" subtitle="Кабинет деканата" />
+          </div>
           {/* TODO(T09): пункт «Объявления» вместе с маршрутом */}
-          <nav aria-label="Разделы кабинета" className="flex-1">
+          {/* На телефоне: логотип — первой строкой, разделы и тема — второй; на ≥ 768 — всё в одну.
+              Порядок в DOM совпадает с визуальным — Tab идёт так же, как видно. */}
+          <nav aria-label="Разделы кабинета" className="min-w-0 flex-1">
             <ul className="flex flex-wrap gap-1">
               <li>
                 <Link
@@ -31,7 +35,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
               </li>
             </ul>
           </nav>
-          <ThemeSwitcher value={theme} compact className="w-40" />
+          <ThemeSwitcher value={theme} compact className="ml-auto w-[9.5rem]" />
         </div>
       </header>
       <main
