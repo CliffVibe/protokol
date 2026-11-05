@@ -17,7 +17,7 @@ export default function GlobalError({ retry }: { retry: () => void }) {
         <button
           type="button"
           onClick={() => retry()}
-          className="min-h-11 rounded-lg bg-brand px-4 text-sm font-medium text-bg"
+          className="min-h-11 rounded-lg bg-brand px-4 text-sm text-bg"
         >
           Повторить
         </button>

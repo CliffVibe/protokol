@@ -281,3 +281,15 @@ test.describe("шкала типографики в браузере", () => {
     );
   });
 });
+
+test.describe("текст 200% без горизонтального скролла", () => {
+  for (const route of ["/", "/requests", "/staff", "/more", "/no-such-page"]) {
+    test(`${route}`, async ({ page }) => {
+      await page.goto(route);
+      await page.evaluate(() => {
+        document.documentElement.style.fontSize = "200%";
+      });
+      expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+    });
+  }
+});

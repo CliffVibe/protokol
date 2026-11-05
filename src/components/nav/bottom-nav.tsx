@@ -33,7 +33,7 @@ export function BottomNav({ unreadCount }: { unreadCount: number }) {
                   // Активный — чернильная черта по верхнему краю, как закладка в папке; не плашка
                   active
                     ? "font-semibold text-brand before:absolute before:inset-x-2 before:top-0 before:h-[3px] before:rounded-b-full before:bg-brand forced-colors:before:bg-[CanvasText]"
-                    : "font-medium text-ink-muted hover:text-ink",
+                    : "text-ink-muted hover:text-ink",
                 )}
               >
                 <span className="relative flex h-7 w-full max-w-12 shrink-0 items-center justify-center">

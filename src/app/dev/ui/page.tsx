@@ -75,7 +75,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 function Panel({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div className="flex flex-col gap-2">
-      <p className="text-sm font-medium text-ink-muted">{label}</p>
+      <p className="text-sm text-ink-muted">{label}</p>
       {children}
     </div>
   );
@@ -123,7 +123,7 @@ export default async function DevUiPage() {
                   style={{ background: `var(--${token})` }}
                 />
                 <span className="flex min-w-0 flex-col">
-                  <code className="truncate text-sm font-medium">--{token}</code>
+                  <code className="truncate text-sm">--{token}</code>
                   <span className="text-xs text-ink-muted">{purpose}</span>
                 </span>
               </li>
@@ -142,7 +142,7 @@ export default async function DevUiPage() {
               </div>
             ))}
             <p className="text-base">
-              Цифры — моноширинные: <span className="tabular font-medium">10:10, 87/100</span>
+              Цифры — моноширинные: <span className="tabular">10:10, 87/100</span>
             </p>
           </div>
         </Section>

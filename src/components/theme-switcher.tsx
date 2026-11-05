@@ -68,16 +68,14 @@ export function ThemeSwitcher({ value, compact = false, className }: ThemeSwitch
 
   return (
     <fieldset className={cn("min-w-0", className)}>
-      <legend className={cn("mb-2 text-sm font-medium text-ink-muted", compact && "sr-only")}>
-        Тема
-      </legend>
+      <legend className={cn("mb-2 text-sm text-ink-muted", compact && "sr-only")}>Тема</legend>
       <div className="grid grid-cols-3 gap-0.5 rounded-xl border border-line bg-bg p-1">
         {OPTIONS.map(({ value: option, label, icon: Icon }) => (
           <label
             key={option}
             title={compact ? label : undefined}
             className={cn(
-              "flex min-h-11 min-w-0 cursor-pointer items-center justify-center rounded-lg border border-transparent px-0.5 text-center text-sm font-medium text-ink-muted transition-colors duration-150 ease-out",
+              "flex min-h-11 min-w-0 cursor-pointer items-center justify-center rounded-lg border border-transparent px-0.5 text-center text-sm text-ink-muted transition-colors duration-150 ease-out",
               compact ? "gap-1.5" : "min-h-14 flex-col gap-1 py-1.5",
               // Выбранный — рамка --brand (≥ 3:1 на --bg) + плашка brand-soft + цвет: видно и без цвета, и в тёмной теме
               "hover:text-ink has-checked:border-brand has-checked:bg-brand-soft has-checked:text-brand",

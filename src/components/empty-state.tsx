@@ -22,7 +22,8 @@ export function StampPlace({ className }: { className?: string }) {
     <span
       aria-hidden
       className={cn(
-        "flex size-16 shrink-0 -rotate-6 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-muted/70 font-heading text-sm font-bold tracking-wide text-ink-muted",
+        // Размер в px, а не rem: знак декоративный, при тексте 200% он не должен съедать ширину строки
+        "flex size-[64px] shrink-0 -rotate-6 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-muted/70 font-heading text-[14px] font-bold tracking-wide text-ink-muted",
         className,
       )}
     >
@@ -42,11 +43,26 @@ export function EmptyState({
 }: EmptyStateProps) {
   const Heading = `h${headingLevel}` as const;
   return (
-    <section className={cn("flex items-start gap-5 border-t border-line pt-6", className)}>
+    <section
+      className={cn(
+        "flex flex-wrap items-start gap-x-5 gap-y-4 border-t border-line pt-6",
+        className,
+      )}
+    >
       {stampPlace ? <StampPlace /> : null}
-      <div className={cn("flex min-w-0 flex-col items-start gap-2", stampPlace && "pt-1")}>
+      {/* min-w-[12rem]: при тексте 200% колонка шире строки — переносится под знак, а не сжимается */}
+      <div
+        className={cn(
+          "flex min-w-[min(12rem,100%)] flex-1 flex-col items-start gap-2",
+          stampPlace && "pt-1",
+        )}
+      >
         <Heading className="max-w-prose text-lg">{title}</Heading>
-        {description ? <p className="max-w-prose text-base text-ink-muted">{description}</p> : null}
+        {description ? (
+          <p className="max-w-prose text-base break-words hyphens-auto text-ink-muted">
+            {description}
+          </p>
+        ) : null}
         {action ? <div className="mt-2">{action}</div> : null}
       </div>
     </section>

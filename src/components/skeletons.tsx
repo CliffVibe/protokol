@@ -6,7 +6,7 @@ export function PageHeaderSkeleton({ className }: { className?: string }) {
   return (
     <div className={cn("flex flex-col gap-2", className)}>
       {/* высота строки text-2xl / text-3xl */}
-      <Skeleton className="h-[2.1rem] w-48 lg:h-[2.6rem] lg:w-64" />
+      <Skeleton className="h-[2.1rem] w-48 max-w-full lg:h-[2.6rem] lg:w-64" />
       <Skeleton className="h-5 w-72 max-w-full" />
     </div>
   );

@@ -29,7 +29,7 @@ export function PageHeader({
       {back ? (
         <Link
           href={back.href}
-          className="-ml-2 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg px-2 text-sm font-medium text-brand hover:underline"
+          className="-ml-2 inline-flex min-h-11 w-fit items-center gap-1 rounded-lg px-2 text-sm text-brand hover:underline"
         >
           <ChevronLeft aria-hidden className="size-4" />
           {back.label}
