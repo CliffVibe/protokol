@@ -11,7 +11,7 @@ export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 
 /** Значение --bg из globals.css: шапки на «бумаге», адресная строка сливается с ними
  *  (сверяет tests/unit/theme.test.ts). */
-export const THEME_COLORS = { light: "#F7F5F0", dark: "#111315" } as const;
+export const THEME_COLORS = { light: "#EEF1EC", dark: "#111412" } as const;
 
 export function parseTheme(value: string | undefined): ThemePreference {
   return value === "light" || value === "dark" ? value : "system";

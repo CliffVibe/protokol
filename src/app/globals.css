@@ -21,53 +21,53 @@
  * Токен `--muted` из дизайна (вторичный текст) реализован как `--ink-muted`:
  * имя `--muted` в shadcn занято фоном. Переменные shadcn ниже — только ссылки на наши токены.
  *
- * Контраст текста ≥ 4.5:1 проверяет tests/unit/contrast.test.ts. На --brand-soft НЕ ставить текст
- * цветом --ink-muted (4.29) и светлым --ok (4.28) — только --ink или --brand.
+ * Палитра «Бланк» (решение человека 06.11): холодная бумага бланка, чернила, фиолетовая штемпельная печать.
+ * Контраст текста ≥ 4.5:1 для всех пар, включая текст на --brand-soft, проверяет tests/unit/contrast.test.ts.
  */
 :root {
-  --bg: #f7f5f0;
-  --surface: #ffffff;
-  --ink: #16181d;
-  --ink-muted: #6b6f76;
-  --line: #e6e2d9;
-  --brand: #1f3a5f;
-  --brand-soft: #e7edf5;
-  --ok: #2e7d4f;
-  --warn: #965900;
-  --danger: #b3261e;
-  --seal: #8c2f39;
+  --bg: #eef1ec;
+  --surface: #fbfcfa;
+  --ink: #161a17;
+  --ink-muted: #5b635c;
+  --line: #d6dbd2;
+  --brand: #22356b;
+  --brand-soft: #e1e7f2;
+  --ok: #2a7348;
+  --warn: #8a5300;
+  --danger: #ae2620;
+  --seal: #55389a;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --bg: #111315;
-    --surface: #1a1d20;
-    --ink: #eceae4;
-    --ink-muted: #9a9ea5;
-    --line: #2a2e33;
-    --brand: #8fb3e0;
-    --brand-soft: #1d2a3a;
+    --bg: #111412;
+    --surface: #1a1e1b;
+    --ink: #e7ebe5;
+    --ink-muted: #9aa39b;
+    --line: #2a302b;
+    --brand: #9cb2ec;
+    --brand-soft: #1e2638;
     --ok: #5cc48a;
     --warn: #f0b14a;
     --danger: #f2867e;
-    --seal: #d9707b;
+    --seal: #d59be4;
     color-scheme: dark;
   }
 }
 
 .dark {
-  --bg: #111315;
-  --surface: #1a1d20;
-  --ink: #eceae4;
-  --ink-muted: #9a9ea5;
-  --line: #2a2e33;
-  --brand: #8fb3e0;
-  --brand-soft: #1d2a3a;
+  --bg: #111412;
+  --surface: #1a1e1b;
+  --ink: #e7ebe5;
+  --ink-muted: #9aa39b;
+  --line: #2a302b;
+  --brand: #9cb2ec;
+  --brand-soft: #1e2638;
   --ok: #5cc48a;
   --warn: #f0b14a;
   --danger: #f2867e;
-  --seal: #d9707b;
+  --seal: #d59be4;
   color-scheme: dark;
 }
 
@@ -135,8 +135,8 @@
   --radius-xl: 1rem;
   --radius-2xl: calc(var(--radius) * 1.8);
 
-  --font-sans: var(--font-inter), system-ui, sans-serif;
-  --font-heading: var(--font-manrope), var(--font-inter), system-ui, sans-serif;
+  --font-sans: var(--font-text), system-ui, sans-serif;
+  --font-heading: var(--font-display), Georgia, serif;
 }
 
 /*
