@@ -1,0 +1,20 @@
+# Локальная разработка: только PostgreSQL. Приложение — `pnpm dev` на хосте.
+# Пароль ниже — только для локальной БД на 127.0.0.1, тот же, что в CI. На проде — свой из .env.
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: protokol
+      POSTGRES_PASSWORD: protokol
+      POSTGRES_DB: protokol
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U protokol -d protokol"]
+      interval: 5s
+      retries: 10
+
+volumes:
+  pgdata:

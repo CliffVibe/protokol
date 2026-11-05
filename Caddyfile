@@ -1,0 +1,13 @@
+# HTTPS через Let's Encrypt автоматически. DOMAIN — из .env (например 203-0-113-7.sslip.io).
+{$DOMAIN} {
+	encode zstd gzip
+
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		-Server
+	}
+
+	reverse_proxy app:3000
+}
