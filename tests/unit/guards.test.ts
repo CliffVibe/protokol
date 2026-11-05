@@ -1,10 +1,14 @@
 // Тест-страж доступа (CLAUDE.md → «Железные правила», docs/05-security.md → S1).
-// Разбирает исходники AST-деревом TypeScript (а не regex — комментарий или строка «requireStudent» не обманут):
-//  - каждая page.tsx в (student) вызывает requireStudent(), в (staff) — requireStaff();
-//  - каждая экспортируемая функция в файлах "use server" вызывает guard — или стоит в списке исключений с причиной;
-//  - каждый route handler в app/api — то же;
+// Разбирает исходники AST-деревом TypeScript (а не regex — комментарий или строка «requireStudent» не обманут).
+// Правила (усилены по security-reviewer T03):
+//  - КАЖДАЯ page.tsx и route.ts в src/app вызывает guard ПЕРВОЙ инструкцией — кроме явного белого списка
+//    публичных точек с причиной; в (student) — requireStudent, в (staff) — requireStaff;
+//  - guard импортирован из @/server/auth/guards (самописная функция с тем же именем не считается);
+//  - каждая экспортируемая функция файла "use server" и каждая функция с "use server" в теле
+//    вызывает guard первой инструкцией — или стоит в списке исключений с причиной;
+//  - экспорт из "use server", который страж не может распознать как функцию, — нарушение;
 //  - layout.tsx guard НЕ вызывает (проверка в layout не защищает, а создаёт ложное чувство защиты).
-// Тест пишется от угрозы: в конце проверяем, что он ловит подложенные «плохие» файлы.
+// В конце страж проверяет сам себя на подложенных «плохих» файлах.
 import { readdirSync, readFileSync } from "node:fs";
 import { join, relative, sep } from "node:path";
 import ts from "typescript";
@@ -12,21 +16,27 @@ import { describe, expect, it } from "vitest";
 
 const ROOT = join(__dirname, "..", "..");
 const SRC = join(ROOT, "src");
-const APP = join(SRC, "app");
 const GUARDS = ["requireUser", "requireStudent", "requireStaff"] as const;
+const GUARDS_MODULE = "@/server/auth/guards";
 
-/** Server Actions без guard — осознанно. Ключ: «путь от src/:имя». */
+/** page.tsx без guard — публичные. Ключ — путь от src/. */
+const PUBLIC_PAGES: Record<string, string> = {
+  "app/(auth)/login/page.tsx": "вход: сессии ещё нет",
+  "app/dev/ui/page.tsx": "витрина компонентов без данных; в прод-сборке — notFound()",
+};
+
+/** Route handlers без guard. Ключ: «путь:метод». */
+const PUBLIC_ROUTES: Record<string, string> = {
+  "app/api/health/route.ts:GET":
+    "проверка БД для Docker healthcheck, данных пользователей не трогает",
+};
+
+/** Server Actions без guard — осознанно. Ключ: «путь:имя». */
 const ACTION_EXCEPTIONS: Record<string, string> = {
   "server/actions/auth.ts:login": "вход: сессии ещё нет",
   "server/actions/auth.ts:demoLogin":
     "демо-вход: сессии ещё нет, проверяет DEMO_MODE и список логинов",
   "server/actions/auth.ts:logout": "выход без сессии безвреден — просто удаляет cookie",
-};
-
-/** Route handlers без guard. */
-const ROUTE_EXCEPTIONS: Record<string, string> = {
-  "app/api/health/route.ts:GET":
-    "проверка БД для Docker healthcheck, данных пользователей не трогает",
 };
 
 function walk(dir: string): string[] {
@@ -43,15 +53,137 @@ function parse(file: string, text = readFileSync(file, "utf8")) {
   return ts.createSourceFile(file, text, ts.ScriptTarget.Latest, true, ts.ScriptKind.TSX);
 }
 
-/** Вызывает ли узел (тело функции) один из guards — напрямую, `await guard()`. */
-function callsGuard(node: ts.Node, names: readonly string[]): boolean {
+/** Guards, импортированные из @/server/auth/guards: локальное имя → настоящее (с учётом `as`). */
+function importedGuards(sf: ts.SourceFile): Map<string, string> {
+  const names = new Map<string, string>();
+  for (const st of sf.statements) {
+    if (
+      ts.isImportDeclaration(st) &&
+      ts.isStringLiteral(st.moduleSpecifier) &&
+      st.moduleSpecifier.text === GUARDS_MODULE &&
+      st.importClause?.namedBindings &&
+      ts.isNamedImports(st.importClause.namedBindings)
+    ) {
+      for (const el of st.importClause.namedBindings.elements) {
+        const original = (el.propertyName ?? el.name).text;
+        if ((GUARDS as readonly string[]).includes(original)) names.set(el.name.text, original);
+      }
+    }
+  }
+  return names;
+}
+
+const DIRECTIVE = "use server";
+const isDirective = (st: ts.Statement | undefined) =>
+  !!st &&
+  ts.isExpressionStatement(st) &&
+  ts.isStringLiteral(st.expression) &&
+  st.expression.text === DIRECTIVE;
+
+/** Первая «настоящая» инструкция тела (директивы "use server" пропускаем). */
+function firstStatement(body: ts.Node): ts.Statement | undefined {
+  if (!ts.isBlock(body)) return undefined; // стрелка без фигурных скобок — guard первым не вызвать
+  return body.statements.find((s) => !isDirective(s));
+}
+
+/** Первая инструкция — `await guard()` или `const ctx = await guard()`, guard из модуля guards. */
+function startsWithGuard(body: ts.Node, allowed: Map<string, string>): boolean {
+  const st = firstStatement(body);
+  if (!st) return false;
+  let expr: ts.Expression | undefined;
+  if (ts.isExpressionStatement(st)) expr = st.expression;
+  if (ts.isVariableStatement(st) && st.declarationList.declarations.length === 1) {
+    expr = st.declarationList.declarations[0]!.initializer;
+  }
+  if (!expr || !ts.isAwaitExpression(expr)) return false;
+  const call = expr.expression;
+  return (
+    ts.isCallExpression(call) &&
+    ts.isIdentifier(call.expression) &&
+    allowed.has(call.expression.text)
+  );
+}
+
+const hasModifier = (n: ts.Node, kind: ts.SyntaxKind) =>
+  ts.canHaveModifiers(n) && (ts.getModifiers(n) ?? []).some((m) => m.kind === kind);
+
+type Fn = { name: string; body: ts.Node };
+type ExportScan = { functions: Fn[]; unknown: string[] };
+
+/** Экспорты файла: распознанные функции и всё, что страж распознать не смог. */
+function scanExports(sf: ts.SourceFile): ExportScan {
+  const functions: Fn[] = [];
+  const unknown: string[] = [];
+  for (const st of sf.statements) {
+    const exported = hasModifier(st, ts.SyntaxKind.ExportKeyword);
+    if (ts.isFunctionDeclaration(st) && exported) {
+      const name = hasModifier(st, ts.SyntaxKind.DefaultKeyword)
+        ? "default"
+        : (st.name?.text ?? "?");
+      if (st.body) functions.push({ name, body: st.body });
+    } else if (ts.isVariableStatement(st) && exported) {
+      for (const d of st.declarationList.declarations) {
+        const name = ts.isIdentifier(d.name) ? d.name.text : "?";
+        const init = d.initializer;
+        if (init && (ts.isArrowFunction(init) || ts.isFunctionExpression(init))) {
+          functions.push({ name, body: init.body });
+        } else {
+          unknown.push(name);
+        }
+      }
+    } else if (ts.isExportAssignment(st)) {
+      unknown.push("default");
+    } else if (ts.isExportDeclaration(st)) {
+      if (st.isTypeOnly) continue;
+      if (st.exportClause && ts.isNamedExports(st.exportClause)) {
+        for (const el of st.exportClause.elements) if (!el.isTypeOnly) unknown.push(el.name.text);
+      } else {
+        unknown.push("*");
+      }
+    }
+  }
+  return { functions, unknown };
+}
+
+/** Функции с "use server" в теле (inline Server Actions) — где угодно в файле. */
+function inlineActions(sf: ts.SourceFile): Fn[] {
+  const out: Fn[] = [];
+  const visit = (n: ts.Node) => {
+    if (
+      (ts.isFunctionDeclaration(n) || ts.isFunctionExpression(n) || ts.isArrowFunction(n)) &&
+      n.body &&
+      ts.isBlock(n.body) &&
+      isDirective(n.body.statements[0])
+    ) {
+      const name =
+        (ts.isFunctionDeclaration(n) && n.name?.text) ||
+        (ts.isVariableDeclaration(n.parent) &&
+          ts.isIdentifier(n.parent.name) &&
+          n.parent.name.text) ||
+        "(анонимная)";
+      out.push({ name, body: n.body });
+    }
+    ts.forEachChild(n, visit);
+  };
+  visit(sf);
+  return out;
+}
+
+const fileHasUseServer = (sf: ts.SourceFile) => isDirective(sf.statements[0]);
+
+function defaultExportBody(sf: ts.SourceFile): ts.Node | null {
+  return scanExports(sf).functions.find((f) => f.name === "default")?.body ?? null;
+}
+
+/** Вызывается ли guard где-то в узле (для правила «layout guard не вызывает»). */
+function callsGuardAnywhere(node: ts.Node): boolean {
   let found = false;
   const visit = (n: ts.Node) => {
     if (found) return;
     if (
       ts.isCallExpression(n) &&
       ts.isIdentifier(n.expression) &&
-      names.includes(n.expression.text)
+      (GUARDS as readonly string[]).includes(n.expression.text)
     ) {
       found = true;
       return;
@@ -62,64 +194,25 @@ function callsGuard(node: ts.Node, names: readonly string[]): boolean {
   return found;
 }
 
-function hasUseServer(sf: ts.SourceFile): boolean {
-  const first = sf.statements[0];
-  return (
-    !!first &&
-    ts.isExpressionStatement(first) &&
-    ts.isStringLiteral(first.expression) &&
-    first.expression.text === "use server"
-  );
-}
-
-const isExported = (n: ts.Node) =>
-  ts.canHaveModifiers(n) &&
-  (ts.getModifiers(n) ?? []).some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
-
-/** Экспортируемые функции файла: `export (async) function f` и `export const f = async () => …`. */
-function exportedFunctions(sf: ts.SourceFile): { name: string; body: ts.Node }[] {
-  const out: { name: string; body: ts.Node }[] = [];
-  for (const st of sf.statements) {
-    if (ts.isFunctionDeclaration(st) && isExported(st) && st.name && st.body) {
-      out.push({ name: st.name.text, body: st.body });
-    }
-    if (ts.isVariableStatement(st) && isExported(st)) {
-      for (const d of st.declarationList.declarations) {
-        if (
-          ts.isIdentifier(d.name) &&
-          d.initializer &&
-          (ts.isArrowFunction(d.initializer) || ts.isFunctionExpression(d.initializer))
-        ) {
-          out.push({ name: d.name.text, body: d.initializer.body });
-        }
-      }
-    }
-  }
-  return out;
-}
-
-/** Тело default-экспорта page.tsx. */
-function defaultExportBody(sf: ts.SourceFile): ts.Node | null {
-  for (const st of sf.statements) {
-    if (ts.isFunctionDeclaration(st) && st.body) {
-      const mods = ts.getModifiers(st) ?? [];
-      if (
-        mods.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) &&
-        mods.some((m) => m.kind === ts.SyntaxKind.DefaultKeyword)
-      ) {
-        return st.body;
-      }
-    }
-  }
-  return null;
-}
-
 // ── Проверки как чистые функции: их же гоняем на подложенных файлах ───────────
 
-function pageViolation(file: string, text: string, guard: string): string | null {
-  const body = defaultExportBody(parse(file, text));
+function requiredGuardFor(file: string): string[] {
+  if (file.startsWith("app/(student)/")) return ["requireStudent"];
+  if (file.startsWith("app/(staff)/")) return ["requireStaff"];
+  return [...GUARDS];
+}
+
+function pageViolation(file: string, text: string): string | null {
+  if (PUBLIC_PAGES[file]) return null;
+  const sf = parse(file, text);
+  const body = defaultExportBody(sf);
   if (!body) return `${file}: нет export default function`;
-  return callsGuard(body, [guard]) ? null : `${file}: page не вызывает ${guard}()`;
+  const allowed = new Map(
+    [...importedGuards(sf)].filter(([, original]) => requiredGuardFor(file).includes(original)),
+  );
+  return startsWithGuard(body, allowed)
+    ? null
+    : `${file}: первая инструкция page — не await ${requiredGuardFor(file).join("/")}() из ${GUARDS_MODULE}`;
 }
 
 function actionViolations(
@@ -128,22 +221,38 @@ function actionViolations(
   exceptions: Record<string, string>,
 ): string[] {
   const sf = parse(file, text);
-  if (!hasUseServer(sf)) return [];
-  return exportedFunctions(sf)
-    .filter((f) => !exceptions[`${file}:${f.name}`] && !callsGuard(f.body, GUARDS))
-    .map((f) => `${file}: Server Action ${f.name}() без guard`);
+  const allowed = importedGuards(sf);
+  const out: string[] = [];
+  if (fileHasUseServer(sf)) {
+    const { functions, unknown } = scanExports(sf);
+    for (const f of functions) {
+      if (!exceptions[`${file}:${f.name}`] && !startsWithGuard(f.body, allowed)) {
+        out.push(`${file}: Server Action ${f.name}() без guard первой инструкцией`);
+      }
+    }
+    for (const name of unknown)
+      out.push(`${file}: экспорт ${name} не распознан как функция — страж не может его проверить`);
+  }
+  for (const f of inlineActions(sf)) {
+    if (!exceptions[`${file}:${f.name}`] && !startsWithGuard(f.body, allowed)) {
+      out.push(`${file}: inline Server Action ${f.name}() без guard первой инструкцией`);
+    }
+  }
+  return out;
 }
 
-const HTTP = ["GET", "POST", "PUT", "PATCH", "DELETE"];
+const HTTP = ["GET", "POST", "PUT", "PATCH", "DELETE", "HEAD", "OPTIONS"];
 function routeViolations(file: string, text: string, exceptions: Record<string, string>): string[] {
-  return exportedFunctions(parse(file, text))
-    .filter((f) => HTTP.includes(f.name))
-    .filter((f) => !exceptions[`${file}:${f.name}`] && !callsGuard(f.body, GUARDS))
-    .map((f) => `${file}: ${f.name} без guard`);
+  const sf = parse(file, text);
+  const allowed = importedGuards(sf);
+  return scanExports(sf)
+    .functions.filter((f) => HTTP.includes(f.name))
+    .filter((f) => !exceptions[`${file}:${f.name}`] && !startsWithGuard(f.body, allowed))
+    .map((f) => `${file}: ${f.name} без guard первой инструкцией`);
 }
 
 function layoutViolation(file: string, text: string): string | null {
-  return callsGuard(parse(file, text), GUARDS)
+  return callsGuardAnywhere(parse(file, text))
     ? `${file}: layout вызывает guard — проверка должна быть в каждой page`
     : null;
 }
@@ -152,97 +261,165 @@ function layoutViolation(file: string, text: string): string | null {
 
 const allFiles = walk(SRC);
 const read = (f: string) => readFileSync(f, "utf8");
+const appFiles = allFiles.filter((f) => rel(f).startsWith("app/"));
 
 describe("тест-страж: guard в каждой page, Server Action и route handler", () => {
-  const pages = allFiles.filter((f) => f.endsWith(`${sep}page.tsx`));
-  const studentPages = pages.filter((f) => rel(f).startsWith("app/(student)/"));
-  const staffPages = pages.filter((f) => rel(f).startsWith("app/(staff)/"));
+  const pages = appFiles.filter((f) => f.endsWith(`${sep}page.tsx`));
 
   it("страницы найдены (иначе тест ничего не проверяет)", () => {
-    expect(studentPages.length).toBeGreaterThanOrEqual(8);
-    expect(staffPages.length).toBeGreaterThanOrEqual(1);
+    expect(pages.filter((f) => rel(f).startsWith("app/(student)/")).length).toBeGreaterThanOrEqual(
+      8,
+    );
+    expect(pages.filter((f) => rel(f).startsWith("app/(staff)/")).length).toBeGreaterThanOrEqual(1);
   });
 
-  it.each(studentPages.map((f) => [rel(f), f]))("%s вызывает requireStudent()", (_, f) => {
-    expect(pageViolation(rel(f), read(f), "requireStudent")).toBeNull();
+  it.each(pages.map((f) => [rel(f), f]))(
+    "%s: guard первой инструкцией или в белом списке",
+    (_, f) => {
+      expect(pageViolation(rel(f), read(f))).toBeNull();
+    },
+  );
+
+  it("Server Actions (файлы и inline) — guard первой инструкцией или в списке исключений", () => {
+    expect(allFiles.some((f) => fileHasUseServer(parse(f)))).toBe(true);
+    expect(allFiles.flatMap((f) => actionViolations(rel(f), read(f), ACTION_EXCEPTIONS))).toEqual(
+      [],
+    );
   });
 
-  it.each(staffPages.map((f) => [rel(f), f]))("%s вызывает requireStaff()", (_, f) => {
-    expect(pageViolation(rel(f), read(f), "requireStaff")).toBeNull();
+  it("все route.ts в src/app — guard первой инструкцией или в белом списке", () => {
+    const routes = appFiles.filter((f) => f.endsWith(`${sep}route.ts`));
+    expect(routes.flatMap((f) => routeViolations(rel(f), read(f), PUBLIC_ROUTES))).toEqual([]);
   });
 
-  it('каждая экспортируемая функция в "use server" вызывает guard или в списке исключений', () => {
-    const files = allFiles.filter((f) => hasUseServer(parse(f)));
-    expect(files.length).toBeGreaterThan(0);
-    expect(files.flatMap((f) => actionViolations(rel(f), read(f), ACTION_EXCEPTIONS))).toEqual([]);
-  });
-
-  it("исключения не устарели: каждая функция из списка существует", () => {
-    for (const key of [...Object.keys(ACTION_EXCEPTIONS), ...Object.keys(ROUTE_EXCEPTIONS)]) {
+  it("белые списки не устарели: каждая запись существует", () => {
+    for (const file of Object.keys(PUBLIC_PAGES)) {
+      expect(defaultExportBody(parse(join(SRC, file))), file).not.toBeNull();
+    }
+    for (const key of [...Object.keys(ACTION_EXCEPTIONS), ...Object.keys(PUBLIC_ROUTES)]) {
       const [file, name] = key.split(":");
-      const fns = exportedFunctions(parse(join(SRC, file!))).map((f) => f.name);
+      const fns = scanExports(parse(join(SRC, file!))).functions.map((f) => f.name);
       expect(fns, key).toContain(name);
     }
   });
 
-  it("route handlers в app/api вызывают guard или в списке исключений", () => {
-    const routes = allFiles.filter((f) => rel(f).startsWith("app/api/") && f.endsWith("route.ts"));
-    expect(routes.flatMap((f) => routeViolations(rel(f), read(f), ROUTE_EXCEPTIONS))).toEqual([]);
-  });
-
   it("layout.tsx в (student) и (staff) не вызывают guard", () => {
-    const layouts = allFiles.filter(
+    const layouts = appFiles.filter(
       (f) => f.endsWith(`${sep}layout.tsx`) && /^app\/\((student|staff)\)\//.test(rel(f)),
     );
     expect(layouts.length).toBeGreaterThanOrEqual(2);
     expect(layouts.map((f) => layoutViolation(rel(f), read(f))).filter(Boolean)).toEqual([]);
   });
-
-  it("app/ не лежит вне src (иначе страж смотрел бы не туда)", () => {
-    expect(allFiles.some((f) => f.startsWith(APP))).toBe(true);
-  });
 });
 
 describe("тест-страж ловит нарушения (проверка самого стража)", () => {
+  const IMPORT = `import { requireStudent, requireStaff, requireUser } from "@/server/auth/guards";\n`;
+  const P = "app/(student)/x/page.tsx";
+
   it("page без guard", () => {
-    const text = `export default async function Page() { return <div /> }`;
-    expect(pageViolation("app/(student)/x/page.tsx", text, "requireStudent")).not.toBeNull();
+    expect(
+      pageViolation(P, `${IMPORT}export default async function Page() { return <div /> }`),
+    ).not.toBeNull();
   });
 
   it("guard только в комментарии или строке — не считается", () => {
-    const text = `// requireStudent()
+    const text = `${IMPORT}// requireStudent()
       export default async function Page() { const s = "requireStudent()"; return <div>{s}</div> }`;
-    expect(pageViolation("app/(student)/x/page.tsx", text, "requireStudent")).not.toBeNull();
+    expect(pageViolation(P, text)).not.toBeNull();
+  });
+
+  it("guard не первой инструкцией: данные успевают отдаться до проверки", () => {
+    const text = `${IMPORT}export default async function Page({ x }) {
+      if (x) return <Data />;
+      await requireStudent();
+      return null }`;
+    expect(pageViolation(P, text)).not.toBeNull();
+  });
+
+  it("guard внутри неиспользуемой стрелки — не считается", () => {
+    const text = `${IMPORT}export default async function Page() { const f = async () => { await requireStudent() }; return null }`;
+    expect(pageViolation(P, text)).not.toBeNull();
+  });
+
+  it("самописная функция с именем requireStudent — не считается", () => {
+    const text = `async function requireStudent() {}
+      export default async function Page() { await requireStudent(); return null }`;
+    expect(pageViolation(P, text)).not.toBeNull();
   });
 
   it("не тот guard: requireStaff на странице студента", () => {
-    const text = `export default async function Page() { await requireStaff(); return null }`;
-    expect(pageViolation("app/(student)/x/page.tsx", text, "requireStudent")).not.toBeNull();
+    const text = `${IMPORT}export default async function Page() { await requireStaff(); return null }`;
+    expect(pageViolation(P, text)).not.toBeNull();
   });
 
-  it("guard в page — ок", () => {
-    const text = `export default async function Page() { const ctx = await requireStudent(); return null }`;
-    expect(pageViolation("app/(student)/x/page.tsx", text, "requireStudent")).toBeNull();
+  it("page вне групп без guard — тоже нарушение", () => {
+    const text = `export default async function Page() { return <Data /> }`;
+    expect(pageViolation("app/requests/[number]/page.tsx", text)).not.toBeNull();
+  });
+
+  it("guard первой инструкцией (с ctx и без) — ок, в том числе под другим именем через as", () => {
+    expect(
+      pageViolation(
+        P,
+        `${IMPORT}export default async function Page() { const ctx = await requireStudent(); return null }`,
+      ),
+    ).toBeNull();
+    expect(
+      pageViolation(
+        P,
+        `${IMPORT}export default async function Page() { await requireStudent(); return null }`,
+      ),
+    ).toBeNull();
+    expect(
+      pageViolation(
+        P,
+        `import { requireStudent as rs } from "@/server/auth/guards";
+        export default async function Page() { await rs(); return null }`,
+      ),
+    ).toBeNull();
   });
 
   it("Server Action без guard — и function, и стрелка", () => {
     const text = `"use server";
+      ${IMPORT}
       export async function cancelRequest(fd: FormData) { await repo.cancel(fd.get("id")) }
       export const reopen = async () => { await repo.reopen() };
       export async function ok() { const ctx = await requireStudent(); }`;
     expect(actionViolations("server/actions/x.ts", text, {})).toEqual([
-      "server/actions/x.ts: Server Action cancelRequest() без guard",
-      "server/actions/x.ts: Server Action reopen() без guard",
+      "server/actions/x.ts: Server Action cancelRequest() без guard первой инструкцией",
+      "server/actions/x.ts: Server Action reopen() без guard первой инструкцией",
+    ]);
+  });
+
+  it('нераспознанные экспорты в "use server": обёртка, export { }, export default выражение', () => {
+    const text = `"use server";
+      const impl = async () => {};
+      export const wrapped = withLogging(async () => { await repo.cancel() });
+      export { impl };
+      export default impl;`;
+    const v = actionViolations("server/actions/x.ts", text, {});
+    expect(v).toHaveLength(3);
+    expect(v.every((s) => s.includes("не распознан"))).toBe(true);
+  });
+
+  it('inline "use server" внутри page без guard', () => {
+    const text = `${IMPORT}export default async function Page() {
+        await requireStudent();
+        async function cancel(fd: FormData) { "use server"; await repo.cancel(fd.get("number")) }
+        return <form action={cancel} />
+      }`;
+    expect(actionViolations(P, text, {})).toEqual([
+      `${P}: inline Server Action cancel() без guard первой инструкцией`,
     ]);
   });
 
   it("route handler без guard", () => {
     const text = `export async function GET() { return Response.json(await repo.all()) }`;
-    expect(routeViolations("app/api/x/route.ts", text, {})).toHaveLength(1);
+    expect(routeViolations("app/verify/[token]/route.ts", text, {})).toHaveLength(1);
   });
 
   it("layout с guard", () => {
-    const text = `export default async function L({ children }) { await requireStudent(); return children }`;
+    const text = `${IMPORT}export default async function L({ children }) { await requireStudent(); return children }`;
     expect(layoutViolation("app/(student)/layout.tsx", text)).not.toBeNull();
   });
 });
