@@ -45,7 +45,7 @@
 ### MCP-серверы (файл `.mcp.json`, версии зафиксированы)
 | Сервер | Издатель / лицензия | Версия | Аудит | Как ограничили |
 |---|---|---|---|---|
-| **Playwright MCP** | Microsoft, Apache-2.0 | `0.0.84` (03.11.2026) | 0 находок, install-скриптов нет | `--isolated` (профиль в памяти), `--headless`, `--allowed-origins` только localhost:3000, вьюпорт 390px. **Не включаем** `--caps devtools` и инструмент `browser_run_code_unsafe` («эквивалент RCE» по README) |
+| **Playwright MCP** | Microsoft, Apache-2.0 | `0.0.84` (03.11.2026) | 0 находок, install-скриптов нет | `--isolated` (профиль в памяти), `--headless`, `--allowed-origins` только localhost:3000, вьюпорт 390px. **Не включаем** `--caps devtools`. Инструмент `browser_run_code_unsafe` («эквивалент RCE» по README) в 0.0.84 доступен без флагов, поэтому закрыт правилом `deny` в `.claude/settings.json` (проверено 05.11.2026) |
 | **shadcn MCP** | shadcn / Vercel, MIT | `4.23.0` (27.10.2026) | 2 умеренные (deepmerge, minimatch) — только dev-CLI, на сборку не влияют | Только официальный реестр. **Не добавляем** сторонние реестры в `components.json` |
 
 Почему версии зафиксированы, а не `@latest`: `@latest` каждый запуск подтягивает свежий код. Если пакет взломают, это сразу попадёт к агенту. Обновляем вручную и с ревью.
