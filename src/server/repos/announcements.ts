@@ -1,25 +1,52 @@
 import "server-only";
+import { matchesAudience } from "@/lib/audience";
 import { db } from "@/server/db";
 import type { StudentCtx } from "./auth";
+import { readerOf } from "./profile";
 
-// Свежие объявления и дедлайны деканата. Адресат — в поле audience; кому показать, решает
-// services/now.ts → matchesAudience по факультету, курсу и группе ИЗ ctx (repos/profile.ts → readerOf).
-// Данных других студентов здесь нет: объявления общие, адресованы группам и факультетам.
+// Объявления и дедлайны деканата — ТОЛЬКО адресованные этому студенту (S1).
+// Фильтр по адресату — здесь, в репозитории, а не у вызывающего: следующий потребитель
+// (уведомления T09, ИИ-помощник T12) не сможет его забыть (security-reviewer, T05).
+// Адресат — факультет, курс и группа студента из ctx (repos/profile.ts → readerOf).
 
-export async function recentAnnouncements(_ctx: StudentCtx, now: Date) {
-  return db.announcement.findMany({
-    where: { publishedAt: { lte: now } },
-    orderBy: { publishedAt: "desc" },
-    take: 50,
-    select: { id: true, title: true, body: true, publishedAt: true, pinned: true, audience: true },
-  });
+/** Сколько свежих записей просматриваем до фильтра — с запасом, чтобы чужие не вытеснили свои. */
+const SCAN = 300;
+
+export async function announcementsFor(ctx: StudentCtx, now: Date) {
+  const [reader, rows] = await Promise.all([
+    readerOf(ctx),
+    db.announcement.findMany({
+      where: { publishedAt: { lte: now } },
+      orderBy: { publishedAt: "desc" },
+      take: SCAN,
+      select: {
+        id: true,
+        title: true,
+        body: true,
+        publishedAt: true,
+        pinned: true,
+        audience: true,
+      },
+    }),
+  ]);
+  if (!reader) return [];
+  return rows
+    .filter((r) => matchesAudience(r.audience, reader))
+    .map(({ id, title, body, publishedAt, pinned }) => ({ id, title, body, publishedAt, pinned }));
 }
 
-export async function upcomingDeadlines(_ctx: StudentCtx, from: Date) {
-  return db.deadline.findMany({
-    where: { dueAt: { gte: from } },
-    orderBy: { dueAt: "asc" },
-    take: 50,
-    select: { id: true, title: true, dueAt: true, link: true, audience: true },
-  });
+export async function deadlinesFor(ctx: StudentCtx, from: Date) {
+  const [reader, rows] = await Promise.all([
+    readerOf(ctx),
+    db.deadline.findMany({
+      where: { dueAt: { gte: from } },
+      orderBy: { dueAt: "asc" },
+      take: SCAN,
+      select: { id: true, title: true, dueAt: true, link: true, audience: true },
+    }),
+  ]);
+  if (!reader) return [];
+  return rows
+    .filter((r) => matchesAudience(r.audience, reader))
+    .map(({ id, title, dueAt, link }) => ({ id, title, dueAt, link }));
 }

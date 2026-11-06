@@ -80,6 +80,10 @@ describe("matchesAudience", () => {
     expect(matchesAudience({ facultyCodes: ["ФМО"], courses: [1] }, alisa)).toBe(false);
     expect(matchesAudience({ groupNames: ["2МО-3", "2МО-1"] }, alisa)).toBe(true);
   });
+  it("неизвестный ключ (опечатка) — никому, а не «всем»", () => {
+    expect(matchesAudience({ facultyCode: "МЭО" }, alisa)).toBe(false);
+    expect(matchesAudience({ faculties: ["ФМО"] }, alisa)).toBe(false);
+  });
   it("битый JSON — никому", () => {
     expect(matchesAudience(null, alisa)).toBe(false);
     expect(matchesAudience("всем", alisa)).toBe(false);

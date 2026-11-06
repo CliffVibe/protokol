@@ -78,6 +78,9 @@ test("изоляция: Тимур не видит номера заявок А�
   const timurText = await timur.getByRole("main").innerText();
   for (const n of alisaNumbers) expect(timurText).not.toContain(n);
   expect(timurText).not.toContain("Алиса");
+  // Объявление только для 2МО-3 — у Алисы есть, у Тимура нет
+  expect(await page.getByRole("main").innerText()).toContain("Изменение расписания группы 2МО-3");
+  expect(timurText).not.toContain("Изменение расписания группы 2МО-3");
   await expect(timur.getByText("Стипендия под угрозой")).toBeVisible();
 });
 

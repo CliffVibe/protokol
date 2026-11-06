@@ -1,9 +1,8 @@
 import "server-only";
 import type { RequestStatus } from "@/generated/prisma/client";
-import { matchesAudience } from "@/lib/audience";
 import { addDays, mskStartOfDay } from "@/lib/msk";
 import type { StudentCtx } from "@/server/auth/guards";
-import { recentAnnouncements, upcomingDeadlines } from "@/server/repos/announcements";
+import { announcementsFor, deadlinesFor } from "@/server/repos/announcements";
 import { gradesOf } from "@/server/repos/grades";
 import { readerOf } from "@/server/repos/profile";
 import { activeRequests, type RequestRow } from "@/server/repos/requests";
@@ -70,13 +69,10 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
     lessonsBetween(ctx, today, addDays(today, LOOKAHEAD_DAYS)),
     activeRequests(ctx),
     gradesOf(ctx),
-    recentAnnouncements(ctx, now),
-    upcomingDeadlines(ctx, now),
+    announcementsFor(ctx, now),
+    deadlinesFor(ctx, now),
   ]);
   if (!reader) return null;
-
-  const forMe = <T extends { audience: unknown }>(rows: T[]) =>
-    rows.filter((r) => matchesAudience(r.audience, reader));
 
   const exams: SoonItem[] = grades
     .filter((g) => g.examDate && g.examDate >= now)
@@ -86,7 +82,7 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
       title: g.discipline.name,
       at: g.examDate!,
     }));
-  const dues: SoonItem[] = forMe(deadlines).map((d) => ({
+  const dues: SoonItem[] = deadlines.map((d) => ({
     id: d.id,
     kind: "deadline",
     title: d.title,
@@ -94,12 +90,9 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
   }));
   const soon = [...exams, ...dues].sort((a, b) => +a.at - +b.at).slice(0, SOON_LIMIT);
 
-  const mine = forMe(announcements);
-  const pinned = mine.filter((a) => a.pinned);
-  const latest = mine.find((a) => !a.pinned);
-  const shownAnnouncements = [...pinned, ...(latest ? [latest] : [])].map(
-    ({ id, title, body, publishedAt, pinned: p }) => ({ id, title, body, publishedAt, pinned: p }),
-  );
+  const pinned = announcements.filter((a) => a.pinned);
+  const latest = announcements.find((a) => !a.pinned);
+  const shownAnnouncements = [...pinned, ...(latest ? [latest] : [])];
 
   return {
     firstName: reader.firstName,

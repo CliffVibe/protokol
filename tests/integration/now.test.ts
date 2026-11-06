@@ -54,7 +54,7 @@ describe.skipIf(!url)("лента «Сейчас» в PostgreSQL", async () => {
     expect(feed.study).toBeNull();
   });
 
-  it("изоляция: в ленте Тимура нет заявок и пар Алисы", async () => {
+  it("изоляция заявок: в ленте Тимура нет ни одной заявки Алисы", async () => {
     const alisa = await feedOf(DEMO.alisa.userId);
     const timur = await feedOf(DEMO.timur.userId);
     const alisaNumbers = (
@@ -65,26 +65,52 @@ describe.skipIf(!url)("лента «Сейчас» в PostgreSQL", async () => {
     ).map((r) => r.number);
     expect(alisaNumbers.length).toBeGreaterThan(0);
     for (const r of timur.feed.requests) expect(alisaNumbers).not.toContain(r.number);
-
-    const alisaLessonIds = new Set(
-      (
-        await prisma.lesson.findMany({
-          where: { groupId: { in: alisa.ctx.groupIds } },
-          select: { id: true },
-        })
-      ).map((l) => l.id),
-    );
-    const timurLessons = [timur.feed.next?.lesson, ...timur.feed.changes].filter(Boolean);
-    for (const l of timurLessons) expect(alisaLessonIds.has(l!.id)).toBe(false);
   });
 
-  it("объявление только для МЭО не попадает к Алисе (ФМО)", async () => {
-    const meoOnly = await prisma.announcement.findMany({
-      where: { audience: { equals: { facultyCodes: ["МЭО"] } } },
-      select: { id: true },
+  it("изоляция пар: КАЖДАЯ пара Тимура — из его основной или языковой группы", async () => {
+    // Проверяем репозиторий целиком, а не одну «ближайшую» пару (security-reviewer, T05)
+    const { lessonsBetween } = await import("@/server/repos/schedule");
+    const timur = await feedOf(DEMO.timur.userId);
+    const from = new Date(now.getTime() - 14 * 24 * 3600 * 1000);
+    const to = new Date(now.getTime() + 21 * 24 * 3600 * 1000);
+    const rows = await lessonsBetween(timur.ctx, from, to);
+    expect(rows.length).toBeGreaterThan(0);
+    const own = await prisma.lesson.findMany({
+      where: { id: { in: rows.map((l) => l.id) } },
+      select: { id: true, groupId: true, languageGroupId: true },
     });
-    expect(meoOnly.length).toBeGreaterThan(0);
-    const { feed } = await feedOf(DEMO.alisa.userId);
-    for (const a of meoOnly) expect(feed.announcements.map((x) => x.id)).not.toContain(a.id);
+    for (const l of own) {
+      const mine =
+        (l.groupId !== null && timur.ctx.groupIds.includes(l.groupId)) ||
+        (l.languageGroupId !== null && timur.ctx.languageGroupIds.includes(l.languageGroupId));
+      expect(mine, l.id).toBe(true);
+    }
+  });
+
+  it("адресаты: каждому — своё, и только своё (с положительным контролем)", async () => {
+    const { announcementsFor, deadlinesFor } = await import("@/server/repos/announcements");
+    const ids = async (userId: string) => {
+      const { ctx } = await feedOf(userId);
+      return {
+        ann: (await announcementsFor(ctx, now)).map((a) => a.id),
+        ddl: (await deadlinesFor(ctx, new Date(0))).map((d) => d.id),
+      };
+    };
+    const alisa = await ids(DEMO.alisa.userId); // ФМО, 2 курс, 2МО-3
+    const timur = await ids(DEMO.timur.userId); // МЭО, 4 курс
+    const vera = await ids(DEMO.vera.userId); // МЖ, 1 курс
+
+    expect(alisa.ann).toEqual(expect.arrayContaining(["ann-1", "ann-2", "ann-4", "ann-6"]));
+    expect(alisa.ann).not.toContain("ann-3"); // только МЭО
+    expect(alisa.ann).not.toContain("ann-5"); // только 1 курс
+
+    expect(timur.ann).toEqual(expect.arrayContaining(["ann-1", "ann-2", "ann-3"]));
+    expect(timur.ann).not.toContain("ann-6"); // только 2МО-3
+    expect(timur.ann).not.toContain("ann-5");
+    expect(timur.ddl).not.toContain("ddl-1"); // 2МО-3 и 2МО-1
+
+    expect(vera.ann).toEqual(expect.arrayContaining(["ann-1", "ann-5"]));
+    expect(vera.ann).not.toContain("ann-2"); // ФМО и МЭО
+    expect(alisa.ddl).toContain("ddl-1");
   });
 });

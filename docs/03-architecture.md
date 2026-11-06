@@ -148,7 +148,7 @@ model IssuedDocument {
   revoked     Boolean  @default(false)
 }
 
-model Announcement { id String @id @default(cuid()) title String  body String  audience Json  /* faculties/groups/courses */  authorId String  publishedAt DateTime  pinned Boolean @default(false) }
+model Announcement { id String @id @default(cuid()) title String  body String  audience Json  /* { facultyCodes?, courses?, groupNames? } — строго эти ключи (src/lib/audience.ts) */  authorId String  publishedAt DateTime  pinned Boolean @default(false) }
 model Deadline     { id String @id @default(cuid()) title String  dueAt DateTime  audience Json  link String? }
 model Notification { id String @id @default(cuid()) studentId String  kind NotificationKind  title String  body String  link String?  readAt DateTime?  createdAt DateTime @default(now())  @@index([studentId, readAt]) }
 model Staff        { id String @id @default(cuid()) userId String @unique  user User @relation(fields:[userId], references:[id])  fullName String  facultyIds String[] }
