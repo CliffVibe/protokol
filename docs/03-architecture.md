@@ -171,7 +171,7 @@ model Staff        { id String @id @default(cuid()) userId String @unique  user 
                      ▼
                page (Server Component) ─ requireStudent() → ctx { userId, studentId, groupIds[] }   ← cache(), в каждой page
                      ▼
-               services.schedule.getWeekSchedule(ctx, week) → repos.schedule.lessonsBetween(ctx, from, to)
+               services.schedule.getWeekSchedule / getDaySchedule(ctx, …) → repos.schedule.lessonsBetween(ctx, from, to)
                                                   └─ WHERE groupId IN ctx.groupIds OR languageGroupId IN ctx.languageGroupIds   ← изоляция здесь
 Server Action → zod.parse → requireRole → service → repo(ctx) → revalidatePath
 ```
@@ -200,7 +200,7 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 |---|---|---|
 | `/login` | все | вход |
 | `/` | STUDENT | лента «Сейчас» |
-| `/schedule`, `/schedule?week=2026-W46` | STUDENT | расписание: без `week` — «Сегодня», с `week` — неделя (ISO, пн–вс по Москве). `week` разбирает zod (`lib/schedule-params.ts`): битое значение, массив или год дальше ±1 от текущего — текущая неделя, не 500 (T06) |
+| `/schedule`, `/schedule?day=2026-11-05`, `/schedule?week=2026-W46` | STUDENT | расписание: без параметров — сегодняшний день, `day` — любой день, `week` — неделя (ISO, пн–вс по Москве). Оба параметра разбирает zod (`lib/schedule-params.ts`): битое значение (мусор, 2026-02-30, W54), массив или год дальше ±1 от текущего — сегодня / текущая неделя, не 500 (T06) |
 | `/grades`, `/grades/[disciplineId]` | STUDENT | успеваемость |
 | `/requests`, `/requests/new`, `/requests/[number]` | STUDENT | заявки (по номеру, но поиск `WHERE studentId = ctx`) |
 | `/notifications` | STUDENT | уведомления |
