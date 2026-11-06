@@ -12,10 +12,12 @@ import {
 import {
   changeStatus,
   queueFor,
+  revokeDocument,
   queueOptions,
   staffRequestByNumber,
   type ChangeResult,
   type QueueFilters,
+  type RevokeResult,
 } from "@/server/repos/staff-requests";
 import { sortRequests } from "./now";
 import {
@@ -66,6 +68,9 @@ export async function getMyRequest(ctx: StudentCtx, number: string) {
     timeline: timelineOf({ ...r, slaDays: r.type.slaDays }),
     fields: labeledPayload(parseFields(r.type.fields), r.payload),
     canCancel: r.status === "SUBMITTED",
+    // PDF с QR (T10): готова или выдана и документ не отозван; то же условие — в documentForPdf
+    canDownload:
+      (r.status === "READY" || r.status === "ISSUED") && !!r.document && !r.document.revoked,
   };
 }
 
@@ -156,4 +161,12 @@ export async function setStatus(
   // Переход проверяем на сервере: скрытая кнопка — не защита (S1)
   if (!canTransition(input.from, input.to)) return "forbidden_transition";
   return changeStatus(ctx, input);
+}
+
+/** Отозвать справку (T10): факультет и «ещё не отозвана» проверяет репозиторий. */
+export async function revokeCertificate(
+  ctx: StaffCtx,
+  input: { number: string; reason: string },
+): Promise<RevokeResult> {
+  return revokeDocument(ctx, input);
 }

@@ -83,7 +83,8 @@ Next.js 16 кладёт 474 файла документации, совпада�
 | react / react-dom | 19.3.1 | Не ниже 19.2.8 / 19.1.9 (CVE-2026-44907) |
 | prisma / @prisma/client / @prisma/adapter-pg | **7.9.0** | ⚠️ npm-тег `latest` у `prisma` — **8.0.0-rc.30**. 7.10.0–7.10.1 CLI опубликованы токеном `prismabot` без provenance (у 7.9.0 и 8.0-rc — GitHub Actions + SLSA) → `trustPolicy` отклонил; взяли 7.9.0 целиком (решение человека 06.11). Изменение 7.10 «Prisma Studio security hardening» нас не касается: Studio не используем |
 | @node-rs/argon2 | 2.2.2 | Готовые бинарники, install-скриптов нет |
-| @react-pdf/renderer | 4.9.0 | |
+| @react-pdf/renderer | 4.9.0 | Проверен на T10 (06.11): Диего Мураччоле, MIT, provenance SLSA, релиз 27.08.2026, install-скриптов нет; дерево 53 пакета, ~33 МБ в node_modules; `pnpm audit --prod` — 0. В Next 16 уже во внешних серверных пакетах — в клиентский бандл не попадает |
+| uqr | 0.1.3 | T10: unjs (pi0, antfu), MIT, 0 зависимостей, 79 КБ, релиз 03.04.2026, install-скриптов нет. Provenance нет ни у одной версии — `trustPolicy: no-downgrade` не срабатывает (понижения нет). Выбран вместо `qrcode` 1.5.4 (тянет yargs, pngjs; PNG и CLI нам не нужны) — решение человека 06.11 |
 
 ### Что защита цепочки поставок поймала на T01 (05.11.2026) — для отчёта
 | Что сработало | На чём | Что сделали |

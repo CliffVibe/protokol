@@ -85,6 +85,17 @@ export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
       updatedAt: true,
       type: { select: { title: true, slaDays: true, fields: true } },
       student: { select: STUDENT_SELECT },
+      // Справка (T10): срок, ссылка проверки и отзыв
+      document: {
+        select: {
+          verifyToken: true,
+          issuedAt: true,
+          validUntil: true,
+          revoked: true,
+          revokedAt: true,
+          revokedReason: true,
+        },
+      },
       events: {
         orderBy: { createdAt: "asc" },
         select: {
@@ -146,6 +157,50 @@ export async function changeStatus(
         },
       });
     }
+    return "ok";
+  });
+}
+
+export type RevokeResult = "ok" | "not_found" | "conflict";
+
+/**
+ * Отзыв справки сотрудником (T10). Только заявка своего факультета (S1) — и при поиске, и в самом
+ * updateMany; «ещё не отозвана» — там же: два сотрудника разом → второй получает conflict.
+ * В той же транзакции — уведомление студенту. Причину видит студент; на /verify — только «Отозвана».
+ */
+export async function revokeDocument(
+  ctx: StaffCtx,
+  input: { number: string; reason: string },
+): Promise<RevokeResult> {
+  return db.$transaction(async (tx) => {
+    const r = await tx.request.findFirst({
+      where: { number: input.number, ...ofMyFaculties(ctx) },
+      select: {
+        studentId: true,
+        type: { select: { title: true } },
+        document: { select: { id: true } },
+      },
+    });
+    if (!r?.document) return "not_found";
+    const { count } = await tx.issuedDocument.updateMany({
+      where: { id: r.document.id, revoked: false, request: { is: ofMyFaculties(ctx) } },
+      data: {
+        revoked: true,
+        revokedAt: new Date(),
+        revokedReason: input.reason,
+        revokedByUserId: ctx.userId,
+      },
+    });
+    if (count !== 1) return "conflict";
+    await tx.notification.create({
+      data: {
+        studentId: r.studentId,
+        kind: "REQUEST_STATUS",
+        title: "Справка отозвана",
+        body: `${r.type.title}: деканат отозвал справку. ${input.reason}`,
+        link: assertLink(requestHref(input.number)),
+      },
+    });
     return "ok";
   });
 }

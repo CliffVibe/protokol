@@ -1,14 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { AlarmClock } from "lucide-react";
+import { AlarmClock, ShieldX } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { requestStatus } from "@/components/now/labels";
 import { STAFF_READY_LABEL } from "@/components/staff/labels";
 import { RequestTimeline } from "@/components/requests/timeline";
+import { RevokeDocument } from "@/components/staff/revoke-document";
 import { StatusActions } from "@/components/staff/status-actions";
 import { StatusChip } from "@/components/status-chip";
-import { formatRelativeDay, plural } from "@/lib/dates";
+import { formatDayMonth, formatRelativeDay, plural } from "@/lib/dates";
 import { requireStaff } from "@/server/auth/guards";
 import { LANGUAGE_LABEL, overdueDays, requestNumberSchema } from "@/server/services/request-rules";
 import { getStaffRequest } from "@/server/services/requests";
@@ -81,6 +82,52 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
         </div>
         {r.next.length ? <StatusActions number={r.number} from={r.status} next={r.next} /> : null}
       </section>
+
+      {r.document ? (
+        <section aria-labelledby="document-title" className="flex flex-col gap-3">
+          <h2 id="document-title" className="text-xl">
+            Справка
+          </h2>
+          <div className="flex flex-col gap-3 border-t border-line pt-4">
+            {r.document.revoked ? (
+              <div className="flex gap-2.5 border-l-2 border-danger py-1 pl-3">
+                <ShieldX aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
+                <div className="flex flex-col gap-0.5">
+                  <p className="text-base font-bold text-ink">
+                    Отозвана
+                    {r.document.revokedAt ? ` ${formatRelativeDay(r.document.revokedAt, now)}` : ""}
+                  </p>
+                  {r.document.revokedReason ? (
+                    <p className="text-sm break-words text-ink-muted">
+                      Причина: {r.document.revokedReason}
+                    </p>
+                  ) : null}
+                </div>
+              </div>
+            ) : (
+              // Документ создаётся на «Готова»: до выдачи на руки он «оформлен», а не «выдан» (ux-reviewer, T10)
+              <p className="text-base text-ink">
+                {r.status === "ISSUED" ? "Выдана" : "Оформлена"}{" "}
+                {formatRelativeDay(r.document.issuedAt, now)}
+                {r.document.validUntil
+                  ? `, действует до ${formatDayMonth(r.document.validUntil)}`
+                  : ""}
+                . Студент {r.status === "ISSUED" ? "может" : "уже может"} скачать её с QR-кодом
+                проверки.
+              </p>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <a
+                href={`/verify/${r.document.verifyToken}`}
+                className="-ml-2 inline-flex min-h-[44px] items-center rounded-lg px-2 text-base text-brand hover:underline"
+              >
+                Открыть страницу проверки
+              </a>
+              {r.document.revoked ? null : <RevokeDocument number={r.number} />}
+            </div>
+          </div>
+        </section>
+      ) : null}
 
       <section aria-labelledby="student-title" className="flex flex-col gap-3">
         <h2 id="student-title" className="text-xl">

@@ -11,7 +11,7 @@ import {
   staffRequestHref,
   statusSchema,
 } from "@/server/services/request-rules";
-import { setStatus } from "@/server/services/requests";
+import { revokeCertificate, setStatus } from "@/server/services/requests";
 
 // Server Actions сотрудника (T08). Первой инструкцией — requireStaff() (guards.test.ts).
 // Факультет заявки, разрешённый переход и «статус всё ещё from» проверяет сервер, а не скрытая кнопка.
@@ -57,6 +57,27 @@ export async function setRequestStatusAction(
     return { error: "Статус уже изменили — обновите страницу, чтобы увидеть актуальный" };
 
   revalidatePath("/staff");
+  revalidatePath(staffRequestHref(number.data));
+  return { ok: true };
+}
+
+export type RevokeState = { ok?: boolean; error?: string; fieldErrors?: { reason?: string } };
+
+/** Отозвать выданную справку (T10). QR в скачанных копиях начнёт показывать «Отозвана». */
+export async function revokeDocumentAction(
+  _prev: RevokeState,
+  formData: FormData,
+): Promise<RevokeState> {
+  const ctx = await requireStaff();
+  const number = requestNumberSchema.safeParse(formData.get("number"));
+  if (!number.success) return { error: "Не получилось — обновите страницу" };
+  const reason = rejectReasonSchema.safeParse(formData.get("reason") ?? "");
+  if (!reason.success) return { fieldErrors: { reason: reason.error.issues[0]!.message } };
+
+  const result = await revokeCertificate(ctx, { number: number.data, reason: reason.data });
+  if (result === "not_found") notFound();
+  if (result === "conflict") return { error: "Справку уже отозвали — обновите страницу" };
+
   revalidatePath(staffRequestHref(number.data));
   return { ok: true };
 }

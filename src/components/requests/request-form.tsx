@@ -4,6 +4,8 @@
 // Двойной клик: кнопка недоступна на время отправки, а одноразовый clientKey не даст серверу
 // создать вторую заявку, даже если запрос всё-таки уйдёт дважды.
 import { useActionState, useEffect, useRef } from "react";
+import Link from "next/link";
+import type { Route } from "next";
 import { FormAlert } from "@/components/form-alert";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
@@ -16,12 +18,15 @@ const LANGUAGE_LABEL: Record<string, string> = { ru: "Русский", en: "Ан
 export function RequestForm({
   code,
   fields,
-  languages,
+  language,
+  changeLanguageHref,
   clientKey,
 }: {
   code: string;
   fields: FieldSpec[];
-  languages: string[];
+  language: string;
+  /** Ссылка на шаг «Язык» — только у справок с выбором языка. */
+  changeLanguageHref?: Route;
   clientKey: string;
 }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitRequestAction, {});
@@ -39,6 +44,24 @@ export function RequestForm({
       <input type="hidden" name="type" value={code} />
       <input type="hidden" name="clientKey" value={clientKey} />
       {errors.form ? <FormAlert title={errors.form} /> : null}
+
+      {/* Язык выбран шагом мастера (T10); сервер всё равно проверяет его по типу справки */}
+      <input type="hidden" name="language" value={language} />
+      {errors.language ? <FormAlert title={errors.language} /> : null}
+      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-ink">
+        <span>
+          Язык справки:{" "}
+          <span className="font-bold">{(LANGUAGE_LABEL[language] ?? language).toLowerCase()}</span>
+        </span>
+        {changeLanguageHref ? (
+          <Link
+            href={changeLanguageHref}
+            className="-mx-2 inline-flex min-h-[44px] items-center rounded-lg px-2 text-brand hover:underline"
+          >
+            Изменить<span className="sr-only"> язык справки</span>
+          </Link>
+        ) : null}
+      </p>
 
       {fields.map((f) => (
         <FormField
@@ -78,36 +101,6 @@ export function RequestForm({
           }
         </FormField>
       ))}
-
-      {languages.length > 1 ? (
-        <fieldset
-          className="flex flex-col gap-2"
-          aria-describedby={errors.language ? "language-error" : undefined}
-        >
-          <legend className="mb-1.5 text-sm font-bold text-ink">Язык справки</legend>
-          {languages.map((l, i) => (
-            <label key={l} className="flex min-h-11 items-center gap-3 text-base text-ink">
-              <input
-                type="radio"
-                name="language"
-                value={l}
-                defaultChecked={
-                  (state.values?.language ?? languages[0]) === l || (!state.values && i === 0)
-                }
-                className="size-5 accent-[var(--brand)]"
-              />
-              {LANGUAGE_LABEL[l] ?? l}
-            </label>
-          ))}
-          {errors.language ? (
-            <p id="language-error" className="text-sm text-danger">
-              {errors.language}
-            </p>
-          ) : null}
-        </fieldset>
-      ) : (
-        <input type="hidden" name="language" value={languages[0]} />
-      )}
 
       <Button type="submit" size="lg" loading={pending} className="w-full sm:w-auto sm:self-start">
         Отправить заявку

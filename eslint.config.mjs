@@ -106,6 +106,8 @@ const eslintConfig = defineConfig([
       "tests/e2e/notifications.spec.ts",
       "tests/e2e/announcements.spec.ts",
       "tests/e2e/reschedule.spec.ts",
+      // T10: готовая справка Алисы из сида (токен), временная справка для отзыва и её уборка
+      "tests/e2e/certificates.spec.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

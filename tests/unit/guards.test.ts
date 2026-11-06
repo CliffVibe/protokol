@@ -23,6 +23,8 @@ const GUARDS_MODULE = "@/server/auth/guards";
 const PUBLIC_PAGES: Record<string, string> = {
   "app/(auth)/login/page.tsx": "вход: сессии ещё нет",
   "app/dev/ui/page.tsx": "витрина компонентов без данных; в прод-сборке — notFound()",
+  "app/verify/[token]/page.tsx":
+    "публичная проверка справки по QR (S7): доступ даёт токен 128 бит, наружу — только статус, тип, дата и инициалы",
 };
 
 /** Route handlers без guard. Ключ: «путь:метод». */

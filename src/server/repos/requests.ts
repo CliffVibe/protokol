@@ -55,6 +55,8 @@ export async function requestByNumber(ctx: StudentCtx, number: string) {
       createdAt: true,
       updatedAt: true,
       type: { select: { code: true, title: true, slaDays: true, fields: true } },
+      // Отзыв справки (T10): студент видит причину у себя в заявке; на /verify её нет
+      document: { select: { revoked: true, revokedAt: true, revokedReason: true } },
       events: {
         orderBy: { createdAt: "asc" },
         select: { status: true, comment: true, createdAt: true },
@@ -144,6 +146,7 @@ export async function requestTypes(ctx: StudentCtx) {
       title: true,
       description: true,
       languages: true,
+      purposeTags: true,
       slaDays: true,
       fields: true,
     },
@@ -151,3 +154,42 @@ export async function requestTypes(ctx: StudentCtx) {
 }
 
 export type RequestTypeRow = Awaited<ReturnType<typeof requestTypes>>[number];
+
+/**
+ * Данные для PDF справки — только своя заявка (S1), только «Готова» или «Выдана» и только с
+ * неотозванным документом. Иначе null → 404: чужую, неготовую и отозванную снаружи не различаем.
+ * Явный select: без номера зачётки, оценок и токена календаря.
+ */
+export async function documentForPdf(ctx: StudentCtx, number: string) {
+  return db.request.findFirst({
+    where: {
+      number,
+      studentId: ctx.studentId,
+      status: { in: ["READY", "ISSUED"] },
+      document: { is: { revoked: false } },
+    },
+    select: {
+      number: true,
+      language: true,
+      payload: true,
+      type: { select: { code: true, title: true, fields: true } },
+      student: {
+        select: {
+          lastName: true,
+          firstName: true,
+          middleName: true,
+          group: {
+            select: {
+              name: true,
+              course: true,
+              program: { select: { name: true, faculty: { select: { code: true, name: true } } } },
+            },
+          },
+        },
+      },
+      document: { select: { verifyToken: true, issuedAt: true, validUntil: true } },
+    },
+  });
+}
+
+export type PdfSource = NonNullable<Awaited<ReturnType<typeof documentForPdf>>>;

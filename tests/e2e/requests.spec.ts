@@ -53,13 +53,15 @@ test("приёмка: Алиса подала → Ирина приняла → 
   page,
   browser,
 }) => {
-  // Алиса: каталог → «Справка об обучении на английском» → форма → «Подана»
+  // Алиса: мастер (T10) «Виза» → первой — «Справка об обучении на английском» → форма → «Подана»
   await page.goto("/requests");
   await page.getByRole("link", { name: "Заказать справку" }).first().click();
-  // Ждём каталог: иначе «Справка об обучении на английском» нашлась бы в списке заявок Алисы
   await expect(page).toHaveURL(/\/requests\/new$/);
-  await expect(page.getByRole("list", { name: "Справки и заявления" })).toBeVisible();
-  await page.getByRole("link", { name: "Справка об обучении на английском" }).click();
+  await page.getByRole("link", { name: /^Виза/ }).click();
+  // Ждём список под цель: иначе «Справка об обучении на английском» нашлась бы в списке заявок Алисы
+  const forVisa = page.getByRole("list", { name: "Справки для цели «Виза»" });
+  await expect(forVisa.getByRole("link").first()).toHaveText("Справка об обучении на английском");
+  await forVisa.getByRole("link", { name: "Справка об обучении на английском" }).click();
   const marker = `e2e-embassy-${randomUUID().slice(0, 6)}`;
   await page.getByLabel(/Addressee/).fill(marker);
   await page.getByRole("button", { name: "Отправить заявку" }).click();

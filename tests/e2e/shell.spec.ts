@@ -37,6 +37,11 @@ const ALL_ROUTES = [
   // Заявки (T08): каталог, форма, заявка Алисы и карточка у сотрудника (номера сида: seq 1 и 2)
   "/requests/new",
   "/requests/new?type=embassy",
+  // Мастер «Зачем нужна справка?» (T10): справки под цель, выбор языка, форма с языком, полный каталог
+  "/requests/new?purpose=visa",
+  "/requests/new?purpose=visa&type=embassy",
+  "/requests/new?purpose=visa&type=embassy&lang=en",
+  "/requests/new?all=1",
   `/requests/${encodeURIComponent(formatRequestNumber(mskYear(addDays(new Date(), -3)), 1))}`,
   `/staff/requests/${encodeURIComponent(formatRequestNumber(mskYear(addDays(new Date(), -1)), 2))}`,
   "/staff",

@@ -67,10 +67,11 @@ model User {
   role         Role
   createdAt    DateTime @default(now())
 
-  student       Student?
-  staff         Staff?
-  sessions      Session[]
-  requestEvents RequestEvent[] @relation("RequestEventActor")
+  student          Student?
+  staff            Staff?
+  sessions         Session[]
+  requestEvents    RequestEvent[]   @relation("RequestEventActor")
+  revokedDocuments IssuedDocument[] @relation("DocumentRevokedBy")
 }
 
 /// Храним sha256(token); сам токен — только в cookie __Host-session (S3).
@@ -290,15 +291,20 @@ model RequestEvent {
 }
 
 model IssuedDocument {
-  id          String    @id @default(cuid())
-  requestId   String    @unique
+  id              String    @id @default(cuid())
+  requestId       String    @unique
   /// Restrict: выданную справку нельзя потерять каскадом — /verify должен показать «отозвана», а не «не найдена»
-  request     Request   @relation(fields: [requestId], references: [id], onDelete: Restrict)
+  request         Request   @relation(fields: [requestId], references: [id], onDelete: Restrict)
   /// 128 бит случайности, в QR (S7)
-  verifyToken String    @unique
-  issuedAt    DateTime
-  validUntil  DateTime?
-  revoked     Boolean   @default(false)
+  verifyToken     String    @unique
+  issuedAt        DateTime
+  validUntil      DateTime?
+  revoked         Boolean   @default(false)
+  /// Отзыв сотрудником (T10): когда, кто и почему. На /verify — только «Отозвана», без причины (S7)
+  revokedAt       DateTime?
+  revokedReason   String?
+  revokedByUserId String?
+  revokedBy       User?     @relation("DocumentRevokedBy", fields: [revokedByUserId], references: [id])
 }
 
 // ── Объявления и уведомления ─────────────────────────────────────────────

@@ -8,7 +8,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from "@pla
 import pg from "pg";
 import { STORAGE } from "../../playwright.config";
 import { ACCOUNTS, ANON, fillLogin, loginAs, randomIpHeaders } from "./helpers/auth";
-import { deleteTestRequests } from "./helpers/db";
+import { deleteTestRequests, withDb } from "./helpers/db";
 
 const SESSION = "__Host-session";
 
@@ -215,9 +215,46 @@ test.describe("05-security: обязательные тесты", () => {
     await loginAs(other, "timur");
   });
 
-  test.fixme("8. /verify/<token> не содержит номера зачётки и оценок (T10: страница проверки справки)", async () => {
-    // T10: открыть /verify/<qrToken выданной справки Алисы> анонимно; в HTML нет recordBookNo
-    // и оценок, есть только «действительна», тип, дата выдачи и инициалы.
+  test("8. /verify/<token> не содержит номера зачётки и оценок", async ({ browser }) => {
+    // Секреты Алисы — из БД: номер зачётки, полное имя, дисциплины с оценками и баллы
+    const alisa = await withDb(async (c) => {
+      const doc = await c.query<{ token: string }>(
+        `SELECT d."verifyToken" AS token FROM "IssuedDocument" d JOIN "Request" r ON r.id = d."requestId"
+          WHERE r."studentId" = 'stu-alisa' AND NOT d.revoked ORDER BY d."issuedAt" LIMIT 1`,
+      );
+      const st = await c.query<{
+        recordBookNo: string;
+        firstName: string;
+        middleName: string | null;
+      }>(`SELECT "recordBookNo", "firstName", "middleName" FROM "Student" WHERE id = 'stu-alisa'`);
+      const grades = await c.query<{ name: string }>(
+        `SELECT DISTINCT d.name FROM "Grade" g JOIN "Discipline" d ON d.id = g."disciplineId"
+          WHERE g."studentId" = 'stu-alisa' AND (g."finalMark" IS NOT NULL OR g."ratingPoints" IS NOT NULL)`,
+      );
+      return {
+        token: doc.rows[0]?.token,
+        ...st.rows[0]!,
+        disciplines: grades.rows.map((r) => r.name),
+      };
+    });
+    expect(alisa.token, "у Алисы в сиде есть выданная справка").toBeTruthy();
+    expect(alisa.disciplines.length, "у Алисы в сиде есть оценки").toBeGreaterThan(0);
+
+    // Положительный контроль: те же строки на её странице «Учёба» есть — поиск их бы нашёл
+    const own = await (await browser.newContext({ storageState: STORAGE.alisa })).newPage();
+    await own.goto("/grades");
+    expect(await own.content()).toContain(alisa.disciplines[0]);
+
+    const anon = await (await browser.newContext({ storageState: ANON })).newPage();
+    const res = await anon.goto(`/verify/${alisa.token}`);
+    expect(res?.status()).toBe(200);
+    await expect(anon.getByRole("heading", { level: 1 })).toHaveText("Справка действительна");
+    const html = await anon.content();
+    expect(html).not.toContain(alisa.recordBookNo);
+    expect(html).not.toContain(alisa.firstName);
+    if (alisa.middleName) expect(html).not.toContain(alisa.middleName);
+    for (const d of alisa.disciplines) expect(html, d).not.toContain(d);
+    expect(html).not.toMatch(/зачётк|рейтинг|оценк/i);
   });
 });
 
@@ -478,6 +515,10 @@ test.describe("заголовки и CSP (S6)", () => {
     ["/more", "Алиса", STORAGE.alisa],
     ["/staff", "Ирина", STORAGE.irina],
     ["/no-such-page", "Алиса", STORAGE.alisa],
+    // T10: публичная проверка справки и мастер справок (плитки целей, шаг языка)
+    [`/verify/${"A".repeat(22)}`, "аноним", undefined],
+    ["/requests/new", "Алиса", STORAGE.alisa],
+    ["/requests/new?purpose=visa&type=embassy", "Алиса", STORAGE.alisa],
   ];
   for (const [route, who, storage] of pagesFor) {
     test(`${route} (${who}): в консоли нет нарушений CSP`, async ({ browser }) => {

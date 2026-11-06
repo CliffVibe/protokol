@@ -4,6 +4,7 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PageHeader } from "@/components/page-header";
+import { FileDown, ShieldX } from "lucide-react";
 import { requestStatus } from "@/components/now/labels";
 import { CancelRequest } from "@/components/requests/cancel-request";
 import { RequestTimeline } from "@/components/requests/timeline";
@@ -11,7 +12,7 @@ import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { formatRelativeDay } from "@/lib/dates";
 import { requireStudent } from "@/server/auth/guards";
-import { LANGUAGE_LABEL, requestNumberSchema } from "@/server/services/request-rules";
+import { LANGUAGE_LABEL, requestHref, requestNumberSchema } from "@/server/services/request-rules";
 import { getMyRequest } from "@/server/services/requests";
 
 // Заявка студента (T08, сценарии 4 и 6). Номер из адреса — только формат через zod; чья — решает
@@ -46,7 +47,10 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
   const r = await load((await params).number);
   if (!r) notFound();
   const now = new Date();
-  const status = requestStatus(r.status);
+  // Отозванная справка — не «Выдана» печатью --seal: печать означает действующий документ (ux-reviewer, T10)
+  const status = r.document?.revoked
+    ? { tone: "danger" as const, label: "Справка отозвана", icon: ShieldX }
+    : requestStatus(r.status);
 
   return (
     <div className="flex flex-col gap-8 lg:max-w-2xl">
@@ -60,14 +64,52 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
         <h2 id="state-title" className="sr-only">
           Статус
         </h2>
-        <StatusChip tone={status.tone} className="self-start">
+        <StatusChip
+          tone={status.tone}
+          icon={"icon" in status ? status.icon : undefined}
+          className="self-start"
+        >
           {status.label}
         </StatusChip>
         {r.status === "READY" ? (
           <p className="text-base text-ink">
             <span className="font-bold">Справка готова.</span> Заберите её в деканате своего
             факультета — с паспортом или студенческим билетом.
+            {r.canDownload
+              ? " Электронную копию с QR-кодом проверки можно скачать уже сейчас."
+              : null}
           </p>
+        ) : null}
+        {r.canDownload ? (
+          // Обычная ссылка, не <Link>: PDF отдаёт route handler, предзагрузка ему не нужна
+          <Button asChild variant="outline" className="self-start">
+            <a href={`${requestHref(r.number)}/pdf`} download>
+              <FileDown aria-hidden />
+              Скачать справку (PDF)
+            </a>
+          </Button>
+        ) : null}
+        {r.document?.revoked ? (
+          // Отзыв — сноска с чертой --danger, как ошибка формы, но без role="alert": это состояние, а не
+          // ответ на действие. Причину видит только сам студент; на /verify — лишь «Отозвана» (S7)
+          <div className="flex gap-2.5 border-l-2 border-danger py-1 pl-3">
+            <ShieldX aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
+            <div className="flex flex-col gap-0.5">
+              <p className="text-base font-bold text-ink">Деканат отозвал справку</p>
+              {r.document.revokedReason ? (
+                <p className="text-sm break-words text-ink-muted">
+                  Причина: {r.document.revokedReason}
+                </p>
+              ) : null}
+              <p className="text-sm text-ink-muted">
+                QR-код в скачанной копии теперь показывает «Отозвана». Новая справка получит новый
+                QR-код.
+              </p>
+              <Button asChild variant="outline" className="mt-2 self-start">
+                <Link href={`/requests/new?type=${r.type.code}` as Route}>Подать заново</Link>
+              </Button>
+            </div>
+          </div>
         ) : null}
         {r.timeline.dueAt ? (
           <p className="text-base text-ink">
