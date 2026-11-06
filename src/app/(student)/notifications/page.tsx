@@ -62,6 +62,23 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
   const unreadHere = kind ? (unread[kind] ?? 0) : unreadTotal;
   // Закреплённые сверху, дальше — новые первыми (репозиторий отдаёт по дате)
   const announcements = [...board].sort((a, b) => Number(b.pinned) - Number(a.pinned));
+  const fresh = items.filter((n) => n.readAt === null);
+  const seen = items.filter((n) => n.readAt !== null);
+
+  const markAll = (
+    <form action={markAllReadAction}>
+      <input type="hidden" name="tab" value={tab} />
+      {/* Тихая кнопка: главное на экране — новые уведомления, а не действие над ними */}
+      <Button
+        type="submit"
+        variant="ghost"
+        className="h-auto min-h-11 px-2 py-2 text-left whitespace-normal text-brand"
+      >
+        <CheckCheck aria-hidden data-icon="inline-start" />
+        {tab === "all" ? "Отметить всё прочитанным" : "Отметить прочитанными"}
+      </Button>
+    </form>
+  );
 
   return (
     <div className="flex flex-col gap-6 lg:max-w-3xl">
@@ -101,43 +118,65 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
         </ul>
       </nav>
 
-      {unreadHere > 0 ? (
-        <form action={markAllReadAction} className="-mt-2">
-          <input type="hidden" name="tab" value={tab} />
-          {/* На телефоне во всю ширину и с переносом: при тексте 200% подпись шире экрана (урок T08) */}
-          <Button
-            type="submit"
-            variant="outline"
-            className="h-auto min-h-11 w-full py-2 whitespace-normal sm:w-auto"
-          >
-            <CheckCheck aria-hidden data-icon="inline-start" />
-            {tab === "all" ? "Отметить всё прочитанным" : "Отметить прочитанными"}
-          </Button>
-        </form>
-      ) : null}
-
       {tab === "announcements" ? (
-        announcements.length ? (
-          <ul
-            aria-label="Объявления деканата"
-            className="flex flex-col divide-y divide-line border-b border-line"
-          >
-            {announcements.map((a) => (
-              <AnnouncementItem key={a.id} announcement={a} now={now} fresh={freshIds.has(a.id)} />
-            ))}
-          </ul>
-        ) : (
-          <EmptyState {...EMPTY.announcements} />
-        )
+        <>
+          {unreadHere > 0 ? markAll : null}
+          {announcements.length ? (
+            <ul
+              aria-label="Объявления деканата"
+              className="flex flex-col divide-y divide-line border-b border-line"
+            >
+              {announcements.map((a) => (
+                <AnnouncementItem
+                  key={a.id}
+                  announcement={a}
+                  now={now}
+                  fresh={freshIds.has(a.id)}
+                />
+              ))}
+            </ul>
+          ) : (
+            <EmptyState {...EMPTY.announcements} />
+          )}
+        </>
       ) : items.length ? (
-        <ul
-          aria-label={TABS[tab].label === "Все" ? "Уведомления" : TABS[tab].label}
-          className="flex flex-col divide-y divide-line border-b border-line"
-        >
-          {items.map((n) => (
-            <NotificationRowItem key={n.id} n={n} tab={tab} now={now} />
-          ))}
-        </ul>
+        <>
+          {/* Новые — отдельным разделом сверху и громче, прочитанные — ниже и тише (человек 06.11:
+              «в тёмной теме всё сливается в кашу»). Кнопка «Отметить…» — тихая, в заголовке раздела */}
+          {fresh.length ? (
+            <section aria-labelledby="fresh-title" className="flex flex-col gap-1">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
+                <h2 id="fresh-title" className="text-xl">
+                  Новые
+                </h2>
+                {markAll}
+              </div>
+              <ul
+                aria-labelledby="fresh-title"
+                className="flex flex-col divide-y divide-line border-b border-line"
+              >
+                {fresh.map((n) => (
+                  <NotificationRowItem key={n.id} n={n} tab={tab} now={now} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+          {seen.length ? (
+            <section aria-labelledby="seen-title" className="flex flex-col gap-1">
+              <h2 id="seen-title" className="text-base font-bold text-ink-muted">
+                Прочитанные
+              </h2>
+              <ul
+                aria-labelledby="seen-title"
+                className="flex flex-col divide-y divide-line border-y border-line"
+              >
+                {seen.map((n) => (
+                  <NotificationRowItem key={n.id} n={n} tab={tab} now={now} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
       ) : (
         <EmptyState {...EMPTY[tab]} />
       )}

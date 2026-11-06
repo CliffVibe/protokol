@@ -17,12 +17,30 @@ import { openNotificationAction } from "@/server/actions/notifications";
 import type { NotificationRow } from "@/server/repos/notifications";
 
 // Строки уведомлений и объявлений (T09). Вид — иконка + скрытая подпись (цвет не единственный носитель смысла).
+// Иерархия (человек 06.11: «в тёмной теме всё сливается в кашу»): новое — громко, прочитанное — тихо.
+//  - новое: черта цвета вида в поле страницы слева (как изменения в расписании), значок в плашке --brand-soft,
+//    полужирный заголовок, текст --ink;
+//  - прочитанное: заголовок обычным, текст мельче и --ink-muted, значок без плашки.
+// Тон — по смыслу, токенами из 04-design: перенос и срок — --warn (как «перенос, риск»), остальное — --brand.
 
-const KIND: Record<NotificationKind, { icon: LucideIcon; label: string }> = {
-  ANNOUNCEMENT: { icon: Megaphone, label: "Объявление" },
-  DEADLINE: { icon: AlarmClock, label: "Срок" },
-  REQUEST_STATUS: { icon: FileText, label: "Заявка" },
-  SCHEDULE_CHANGE: { icon: CalendarClock, label: "Расписание" },
+const KIND: Record<
+  NotificationKind,
+  { icon: LucideIcon; label: string; text: string; bar: string }
+> = {
+  ANNOUNCEMENT: {
+    icon: Megaphone,
+    label: "Объявление",
+    text: "text-brand",
+    bar: "before:bg-brand",
+  },
+  DEADLINE: { icon: AlarmClock, label: "Срок", text: "text-warn", bar: "before:bg-warn" },
+  REQUEST_STATUS: { icon: FileText, label: "Заявка", text: "text-brand", bar: "before:bg-brand" },
+  SCHEDULE_CHANGE: {
+    icon: CalendarClock,
+    label: "Расписание",
+    text: "text-warn",
+    bar: "before:bg-warn",
+  },
 };
 
 /**
@@ -31,24 +49,35 @@ const KIND: Record<NotificationKind, { icon: LucideIcon; label: string }> = {
  */
 export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: Tab; now: Date }) {
   const unread = n.readAt === null;
-  const { icon: Icon, label } = KIND[n.kind];
+  const { icon: Icon, label, text, bar } = KIND[n.kind];
   const hasLink = safeLink(n.link) !== null;
   return (
     <li
       data-notification={n.id}
       data-link={safeLink(n.link) ?? undefined}
-      className="relative flex gap-3 py-4"
+      data-unread={unread || undefined}
+      className={cn(
+        "relative flex gap-3",
+        unread
+          ? cn(
+              "py-4 before:absolute before:inset-y-3 before:-left-3 before:w-[3px] before:rounded-full forced-colors:before:bg-[CanvasText] md:before:-left-4",
+              bar,
+            )
+          : "py-3",
+      )}
     >
-      <span
-        aria-hidden
-        className="relative mt-0.5 flex size-6 shrink-0 items-center justify-center"
-      >
-        <Icon className={cn("size-5", unread ? "text-brand" : "text-ink-muted")} />
-        {/* Новое — точка; для скринридера — «Новое:» перед заголовком */}
-        {unread ? (
-          <span className="absolute -top-0.5 -right-0.5 size-2.5 rounded-full border-2 border-bg bg-brand forced-colors:bg-[CanvasText]" />
-        ) : null}
-      </span>
+      {unread ? (
+        <span
+          aria-hidden
+          className="flex size-[36px] shrink-0 items-center justify-center rounded-full bg-brand-soft"
+        >
+          <Icon className={cn("size-5", text)} strokeWidth={2} />
+        </span>
+      ) : (
+        <span aria-hidden className="flex size-[36px] shrink-0 items-start justify-center pt-0.5">
+          <Icon className="size-5 text-ink-muted" strokeWidth={1.75} />
+        </span>
+      )}
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <form action={openNotificationAction}>
           <input type="hidden" name="id" value={n.id} />
@@ -56,8 +85,8 @@ export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: 
           <button
             type="submit"
             className={cn(
-              "text-left text-base break-words text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand",
-              unread ? "font-bold" : "font-normal",
+              "text-left break-words text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand",
+              unread ? "text-lg leading-snug font-bold" : "text-base font-normal",
             )}
           >
             {unread ? <span className="sr-only">Новое: </span> : null}
@@ -65,13 +94,18 @@ export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: 
             {n.title}
           </button>
         </form>
-        <p className="text-base break-words text-ink">{n.body}</p>
+        <p className={cn("break-words", unread ? "text-base text-ink" : "text-sm text-ink-muted")}>
+          {n.body}
+        </p>
         <p className="text-sm text-ink-muted tabular">
           {formatRelativeDay(n.createdAt, now)}, {formatTime(n.createdAt)}
         </p>
       </div>
       {hasLink ? (
-        <ChevronRight aria-hidden className="mt-0.5 size-5 shrink-0 self-start text-ink-muted" />
+        <ChevronRight
+          aria-hidden
+          className={cn("size-5 shrink-0 self-start text-ink-muted", unread ? "mt-2" : "mt-0.5")}
+        />
       ) : null}
     </li>
   );

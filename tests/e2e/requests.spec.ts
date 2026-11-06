@@ -184,7 +184,8 @@ test.describe("изоляция", () => {
     const timur = await asTimur(browser);
     await timur.goto("/notifications");
     await expect(timur.getByRole("heading", { level: 1, name: "Уведомления" })).toBeVisible();
-    await expect(timur.getByRole("list", { name: "Уведомления" })).toBeVisible();
+    // Список загрузился (T09: «Новые» и «Прочитанные» — два списка)
+    await expect(timur.locator("[data-notification]").first()).toBeVisible();
     await expect(timur.locator(link)).toHaveCount(0);
     await timur.goto("/requests");
     await expect(timur.getByRole("heading", { level: 1, name: "Заявки" })).toBeVisible();
