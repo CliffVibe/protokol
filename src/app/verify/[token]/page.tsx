@@ -8,7 +8,7 @@ import { verifyTokenSchema } from "@/lib/verify-token";
 import { documentByToken, type VerifyState } from "@/server/repos/verify";
 
 // Публичная проверка справки по QR (T10). Без входа: guard не нужен — страница показывает только
-// разрешённое S7: «действительна / отозвана / срок истёк», тип, дату выдачи и инициалы. Номера
+// разрешённое S7: «действительна / отозвана / срок истёк», тип, дату выдачи, срок действия и инициалы. Номера
 // зачётки, оценок, причины отзыва нет и в выборке (repos/verify.ts). Битый токен — 404 без запроса к БД.
 // Своего loading.tsx нет: проверка до начала стрима, «не найдена» — настоящий HTTP 404.
 // Двуязычная: справку для визы проверяет посольство — английский идёт строкой под русским.
@@ -113,6 +113,20 @@ export default async function VerifyPage({ params }: PageProps<"/verify/[token]"
             </span>
           </dd>
         </div>
+        {doc.validUntil ? (
+          <div className="flex flex-col gap-0.5 py-3">
+            <dt className="text-sm text-ink-muted">
+              {doc.state === "expired" ? "Действовала до" : "Действует до"}{" "}
+              <span lang="en">/ Valid until</span>
+            </dt>
+            <dd className="font-bold text-ink">
+              {longDate(doc.validUntil, "ru-RU")}{" "}
+              <span lang="en" className="font-normal text-ink-muted">
+                / {longDate(doc.validUntil, "en-GB")}
+              </span>
+            </dd>
+          </div>
+        ) : null}
         <div className="flex flex-col gap-0.5 py-3">
           <dt className="text-sm text-ink-muted">
             Владелец <span lang="en">/ Holder</span>
@@ -125,11 +139,11 @@ export default async function VerifyPage({ params }: PageProps<"/verify/[token]"
         <p>{s.hint}</p>
         <p lang="en">{s.hintEn}</p>
         <p className="pt-2">
-          Здесь показаны только статус, тип справки, дата выдачи и инициалы владельца — других
+          Здесь показаны только статус, тип справки, срок действия и инициалы владельца — других
           данных студента страница не раскрывает.
         </p>
         <p lang="en">
-          This page shows only the status, certificate type, date of issue and the holder&apos;s
+          This page shows only the status, certificate type, validity dates and the holder&apos;s
           initials — no other student data.
         </p>
       </div>

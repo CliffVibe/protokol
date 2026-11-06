@@ -5,8 +5,8 @@ import { db } from "@/server/db";
 // Публичная проверка справки по QR (T10, S7) — исключение из правила «каждая функция репозитория
 // получает ctx»: проверяющий (посольство, работодатель) не входит в систему. Доступ даёт сам токен —
 // 128 бит случайности (repos/staff-requests.changeStatus), перебором не найти.
-// Наружу — только статус, тип, дата выдачи и инициалы. Полное ФИО собирается в инициалы ЗДЕСЬ и из
-// функции не выходит; номера зачётки, оценок, причины отзыва в выборке нет вовсе.
+// Наружу — только статус, тип, дата выдачи, срок действия и инициалы. Полное ФИО собирается
+// в инициалы ЗДЕСЬ и из функции не выходит; номера зачётки, оценок, причины отзыва в выборке нет вовсе.
 
 export type VerifyState = "valid" | "revoked" | "expired";
 
@@ -16,6 +16,8 @@ export type VerifiedDocument = {
   typeTitle: string;
   language: string;
   issuedAt: Date;
+  /** «Действует до» — решение человека 07.11 (S7): проверяющему нужен срок, это не персональные данные */
+  validUntil: Date | null;
   holder: string;
 };
 
@@ -43,6 +45,7 @@ export async function documentByToken(token: string, now: Date): Promise<Verifie
     typeTitle: r.type.title,
     language: r.language,
     issuedAt: d.issuedAt,
+    validUntil: d.validUntil,
     holder: holderInitials(r.student, r.language === "en"),
   };
 }

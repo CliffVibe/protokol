@@ -84,7 +84,7 @@ describe.skipIf(!url)("справки в PostgreSQL", async () => {
     expect(json).not.toContain(full.firstName);
     expect(json).not.toContain(full.recordBookNo);
     expect(Object.keys(v!).sort()).toEqual(
-      ["holder", "issuedAt", "language", "state", "typeCode", "typeTitle"].sort(),
+      ["holder", "issuedAt", "language", "state", "typeCode", "typeTitle", "validUntil"].sort(),
     );
     expect(await verify.documentByToken("A".repeat(22), new Date())).toBeNull();
   });

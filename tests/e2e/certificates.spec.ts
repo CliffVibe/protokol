@@ -188,6 +188,8 @@ test.describe("проверка по QR (/verify)", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Справка действительна");
     await expect(page.getByText("This certificate is valid")).toBeVisible();
     await expect(page.getByText("Справка об обучении на английском")).toBeVisible();
+    // Срок действия — решение человека 07.11 (S7)
+    await expect(page.getByText(/^Действует до/)).toBeVisible();
     // Справка на английском — инициалы латиницей, как в самой справке
     await expect(
       page.locator("dd").filter({ hasText: /^[A-Z][a-z]+ [A-Z]\. [A-Z]\.$/ }),
