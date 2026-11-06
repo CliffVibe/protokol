@@ -926,6 +926,7 @@ function applyChanges({
       .filter((l) => l.groupId === groupId && mskDateKey(new Date(l.startsAt)) === mskDateKey(day))
       .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime());
 
+  // changeNote — только причина или подробность: «Перенос», «было 09:30» интерфейс пишет сам (T05)
   const moveLater = (lesson: Prisma.LessonCreateManyInput, note: string) => {
     // Переносим на свободный слот после последней пары группы в этот день (не пересекается с языками: слот 5)
     const day = mskStartOfDay(new Date(lesson.startsAt));
@@ -941,7 +942,7 @@ function applyChanges({
   const todays = onDay(ALISA_GROUP, today);
   const first = todays[0];
   if (!first) throw new Error("У 2МО-3 нет пар сегодня — нарушено правило «сегодня учебный день»");
-  moveLater(first, "Перенос: преподаватель на конференции. Было в 09:00");
+  moveLater(first, "Преподаватель на конференции");
 
   // 2) Ещё один перенос и одна отмена у Алисы на этой неделе — в другие дни (пн–сб, не сегодня)
   const otherDays = [1, 2, 3, 4, 5, 6]
@@ -950,11 +951,11 @@ function applyChanges({
   const movedDay = otherDays[0]!;
   const cancelledDay = otherDays[1]!;
   const moved = onDay(ALISA_GROUP, movedDay)[0];
-  if (moved) moveLater(moved, "Перенос по просьбе кафедры. Было в 09:00");
+  if (moved) moveLater(moved, "По просьбе кафедры");
   const cancelled = onDay(ALISA_GROUP, cancelledDay).at(-1);
   if (cancelled) {
     cancelled.change = "CANCELLED";
-    cancelled.changeNote = "Отмена: занятие будет отработано на консультации";
+    cancelled.changeNote = "Занятие отработаем на консультации";
   }
 
   // 3) У других групп — смена аудитории и преподавателя (для разнообразия в T06)
@@ -962,13 +963,13 @@ function applyChanges({
     onDay("grp-4meo1", addDays(today, 1))[0] ?? onDay("grp-4meo1", addDays(today, 2))[0];
   if (timurToday) {
     timurToday.change = "ROOM_CHANGED";
-    timurToday.changeNote = `Новая аудитория. Была ${timurToday.room}`;
+    timurToday.changeNote = `Была ${timurToday.room}`;
     timurToday.room = "4012";
   }
   const nextWeek = onDay("grp-3meo2", addDays(weekStart, 8))[0];
   if (nextWeek) {
     nextWeek.change = "TEACHER_CHANGED";
-    nextWeek.changeNote = "Замена преподавателя";
+    nextWeek.changeNote = "Ведёт преподаватель кафедры";
     nextWeek.teacherId = teacherId(10);
   }
 }
