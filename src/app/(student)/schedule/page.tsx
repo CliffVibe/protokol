@@ -15,7 +15,7 @@ import {
   weekHref,
 } from "@/components/schedule/nav";
 import { Button } from "@/components/ui/button";
-import { formatLessonCount, formatRelativeDay, formatTime } from "@/lib/dates";
+import { formatLessonCount, formatTime } from "@/lib/dates";
 import { addDays, mskDateKey, mskStartOfDay, mskStartOfWeek } from "@/lib/msk";
 import { parseDayParam, parseWeekParam } from "@/lib/schedule-params";
 import { requireStudent } from "@/server/auth/guards";
@@ -78,8 +78,6 @@ function Shell({ toggle, children }: { toggle: ReactNode; children: ReactNode })
   );
 }
 
-const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
-
 function nextSummary(next: DaySchedule["next"]): string {
   return next
     ? `${formatLessonCount(next.count)}, первая в ${formatTime(next.firstStartsAt)}.`
@@ -90,15 +88,16 @@ async function DayView({ ctx, now, dayStart }: { ctx: StudentCtx; now: Date; day
   const { day, week, next } = await getDaySchedule(ctx, dayStart);
   const isToday = day.key === mskDateKey(now);
   const nextStart = addDays(dayStart, 1);
-  const nextLabel = capitalize(formatRelativeDay(nextStart, now));
-  const weekLink = (
+  const nextName = isToday ? "завтра" : "следующий день";
+  // Из пустого дня — к следующему дню, а не «Вся неделя»: из воскресенья она уводила бы на другую неделю
+  const nextLink = (
     <Button asChild variant="outline">
-      <Link href={weekHref(nextStart, `day-${mskDateKey(nextStart)}`)}>Вся неделя</Link>
+      <Link href={dayHref(nextStart, now)}>Открыть {nextName}</Link>
     </Button>
   );
 
   return (
-    <div className="flex flex-col gap-6 lg:max-w-3xl">
+    <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-4">
         <DayNav dayStart={dayStart} now={now} />
         <DayStrip days={week} now={now} selectedKey={day.key} />
@@ -108,8 +107,12 @@ async function DayView({ ctx, now, dayStart }: { ctx: StudentCtx; now: Date; day
       ) : (
         <EmptyState
           title={isToday ? "Сегодня пар нет. Можно выдохнуть" : "В этот день пар нет"}
-          description={`${nextLabel}: ${nextSummary(next).toLowerCase()}`}
-          action={weekLink}
+          description={
+            next
+              ? `${isToday ? "Завтра" : "На следующий день"} ${nextSummary(next).toLowerCase()}`
+              : `${isToday ? "Завтра" : "Следующий день"} тоже свободен.`
+          }
+          action={nextLink}
         />
       )}
       {/* «Завтра» — только у сегодняшнего дня: «что у меня завтра» спрашивают именно отсюда */}
@@ -120,9 +123,7 @@ async function DayView({ ctx, now, dayStart }: { ctx: StudentCtx; now: Date; day
           </h2>
           <div className="flex flex-col items-start gap-3 border-t border-line pt-3">
             <p className="text-base text-ink">{nextSummary(next)}</p>
-            <Button asChild variant="outline">
-              <Link href={dayHref(nextStart, now)}>Открыть завтра</Link>
-            </Button>
+            {nextLink}
           </div>
         </section>
       ) : null}

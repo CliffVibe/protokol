@@ -151,21 +151,23 @@ function TransitionRow({ transition }: { transition: Transition }) {
   const from = formatTime(transition.startsAt);
   const to = formatTime(transition.endsAt);
   return (
-    <li className="flex flex-wrap gap-x-4 gap-y-1 py-2.5 text-sm text-brand">
+    <li className="flex flex-wrap gap-x-4 gap-y-1 py-2.5 text-sm">
       <p className="sr-only">
         Переход между корпусами с {from} до {to}, перерыв {transition.breakMinutes} мин: из{" "}
         {transition.from} в {transition.to}
       </p>
-      <p aria-hidden className="flex w-[4.5rem] shrink-0 flex-col tabular">
+      {/* Время перерыва — тихим цветом, как конец пары: brand только у заголовка, строка — не ссылка */}
+      <p aria-hidden className="flex w-[4.5rem] shrink-0 flex-col text-ink-muted tabular">
         <span>{from}</span>
         <span>{to}</span>
       </p>
       <div aria-hidden className="flex min-w-[min(12rem,100%)] flex-1 flex-col">
-        <span className="flex items-start gap-1.5 font-bold">
+        {/* «Перерыв N мин», а не «переход N мин»: это время между парами, не дорога (ux-reviewer) */}
+        <span className="flex items-start gap-1.5 font-bold text-brand">
           <Footprints className="mt-0.5 size-4 shrink-0" />
-          Переход в другой корпус · {transition.breakMinutes} мин
+          Перерыв {transition.breakMinutes} мин — переход в другой корпус
         </span>
-        <span>
+        <span className="text-ink">
           {transition.from} → {transition.to}
         </span>
       </div>

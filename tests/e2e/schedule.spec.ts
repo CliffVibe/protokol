@@ -78,7 +78,7 @@ test.describe("неделя Алисы", () => {
     page,
   }) => {
     const { row, next } = await transitionToOdintsovo(page);
-    await expect(row).toContainText(/Переход в другой корпус · \d+ мин/);
+    await expect(row).toContainText(/Перерыв \d+ мин — переход в другой корпус/);
     await expect(row).toContainText(/с \d{2}:\d{2} до \d{2}:\d{2}/);
     await expect(row).toContainText(/Главный корпус .*→ Одинцово/);
     // Сразу за строкой перехода — пара, на которую идём
@@ -191,9 +191,10 @@ test.describe("переключатель и недели", () => {
     await expect(page).toHaveURL(/\/schedule$/);
     await expect(nav).toContainText("Сегодня");
 
-    // Полоса дней: выбранный день — aria-current="page", касание открывает другой день
+    // Полоса дней: выбранный день — aria-current="date"; «page» на странице один — у «День»
     const strip = page.getByRole("navigation", { name: "Дни недели" });
-    await expect(strip.locator("[aria-current=page]")).toHaveCount(1);
+    await expect(strip.locator("[aria-current=date]")).toHaveCount(1);
+    await expect(page.locator("main [aria-current=page]")).toHaveCount(1);
     await strip.getByRole("link").first().click();
     const monday = mskDateKey(mskStartOfWeek(new Date()));
     await expect(page).toHaveURL(new RegExp(monday === TODAY ? "/schedule$" : `\\?day=${monday}$`));
@@ -317,5 +318,5 @@ test("изоляция на ?day=: у Тимура в четверг нет Од
   await expect(lessonItems(timur).first().or(timur.getByText("В этот день пар нет"))).toBeVisible();
   const text = await timur.getByRole("main").innerText();
   expect(text).not.toContain("Одинцово");
-  expect(text).not.toContain("Переход в другой корпус");
+  expect(text).not.toContain("переход в другой корпус");
 });

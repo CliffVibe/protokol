@@ -174,8 +174,8 @@ export function WeekNav({
 /**
  * Пн…сб недели: касание открывает день отдельно (?day=) — и из «Дня», и из «Недели»
  * (человек на проверке T06: «удобно смотреть отдельно по дням»).
- * Выбранный день — чернильная черта и полужирный; сегодня — точка под числом и скрытое «сегодня»:
- * не только цветом.
+ * Выбранный день — чернильная черта, полужирный и aria-current="date"; сегодня — точка под числом
+ * и скрытое «сегодня»: не только цветом.
  */
 export function DayStrip({
   days,
@@ -199,7 +199,8 @@ export function DayStrip({
             <li key={d.key} className="min-w-[44px] flex-1">
               <Link
                 href={dayHref(d.start, now)}
-                aria-current={selected ? "page" : isToday ? "date" : undefined}
+                // «page» уже у «День» в переключателе; выбранный день — «date», сегодня — скрытым текстом
+                aria-current={selected ? "date" : undefined}
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center border-b-2 px-1 py-1 text-center hover:bg-surface",
                   selected
