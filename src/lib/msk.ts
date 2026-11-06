@@ -49,6 +49,44 @@ export function mskHour(d: Date): number {
   return new Date(d.getTime() + MSK_OFFSET_MS).getUTCHours();
 }
 
+// ── ISO-неделя (пн–вс) по Москве: адрес недели в URL расписания — ?week=2026-W46 (T06) ──
+
+const WEEK_MS = 7 * DAY_MS;
+
+/** Полночь по Москве на календарную дату (месяц — с 0, как в Date.UTC). */
+function mskMidnight(year: number, month: number, day: number): Date {
+  return new Date(Date.UTC(year, month, day) - MSK_OFFSET_MS);
+}
+
+/** Понедельник первой ISO-недели года: неделя, где лежит 4 января. */
+function isoWeekOneStart(year: number): Date {
+  return mskStartOfWeek(mskMidnight(year, 0, 4));
+}
+
+/** ISO-год и номер недели момента `d` по Москве: 31 декабря может быть W01 следующего года. */
+export function isoWeekOf(d: Date): { year: number; week: number } {
+  const monday = mskStartOfWeek(d);
+  const year = mskYear(addDays(monday, 3)); // год недели — год её четверга
+  const week = Math.round((+monday - +isoWeekOneStart(year)) / WEEK_MS) + 1;
+  return { year, week };
+}
+
+/** Сколько ISO-недель в году: 52 или 53. 28 декабря всегда в последней неделе. */
+export function isoWeeksInYear(year: number): number {
+  return isoWeekOf(mskMidnight(year, 11, 28)).week;
+}
+
+/** Понедельник 00:00 МСК недели `week` ISO-года `year` (без проверки диапазона). */
+export function isoWeekStart(year: number, week: number): Date {
+  return addDays(isoWeekOneStart(year), (week - 1) * 7);
+}
+
+/** «2026-W46» — адрес недели, в которую попадает `d`. */
+export function formatIsoWeek(d: Date): string {
+  const { year, week } = isoWeekOf(d);
+  return `${year}-W${String(week).padStart(2, "0")}`;
+}
+
 /** +N рабочих дней (пн–пт по Москве): срок заявки не выпадает на воскресенье (ux-reviewer, T05). */
 export function addBusinessDays(d: Date, days: number): Date {
   let result = d;
