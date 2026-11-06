@@ -3,8 +3,19 @@
 // создал тест, тест и удаляет (T08). Это уборка тестовых данных, а не продуктовое удаление заявок.
 import pg from "pg";
 
+/** Только локальная база: если e2e когда-нибудь запустят с прод-строкой, уборка не тронет прод. */
+function localDatabaseUrl(): string {
+  const url = process.env.DATABASE_URL ?? "";
+  const host = url ? new URL(url).hostname : "";
+  if (!["localhost", "127.0.0.1", "::1", "[::1]", "db"].includes(host))
+    throw new Error(
+      `e2e ходят в БД только локально, а DATABASE_URL указывает на «${host || "пусто"}»`,
+    );
+  return url;
+}
+
 export async function withDb<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
-  const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
+  const client = new pg.Client({ connectionString: localDatabaseUrl() });
   await client.connect();
   try {
     return await fn(client);

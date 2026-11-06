@@ -257,4 +257,16 @@ describe.skipIf(!url)("заявки в PostgreSQL", async () => {
     );
     expect(items).toEqual([]);
   });
+
+  // Последним: пересевает базу (security-reviewer, T08 — сброс не чаще раза в 5 минут)
+  it("«Сбросить демо»: второй сброс сразу после первого — отказ с временем ожидания", async () => {
+    const { resetDemoData, RESET_COOLDOWN_MS } = await import("@/server/repos/demo");
+    const staff = await irina();
+    const t0 = Date.now();
+    expect(await resetDemoData(staff, t0)).toEqual({ ok: true });
+    expect(await resetDemoData(staff, t0 + 60_000)).toEqual({ ok: false, retryInMinutes: 4 });
+    expect(RESET_COOLDOWN_MS).toBe(5 * 60 * 1000);
+    // Сброс действительно вернул сид: заявок ровно столько, сколько в сиде
+    expect(await prisma.request.count()).toBe(8);
+  }, 60_000);
 });

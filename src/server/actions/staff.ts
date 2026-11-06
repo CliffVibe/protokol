@@ -70,6 +70,10 @@ export type ResetState = { error?: string };
 export async function resetDemoAction(): Promise<ResetState> {
   const ctx = await requireStaff();
   if (process.env.DEMO_MODE !== "1") notFound();
-  await resetDemoData(ctx);
+  const result = await resetDemoData(ctx);
+  if (!result.ok)
+    return {
+      error: `Демо сбросили совсем недавно — повторить можно через ${result.retryInMinutes} мин.`,
+    };
   redirect("/login");
 }

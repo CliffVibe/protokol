@@ -6,7 +6,16 @@
 import { randomUUID } from "node:crypto";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
+import { ANON } from "./helpers/auth";
 import { deleteTestRequests, withDb } from "./helpers/db";
+
+async function asTimur(browser: Browser): Promise<Page> {
+  const page = await (await browser.newContext({ storageState: ANON })).newPage();
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Войти как Тимур" }).click();
+  await expect(page).toHaveURL(/\/$/);
+  return page;
+}
 
 async function asIrina(browser: Browser): Promise<Page> {
   return (await browser.newContext({ storageState: STORAGE.irina })).newPage();
@@ -157,6 +166,76 @@ test("отклонение — только с причиной; студент 
 });
 
 test.describe("изоляция", () => {
+  test("Тимур не видит заявку Алисы ни в списке, ни в уведомлениях (security-reviewer, T08)", async ({
+    page,
+    browser,
+  }) => {
+    const { number } = await submitStudy(page);
+    const irina = await asIrina(browser);
+    await irina.goto(staffUrl(number));
+    await irina.getByRole("button", { name: "Принять" }).click();
+    await expect(irina.getByRole("status")).toContainText("Статус изменён");
+    const link = `a[href="${requestUrl(number)}"]`;
+
+    // Положительный контроль — у Алисы уведомление есть (после загрузки)
+    await page.goto("/notifications");
+    await expect(page.locator(link)).toHaveCount(1);
+
+    const timur = await asTimur(browser);
+    await timur.goto("/notifications");
+    await expect(timur.getByRole("heading", { level: 1, name: "Уведомления" })).toBeVisible();
+    await expect(timur.getByRole("list", { name: "Уведомления" })).toBeVisible();
+    await expect(timur.locator(link)).toHaveCount(0);
+    await timur.goto("/requests");
+    await expect(timur.getByRole("heading", { level: 1, name: "Заявки" })).toBeVisible();
+    await expect(timur.getByRole("main")).not.toContainText(number);
+  });
+
+  test("смена статуса заявки чужого факультета подменой номера — статус не меняется", async ({
+    page,
+    browser,
+  }) => {
+    const foreign = await withDb(async (c) => {
+      const r = await c.query(`
+        SELECT r.number, r.status FROM "Request" r
+        JOIN "Student" s ON s.id = r."studentId"
+        JOIN "Group" g ON g.id = s."groupId"
+        JOIN "Program" p ON p.id = g."programId"
+        WHERE r.status = 'SUBMITTED'
+          AND p."facultyId" <> ALL (SELECT unnest("facultyIds") FROM "Staff" WHERE "userId" = 'usr-irina')
+        LIMIT 1`);
+      return r.rows[0] as { number: string; status: string } | undefined;
+    });
+    expect(foreign, "в сиде есть поданная заявка чужого факультета").toBeTruthy();
+
+    // Ирина открывает СВОЮ заявку (Алисы, ФМО) и подменяет номер в форме на чужой
+    const { number } = await submitStudy(page);
+    const irina = await asIrina(browser);
+    await irina.goto(staffUrl(number));
+    await irina
+      .locator('form input[name="number"]')
+      .first()
+      .evaluate((el, n) => {
+        (el as HTMLInputElement).value = n;
+      }, foreign!.number);
+    await irina.getByRole("button", { name: "Принять" }).click();
+    await expect(irina.getByRole("status")).toHaveCount(0);
+
+    const after = await withDb(async (c) => {
+      const r = await c.query(`SELECT status FROM "Request" WHERE number = $1`, [foreign!.number]);
+      return r.rows[0].status as string;
+    });
+    expect(after).toBe("SUBMITTED");
+    const events = await withDb(async (c) => {
+      const r = await c.query(
+        `SELECT count(*)::int AS n FROM "RequestEvent" e JOIN "Request" r ON r.id = e."requestId" WHERE r.number = $1 AND e."actorUserId" = 'usr-irina'`,
+        [foreign!.number],
+      );
+      return r.rows[0].n as number;
+    });
+    expect(events).toBe(0);
+  });
+
   test("Ирина не видит заявки чужих факультетов: ни в очереди, ни по номеру (404)", async ({
     browser,
   }) => {
