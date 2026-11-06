@@ -17,6 +17,9 @@ describe("навигация студента", () => {
 
   it("за «Ещё» — уведомления, профиль, помощник; на десктопе они в общем списке", () => {
     expect(MORE_ITEMS.map((i) => i.label)).toEqual(["Уведомления", "Профиль", "Помощник"]);
+    // T09: число непрочитанных на телефоне — у колокольчика в шапке, на «Ещё» его нет (решение человека)
+    expect(MORE.badge).toBeFalsy();
+    expect(MORE_ITEMS.find((i) => i.href === "/notifications")?.badge).toBe(true);
     expect(SIDE_NAV).toHaveLength(7);
     expect(SIDE_NAV).not.toContain(MORE);
   });

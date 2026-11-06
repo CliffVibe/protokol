@@ -1,6 +1,7 @@
 import "server-only";
 import { randomBytes } from "node:crypto";
 import type { RequestStatus } from "@/generated/prisma/client";
+import { assertLink } from "@/lib/links";
 import { addDays } from "@/lib/msk";
 import { db } from "@/server/db";
 import { notificationFor, requestHref } from "@/server/services/request-rules";
@@ -131,7 +132,7 @@ export async function changeStatus(
         kind: "REQUEST_STATUS",
         title: n.title,
         body: n.body,
-        link: requestHref(input.number),
+        link: assertLink(requestHref(input.number)),
       },
     });
     if (input.to === "READY") {

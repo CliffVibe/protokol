@@ -105,6 +105,17 @@ test.describe("05-security: обязательные тесты", () => {
     await expect(page.getByRole("heading", { name: "Очередь заявок" })).toHaveCount(0);
   });
 
+  test("3а. Студент открывает /staff/announcements и /staff/schedule → не видит кабинет (T09)", async ({
+    page,
+  }) => {
+    for (const route of ["/staff/announcements", "/staff/schedule"]) {
+      const res = await page.goto(route);
+      expect(res?.status(), route).toBeLessThan(500);
+      await expect(page, route).toHaveURL(/\/$/);
+      await expect(page.getByRole("navigation", { name: "Разделы кабинета" })).toHaveCount(0);
+    }
+  });
+
   test.describe("4. Неавторизованный", () => {
     test.use({ storageState: ANON });
     for (const route of ["/", "/grades", "/staff", "/requests", "/profile"]) {

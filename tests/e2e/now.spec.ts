@@ -39,13 +39,14 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
     ["Все заявки", "/requests"],
     ["Всё расписание", "/schedule"],
     ["Успеваемость", "/grades"],
-    ["Все объявления", "/notifications"],
+    // T09: «Все объявления» ведут сразу на доску объявлений
+    ["Все объявления", "/notifications?tab=announcements"],
   ] as const) {
     test(`блок ведёт в раздел за 1 касание: «${link}» → ${path}`, async ({ page }) => {
       await page.goto("/");
       // first(): «Всё расписание» есть и в NowCard (главный блок), и в «Изменениях»
       await page.getByRole("main").getByRole("link", { name: link, exact: true }).first().click();
-      await expect(page).toHaveURL(new RegExp(`${path}$`));
+      await expect(page).toHaveURL(new RegExp(`${path.replace(/[?]/g, "\\?")}$`));
     });
   }
 

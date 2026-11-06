@@ -1267,6 +1267,8 @@ function buildNotifications({
 }): Prisma.NotificationCreateManyInput[] {
   const a = DEMO.alisa.studentId;
   const t = DEMO.timur.studentId;
+  // Уведомление-объявление ведёт на доску к своему объявлению (T09, src/server/services/staff-rules.ts)
+  const board = (id: string) => `/notifications?tab=announcements#announcement-${id}`;
   return [
     {
       id: "ntf-a1",
@@ -1301,9 +1303,29 @@ function buildNotifications({
       kind: "ANNOUNCEMENT",
       title: "Зимняя сессия: расписание экзаменов",
       body: "Расписание экзаменов и зачётов опубликовано.",
-      link: "/notifications",
+      link: board("ann-1"),
       readAt: at(-1, "12:00"),
       createdAt: at(-1, "10:00"),
+    },
+    // T09: у Алисы видны и непрочитанное объявление, и прочитанная новость по заявке — вкладки не пустые
+    {
+      id: "ntf-a5",
+      studentId: a,
+      kind: "ANNOUNCEMENT",
+      title: "Стипендиальная комиссия — документы до пятницы",
+      body: "Заявления на повышенную стипендию принимаются через «Заявки».",
+      link: board("ann-2"),
+      createdAt: at(-3, "12:30"),
+    },
+    {
+      id: "ntf-a6",
+      studentId: a,
+      kind: "REQUEST_STATUS",
+      title: "Заявка принята",
+      body: "Справка об обучении на английском: деканат принял заявку.",
+      link: "/requests",
+      readAt: at(-3, "18:00"),
+      createdAt: at(-3, "11:40"),
     },
     {
       id: "ntf-t1",
@@ -1329,7 +1351,7 @@ function buildNotifications({
       kind: "ANNOUNCEMENT",
       title: "Неделя карьеры МЭО",
       body: "Встречи с работодателями в актовом зале.",
-      link: "/notifications",
+      link: board("ann-3"),
       createdAt: at(-2, "09:15"),
     },
   ];

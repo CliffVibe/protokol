@@ -4,16 +4,20 @@
 import { BrandMark } from "@/components/brand-mark";
 import { LogoutButton } from "@/components/logout-button";
 import { BottomNav } from "@/components/nav/bottom-nav";
+import { HeaderBell } from "@/components/nav/header-bell";
 import { SideNav } from "@/components/nav/side-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getThemePreference } from "@/lib/theme-server";
+import { optionalStudent } from "@/server/auth/guards";
+import { unreadCountOf } from "@/server/repos/notifications";
 
 export default async function StudentLayout({ children }: { children: React.ReactNode }) {
-  const theme = await getThemePreference();
-  // TODO(T09): число непрочитанных из уведомлений текущего студента (через ctx, не из layout-проверки).
-  const unreadCount = 0;
+  // Число непрочитанных — только для бейджа (T09). optionalStudent() не проверка доступа и не редиректит:
+  // защищает requireStudent() в каждой page. Обновляется после «прочитано» — revalidatePath("/", "layout").
+  const [theme, ctx] = await Promise.all([getThemePreference(), optionalStudent()]);
+  const unreadCount = ctx ? await unreadCountOf(ctx) : 0;
 
   return (
     <div className="flex min-h-dvh">
@@ -29,8 +33,11 @@ export default async function StudentLayout({ children }: { children: React.Reac
       </aside>
 
       <div className="flex min-w-0 flex-1 flex-col pb-bottom-nav lg:pb-0">
-        <header className="border-b border-line bg-bg px-4 lg:hidden">
+        {/* flex-wrap: при тексте 200% знак логотипа (rem) растёт, и колокольчик уходит вправо на вторую строку,
+            а не за край экрана */}
+        <header className="flex flex-wrap items-center justify-between gap-x-2 border-b border-line bg-bg px-4 lg:hidden">
           <BrandMark href="/" className="h-14" />
+          <HeaderBell unreadCount={unreadCount} />
         </header>
         <main
           id="main"

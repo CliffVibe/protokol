@@ -29,6 +29,16 @@ export const requireStudent = cache(async (): Promise<StudentCtx> => {
 });
 
 /**
+ * Студент или null — БЕЗ редиректа. Только для оболочки (число непрочитанных в layout, T09): это не проверка
+ * доступа, а «кому показать бейдж». Страницу защищает requireStudent() в самой page.
+ */
+export const optionalStudent = cache(async (): Promise<StudentCtx | null> => {
+  const session = await getSession();
+  if (!session || session.role !== "STUDENT") return null;
+  return loadStudentCtx(session.userId);
+});
+
+/**
  * Сотрудник → ctx { userId, staffId, facultyIds }. Студента — в его кабинет (тест 3 в 05: «редирект/404»):
  * notFound() рисовался бы внутри оболочки сотрудника и показывал бы её шапку.
  */

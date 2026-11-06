@@ -8,16 +8,15 @@ import { PageHeader } from "@/components/page-header";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getThemePreference } from "@/lib/theme-server";
 import { requireStudent } from "@/server/auth/guards";
+import { unreadCountOf } from "@/server/repos/notifications";
 
 export const metadata: Metadata = { title: "Ещё" };
 
 // «Ещё» на мобильном: разделы, которые не влезли в нижнюю панель, и настройки.
 // Доступ — requireStudent() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
 export default async function MorePage() {
-  await requireStudent();
-  const theme = await getThemePreference();
-  // TODO(T09): число непрочитанных текущего студента.
-  const unreadCount = 0;
+  const ctx = await requireStudent();
+  const [theme, unreadCount] = await Promise.all([getThemePreference(), unreadCountOf(ctx)]);
 
   return (
     <div className="flex flex-col gap-6">

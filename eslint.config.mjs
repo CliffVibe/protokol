@@ -91,7 +91,7 @@ const eslintConfig = defineConfig([
   {
     // Где работа с БД разрешена: репозитории, клиент, сид/миграции и интеграционные тесты,
     // а также security.spec.ts — тест 6 из 05-security проверяет хеши паролей прямо в БД
-    // и requests.spec.ts + helpers/db.ts — двойная отправка считается в БД, тестовые заявки убираются (T08)
+    // и requests.spec.ts + helpers/db.ts — двойная отправка считается в БД, тестовые заявки убираются (T08);
     files: [
       "src/server/repos/**",
       "src/server/db.ts",
@@ -100,6 +100,12 @@ const eslintConfig = defineConfig([
       "tests/e2e/security.spec.ts",
       "tests/e2e/requests.spec.ts",
       "tests/e2e/helpers/db.ts",
+      // T09: временный студент со своей сессией (счётчики непрочитанных не делят с демо и параллельными
+      // проектами), уборка объявлений и возврат перенесённой пары
+      "tests/e2e/helpers/temp-student.ts",
+      "tests/e2e/notifications.spec.ts",
+      "tests/e2e/announcements.spec.ts",
+      "tests/e2e/reschedule.spec.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

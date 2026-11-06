@@ -37,7 +37,8 @@ export const ASSISTANT: NavItem = { href: "/assistant", label: "Помощник
 /** Что прячется за «Ещё» на мобильном. */
 export const MORE_ITEMS: NavItem[] = [NOTIFICATIONS, PROFILE, ASSISTANT];
 
-export const MORE: NavItem = { href: "/more", label: "Ещё", icon: Menu, badge: true };
+/** Без бейджа: число непрочитанных на телефоне — у колокольчика в шапке (решение человека 06.11, T09). */
+export const MORE: NavItem = { href: "/more", label: "Ещё", icon: Menu };
 
 /** Нижняя панель (мобильный): Сейчас · Расписание · Учёба · Заявки · Ещё. */
 export const BOTTOM_NAV: NavItem[] = [NOW, SCHEDULE, GRADES, REQUESTS, MORE];

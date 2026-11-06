@@ -45,7 +45,9 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
         </p>
       </div>
       <div className="flex flex-col gap-0.5">
-        <p className="font-heading text-xl font-bold text-ink">{lesson.discipline.name}</p>
+        <p className="font-heading text-xl font-bold break-words text-ink">
+          {lesson.discipline.name}
+        </p>
         <p className="text-sm text-ink-muted">
           {LESSON_KIND[lesson.kind]}
           {lesson.languageGroup ? `, ${lesson.languageGroup.name}` : null}

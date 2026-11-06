@@ -10,6 +10,7 @@ import type { FeedRequest, NowFeed, SoonItem } from "@/server/services/now";
 import type { LessonRow } from "@/server/repos/schedule";
 import { FeedList, FeedSection } from "./feed-section";
 import { CHANGE, requestStatus } from "./labels";
+import { markdownToPlain } from "@/lib/markdown";
 
 const when = (d: Date, now: Date) => `${formatRelativeDay(d, now)}, ${formatTime(d)}`;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -153,7 +154,7 @@ export function AnnouncementsBlock({
     <FeedSection
       id="announcements-title"
       title="Объявления"
-      link={{ href: "/notifications", label: "Все объявления" }}
+      link={{ href: "/notifications?tab=announcements", label: "Все объявления" }}
     >
       {announcements === null ? (
         <p className="border-t border-line pt-3 text-base text-ink-muted">
@@ -173,8 +174,8 @@ export function AnnouncementsBlock({
                 <span>{formatRelativeDay(a.publishedAt, now)}</span>
               </p>
               <p className="font-bold text-ink">{a.title}</p>
-              {/* Текст объявления — простой текст: React экранирует, markdown здесь не рендерим (S5) */}
-              <p className="line-clamp-2 text-sm text-ink-muted">{a.body}</p>
+              {/* Здесь — простой текст без разметки (полный текст с разметкой — на доске объявлений, T09) */}
+              <p className="line-clamp-2 text-sm text-ink-muted">{markdownToPlain(a.body)}</p>
             </li>
           ))}
         </FeedList>

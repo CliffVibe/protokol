@@ -259,11 +259,5 @@ export const staffRequestHref = (number: string) => `/staff/requests/${encodeURI
 /** Ссылка заявки внутри кабинета студента. */
 export const requestHref = (number: string) => `/requests/${encodeURIComponent(number)}`;
 
-/**
- * Ссылка уведомления перед выводом в href: только относительный путь внутри сайта.
- * `javascript:`, `//evil`, `/\evil` (браузер читает как //) → null (из security-ревью T02).
- */
-export function safeLink(link: string | null): string | null {
-  if (!link) return null;
-  return /^\/(?![/\\])[^\s\\]*$/.test(link) ? link : null;
-}
+/** Проверка ссылки уведомления переехала в src/lib/links.ts (T09): ею пользуются и объявления, и переносы. */
+export { safeLink } from "@/lib/links";

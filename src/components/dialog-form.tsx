@@ -11,6 +11,10 @@ type State = { ok?: boolean; error?: string; fieldErrors?: Record<string, string
 
 type Props<S extends State> = {
   triggerLabel: string;
+  /** Полное имя кнопки для скринридера, когда таких кнопок на экране несколько: «Перенести: Эконометрика, 10:10» */
+  triggerAriaLabel?: string;
+  /** Уникальный id диалога, когда на экране несколько диалогов с одной подписью кнопки */
+  dialogId?: string;
   triggerVariant?: "outline" | "ghost" | "destructive" | "default";
   title: string;
   description?: ReactNode;
@@ -25,6 +29,8 @@ type Props<S extends State> = {
 
 export function DialogForm<S extends State>({
   triggerLabel,
+  triggerAriaLabel,
+  dialogId,
   triggerVariant = "outline",
   title,
   description,
@@ -37,7 +43,7 @@ export function DialogForm<S extends State>({
   const [state, formAction, pending] = useActionState<S, FormData>(action, {} as Awaited<S>);
   const dialogRef = useRef<HTMLDialogElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
-  const titleId = `dlg-${triggerLabel.replace(/\s+/g, "-")}`;
+  const titleId = `dlg-${dialogId ?? triggerLabel.replace(/\s+/g, "-")}`;
 
   // Успех — закрываем; данные на странице обновит revalidatePath
   // Ответ с ошибкой: кнопка была недоступна, фокус упал на <body> — ведём его к тому, что исправить
@@ -60,6 +66,7 @@ export function DialogForm<S extends State>({
         type="button"
         variant={triggerVariant}
         aria-haspopup="dialog"
+        aria-label={triggerAriaLabel}
         onClick={() => dialogRef.current?.showModal()}
       >
         {triggerLabel}

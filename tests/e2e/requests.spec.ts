@@ -94,12 +94,12 @@ test("приёмка: Алиса подала → Ирина приняла → 
 
   // Алиса: уведомление «Справка готова» ведёт в заявку, там «Готова — заберите» и комментарий
   await page.goto("/notifications");
+  // T09: строка уведомления — форма «открыть» (отмечает прочитанным), ссылка — в data-link
   const note = page
-    .getByRole("listitem")
-    .filter({ hasText: "Справка готова" })
-    .filter({ has: page.locator(`a[href="${requestUrl(number)}"]`) });
+    .locator(`[data-notification][data-link="${requestUrl(number)}"]`)
+    .filter({ hasText: "Справка готова" });
   await expect(note).toHaveCount(1);
-  await note.getByRole("link").click();
+  await note.getByRole("button").click();
   await expect(page).toHaveURL(new RegExp(`${requestUrl(number).replace(/[-%]/g, "\\$&")}$`));
   await expect(page.getByText("Готова — заберите").first()).toBeVisible();
   await expect(page.getByText("Приняли, срок — 3 рабочих дня")).toBeVisible();
@@ -175,7 +175,7 @@ test.describe("изоляция", () => {
     await irina.goto(staffUrl(number));
     await irina.getByRole("button", { name: "Принять" }).click();
     await expect(irina.getByRole("status")).toContainText("Статус изменён");
-    const link = `a[href="${requestUrl(number)}"]`;
+    const link = `[data-notification][data-link="${requestUrl(number)}"]`;
 
     // Положительный контроль — у Алисы уведомление есть (после загрузки)
     await page.goto("/notifications");

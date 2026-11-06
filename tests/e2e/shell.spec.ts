@@ -40,6 +40,11 @@ const ALL_ROUTES = [
   `/requests/${encodeURIComponent(formatRequestNumber(mskYear(addDays(new Date(), -3)), 1))}`,
   `/staff/requests/${encodeURIComponent(formatRequestNumber(mskYear(addDays(new Date(), -1)), 2))}`,
   "/staff",
+  // Уведомления и кабинет сотрудника (T09): доска объявлений, вкладка, объявления и расписание групп
+  "/notifications?tab=announcements",
+  "/notifications?tab=requests",
+  "/staff/announcements",
+  "/staff/schedule",
 ];
 
 const BOTTOM = [
@@ -102,16 +107,20 @@ test.describe("навигация студента", () => {
     await page.goto("/");
     const nav = mainNav(page);
     await expect(nav).toHaveCount(1); // вторая скрыта display:none и не видна скринридеру
-    const labels = (isMobile ? BOTTOM : SIDE).map(([label]) => label);
+    // «Уведомления» на десктопе — с числом новых (T09), поэтому по началу подписи
+    const labels = (isMobile ? BOTTOM : SIDE).map(([label]) =>
+      label === "Уведомления" ? /^Уведомления/ : label,
+    );
     await expect(nav.getByRole("link")).toHaveText(labels);
   });
 
   test("переход по каждому пункту и aria-current", async ({ page, isMobile }) => {
     await page.goto("/");
     for (const [label, href] of isMobile ? BOTTOM : SIDE) {
-      await mainNav(page).getByRole("link", { name: label, exact: true }).click();
+      const name = label === "Уведомления" ? /^Уведомления/ : label;
+      await mainNav(page).getByRole("link", { name, exact: true }).click();
       await expect(page).toHaveURL(href);
-      await expect(mainNav(page).getByRole("link", { name: label, exact: true })).toHaveAttribute(
+      await expect(mainNav(page).getByRole("link", { name, exact: true })).toHaveAttribute(
         "aria-current",
         "page",
       );
@@ -133,7 +142,14 @@ test.describe("навигация студента", () => {
     );
   });
 
-  for (const route of ["/", "/more", "/staff"]) {
+  for (const route of [
+    "/",
+    "/more",
+    "/notifications",
+    "/staff",
+    "/staff/announcements",
+    "/staff/schedule",
+  ]) {
     test.describe(route, () => {
       useSessionFor(route);
       test(`цели касания ≥ 44×44: ${route}`, async ({ page }) => {
@@ -336,7 +352,17 @@ test.describe("шкала типографики в браузере", () => {
 });
 
 test.describe("текст 200% без горизонтального скролла", () => {
-  for (const route of ["/", "/requests", "/staff", "/more", "/no-such-page"]) {
+  for (const route of [
+    "/",
+    "/requests",
+    "/notifications",
+    "/notifications?tab=announcements",
+    "/staff",
+    "/staff/announcements",
+    "/staff/schedule",
+    "/more",
+    "/no-such-page",
+  ]) {
     test.describe(route, () => {
       useSessionFor(route);
       test(`${route}`, async ({ page }) => {

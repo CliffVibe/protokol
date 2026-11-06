@@ -262,3 +262,46 @@ export function QueueSkeleton() {
     </div>
   );
 }
+
+/** «Уведомления» (T09): заголовок, вкладки, строки с иконкой. */
+export function NotificationsSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-6 lg:max-w-3xl">
+      <span className="sr-only">Загружаем уведомления…</span>
+      <PageHeaderSkeleton />
+      <div className="flex flex-wrap gap-x-6 border-b border-line">
+        {Array.from({ length: 5 }, (_, i) => (
+          <Skeleton key={i} className="my-3 h-5 w-20" />
+        ))}
+      </div>
+      <ul className="flex flex-col divide-y divide-line border-y border-line">
+        {Array.from({ length: 4 }, (_, i) => (
+          <li key={i} className="flex gap-3 py-4">
+            <Skeleton className="size-6 shrink-0 rounded-full" />
+            <div className="flex flex-1 flex-col gap-2">
+              <Skeleton className="h-5 w-2/3" />
+              <Skeleton className="h-5 w-full" />
+              <Skeleton className="h-4 w-28" />
+            </div>
+          </li>
+        ))}
+      </ul>
+    </div>
+  );
+}
+
+/** Экраны сотрудника с формой и списком (T09: объявления, расписание групп). */
+export function StaffFormSkeleton({ label }: { label: string }) {
+  return (
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">{label}</span>
+      <PageHeaderSkeleton />
+      <div className="flex flex-col gap-4 lg:max-w-2xl">
+        <Skeleton className="h-[4.25rem] w-full" />
+        <Skeleton className="h-36 w-full" />
+        <Skeleton className="h-12 w-40 rounded-lg" />
+      </div>
+      <SkeletonList rows={3} />
+    </div>
+  );
+}

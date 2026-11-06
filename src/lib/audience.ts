@@ -13,6 +13,8 @@ export const audienceSchema = z
   })
   .strict();
 
+export type Audience = z.infer<typeof audienceSchema>;
+
 export type Reader = { facultyCode: string; course: number; groupName: string };
 
 export function matchesAudience(raw: unknown, who: Reader): boolean {

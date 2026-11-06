@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { buildSeed, DEMO } from "../../prisma/seed-data";
 import { addDays, mskDateKey, mskStartOfDay, mskStartOfWeek } from "@/lib/msk";
+import { relativeLinkSchema } from "@/lib/links";
 
 // Среда, суббота и воскресенье — сид должен давать живое демо в любой день (06-seed-data.md)
 const DATES = {
@@ -162,6 +163,12 @@ describe("buildSeed", () => {
   it("номера заявок — «С-ГГГГ-NNNNN» с кириллической С", () => {
     for (const r of buildSeed(DATES.wednesday).requests)
       expect(r.number).toMatch(/^С-\d{4}-\d{5}$/);
+  });
+
+  it("ссылки уведомлений и дедлайнов — только пути внутри сайта (T09: та же схема, что при записи)", () => {
+    const d = buildSeed(DATES.wednesday);
+    for (const x of [...d.notifications, ...d.deadlines])
+      if (x.link) expect(relativeLinkSchema.safeParse(x.link).success, x.link).toBe(true);
   });
 
   it("Ирина — сотрудник ФМО и МЭО", () => {
