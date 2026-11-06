@@ -31,6 +31,8 @@ const ALL_ROUTES = [
   ...STUDENT_ROUTES,
   `/schedule?week=${formatIsoWeek(new Date())}`,
   `/schedule?day=${THURSDAY}`,
+  // Детали дисциплины (T07) — у Алисы (сессия по умолчанию) это «Теория международных отношений»
+  "/grades/dsc-tmo",
   "/staff",
 ];
 
