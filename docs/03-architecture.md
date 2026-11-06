@@ -201,7 +201,7 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 | `/login` | все | вход |
 | `/` | STUDENT | лента «Сейчас» |
 | `/schedule`, `/schedule?day=2026-11-05`, `/schedule?week=2026-W46` | STUDENT | расписание: без параметров — сегодняшний день, `day` — любой день, `week` — неделя (ISO, пн–вс по Москве). Оба параметра разбирает zod (`lib/schedule-params.ts`): битое значение (мусор, 2026-02-30, W54), массив или год дальше ±1 от текущего — сегодня / текущая неделя, не 500 (T06) |
-| `/grades`, `/grades/[disciplineId]` | STUDENT | успеваемость |
+| `/grades`, `/grades?semester=6`, `/grades/[disciplineId]` | STUDENT | успеваемость (T07): `semester` — только семестр студента (zod, `lib/grades-params.ts`), иначе текущий. `disciplineId` — формат через zod (мусор → 404 без запроса), владелец — `repos/grades.disciplineGradesOf(ctx, id)` с `studentId = ctx.studentId`: чужая дисциплина → 404, общая (английский) — только свои строки. Список — в группе `grades/(list)/` со своим `loading.tsx`, у деталей его нет: иначе ответ стримился бы до проверки и 404 пришёл бы со статусом 200 (`loading.md` → «Status codes»). **Тот же приём — для `/requests/[number]` в T08** |
 | `/requests`, `/requests/new`, `/requests/[number]` | STUDENT | заявки (по номеру, но поиск `WHERE studentId = ctx`) |
 | `/notifications` | STUDENT | уведомления |
 | `/profile` | STUDENT | профиль, безопасность (сменить пароль, выйти со всех устройств, перевыпустить ссылку календаря) |
