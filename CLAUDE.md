@@ -43,6 +43,7 @@ PostgreSQL 16 · Prisma **7.9.0** · zod · @node-rs/argon2 · Vitest · Playwri
 - **Плагины:** `typescript-lsp`, `frontend-design`, `pr-review-toolkit`, `claude-security` (глубокий скан на T13/T14). `security-guidance` **выключен по умолчанию** (тратит лимиты на Opus после каждого хода); человек включает его на задачи с данными и входом (T03, T08, T10, T12).
 - **Скиллы проекта:** `react-best-practices`, `web-interface-guidelines` (`.claude/skills/`).
 - **Хуки:** `guard.mjs` блокирует нарушения безопасности до выполнения; `format.mjs` запускает prettier и eslint после правки. Если хук заблокировал действие — **не обходи**, исправь подход или спроси человека.
+- **agy (Antigravity CLI, Google)** — только простые задачи без секретов (вердикт «условно», `docs/07-tooling.md`): `agy -p "…" --sandbox` из пустой папки в scratchpad, без `--add-dir` проекта и без `--dangerously-skip-permissions`; код — фрагментом в тексте промпта (он уходит в Google); никогда не передавать `.env`, `SEED_PASSWORD_*`, `.claude/`, `.mcp.json`; ответ agy — черновик, Claude перепроверяет и вносит сам; каждая передача — строка в журнале.
 - Новый инструмент — только после проверки и записи в `docs/07-tooling.md`.
 
 ## Команды
