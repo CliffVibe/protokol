@@ -165,7 +165,7 @@ model Staff        { id String @id @default(cuid()) userId String @unique  user 
 ## Слои и поток запроса
 
 ```
-Браузер ──cookie──▶ proxy.ts (есть cookie? нет → /login)   ← только удобство, НЕ защита
+Браузер ──cookie──▶ proxy.ts (битый %-код в пути → 400; есть cookie? нет → /login)   ← только удобство, НЕ защита
                      ▼
                layout (student) ─ только оболочка (навигация); защиты здесь НЕТ
                      ▼
@@ -202,12 +202,12 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 | `/` | STUDENT | лента «Сейчас» |
 | `/schedule`, `/schedule?day=2026-11-05`, `/schedule?week=2026-W46` | STUDENT | расписание: без параметров — сегодняшний день, `day` — любой день, `week` — неделя (ISO, пн–вс по Москве). Оба параметра разбирает zod (`lib/schedule-params.ts`): битое значение (мусор, 2026-02-30, W54), массив или год дальше ±1 от текущего — сегодня / текущая неделя, не 500 (T06) |
 | `/grades`, `/grades?semester=6`, `/grades/[disciplineId]` | STUDENT | успеваемость (T07): `semester` — только семестр студента (zod, `lib/grades-params.ts`), иначе текущий. `disciplineId` — формат через zod (мусор → 404 без запроса), владелец — `repos/grades.disciplineGradesOf(ctx, id)` с `studentId = ctx.studentId`: чужая дисциплина → 404, общая (английский) — только свои строки. Список — в группе `grades/(list)/` со своим `loading.tsx`, у деталей его нет: иначе ответ стримился бы до проверки и 404 пришёл бы со статусом 200 (`loading.md` → «Status codes»). **Тот же приём — для `/requests/[number]` в T08** |
-| `/requests`, `/requests/new`, `/requests/[number]` | STUDENT | заявки (по номеру, но поиск `WHERE studentId = ctx`) |
-| `/notifications` | STUDENT | уведомления |
+| `/requests`, `/requests/new?type=…`, `/requests/[number]` | STUDENT | заявки (T08). Номер `С-2026-00042` (кириллическая С): формат — zod (`requestNumberSchema`), поиск — `WHERE number AND studentId = ctx` → чужая → 404. Список — в группе `requests/(list)/` со своим skeleton, у заявки его нет (настоящий 404). Форма строится из `RequestType.fields` (описание тоже проверяет zod — битое → тип не предлагается), zod-схема заявки — на сервере. Номер — `nextval` последовательности `seq` в той же транзакции. Двойная отправка: кнопка недоступна + одноразовый `clientKey` (`@@unique([studentId, clientKey])`) — повтор возвращает уже созданную |
+| `/notifications` | STUDENT | уведомления: в T08 — минимальный список своих; ссылка уведомления перед `href` — `safeLink` (только относительный путь). Вкладки, «прочитано», бейдж — T09 |
 | `/profile` | STUDENT | профиль, безопасность (сменить пароль, выйти со всех устройств, перевыпустить ссылку календаря) |
 | `/more` | STUDENT | «Ещё» на мобильном: уведомления, профиль, помощник, тема |
 | `/assistant` | STUDENT | ИИ-помощник |
-| `/staff`, `/staff/requests/[number]`, `/staff/announcements` | STAFF | кабинет сотрудника |
+| `/staff`, `/staff/requests/[number]`, `/staff/announcements` | STAFF | кабинет сотрудника (T08). Очередь и карточка — только студенты `staff.facultyIds` (фильтр в КАЖДОМ запросе `repos/staff-requests.ts`, включая мутации), явный `select` студента (ФИО, группа, курс, факультет). Фильтры очереди — zod, чужой факультет игнорируется. Переходы — таблица `TRANSITIONS` (7 шт.), проверка на сервере; смена — `updateMany({ number, status: from, факультет })` с `count === 1` (два сотрудника разом → «статус уже изменили») + событие + уведомление; при «Готова» — `IssuedDocument` с токеном 128 бит (для T10). «Сбросить демо» — `requireStaff` + `DEMO_MODE=1`, `runSeed` (как `db:reset-demo`), все сессии сбрасываются |
 | `/verify/[token]` | публично | проверка справки |
 | `/dev/ui` | только `pnpm dev` | витрина компонентов; в прод-сборке 404 |
 | `/api/calendar/[token]` | по токену | подписка на расписание. Файл `route.ts`; ссылка вида `…/<token>.ics`, суффикс `.ics` отрезаем в обработчике (папка `[token].ics` — недопустимый динамический сегмент) |
