@@ -1,12 +1,17 @@
-// Расписание (T06): «Сегодня / Неделя», изменения без цвета, переход между корпусами, лист с деталями,
-// битый ?week, 360px и текст 200%, изоляция Тимур ↔ Алиса.
+// Расписание (T06): «День / Неделя», изменения без цвета, переход между корпусами, лист с деталями,
+// битые ?week и ?day, 360px и текст 200%, изоляция Тимур ↔ Алиса.
 // Алиса — сессия по умолчанию (setup); Тимур — демо-вход в отдельном контексте.
 import { expect, test, type Browser, type Page } from "@playwright/test";
-import { formatIsoWeek } from "../../src/lib/msk";
+import { addDays, formatIsoWeek, mskDateKey, mskStartOfWeek } from "../../src/lib/msk";
 import { ANON } from "./helpers/auth";
 
 const THIS_WEEK = formatIsoWeek(new Date());
 const WEEK_URL = `/schedule?week=${THIS_WEEK}`;
+const TODAY = mskDateKey(new Date());
+// Четверг этой недели: у Алисы пара в Одинцове и переход туда и обратно
+const THURSDAY = mskDateKey(addDays(mskStartOfWeek(new Date()), 3));
+const dayUrl = (key: string) => (key === TODAY ? "/schedule" : `/schedule?day=${key}`);
+const THURSDAY_URL = dayUrl(THURSDAY);
 
 async function asTimur(browser: Browser): Promise<Page> {
   const ctx = await browser.newContext({ storageState: ANON });
@@ -25,6 +30,16 @@ async function weekLoaded(page: Page) {
   await expect(page.getByRole("heading", { level: 1, name: "Расписание" })).toBeVisible();
   await expect(page.getByRole("navigation", { name: "Недели", exact: true })).toBeVisible();
   await expect(lessonItems(page).first()).toBeVisible();
+}
+
+const dayNav = (page: Page) => page.getByRole("navigation", { name: "Соседние дни" });
+
+/** Одна строка перехода в Одинцово и пара сразу после неё. */
+async function transitionToOdintsovo(page: Page) {
+  const row = lessonItems(page).filter({ hasText: /Переход между корпусами с .* в Одинцово/ });
+  await expect(row).toHaveCount(1);
+  const next = await row.evaluate((li) => li.nextElementSibling?.textContent ?? "");
+  return { row, next };
 }
 
 async function horizontalOverflow(page: Page) {
@@ -59,10 +74,17 @@ test.describe("неделя Алисы", () => {
     expect(await icon("warn")).not.toBe(await icon("danger"));
   });
 
-  test("четверг: «Переход между корпусами» перед парой в Одинцове", async ({ page }) => {
-    const thursday = page.getByRole("region", { name: /^Четверг/ });
-    const odintsovo = thursday.getByRole("listitem").filter({ hasText: /ауд\. \S+, Одинцово/ });
-    await expect(odintsovo).toContainText(/Переход между корпусами: перерыв \d+ мин/);
+  test("четверг: переход — своя строка между парами: когда перерыв и откуда куда", async ({
+    page,
+  }) => {
+    const { row, next } = await transitionToOdintsovo(page);
+    await expect(row).toContainText(/Переход в другой корпус · \d+ мин/);
+    await expect(row).toContainText(/с \d{2}:\d{2} до \d{2}:\d{2}/);
+    await expect(row).toContainText(/Главный корпус .*→ Одинцово/);
+    // Сразу за строкой перехода — пара, на которую идём
+    expect(next).toMatch(/ауд\. \S+, Одинцово/);
+    // У строки перехода нет листа: это не пара
+    await expect(row.getByRole("button")).toHaveCount(0);
   });
 
   test("языковая пара — в общей ленте, с бейджем группы", async ({ page }) => {
@@ -106,12 +128,10 @@ test.describe("неделя Алисы", () => {
 });
 
 test.describe("переключатель и недели", () => {
-  test("«Сегодня» по умолчанию, «Неделя» — ?week=, стрелки и «К текущей неделе»", async ({
-    page,
-  }) => {
+  test("«День» по умолчанию, «Неделя» — ?week=, стрелки и «К текущей неделе»", async ({ page }) => {
     await page.goto("/schedule");
     const toggle = page.getByRole("navigation", { name: "Вид расписания" });
-    await expect(toggle.getByRole("link", { name: "Сегодня" })).toHaveAttribute(
+    await expect(toggle.getByRole("link", { name: "День" })).toHaveAttribute(
       "aria-current",
       "page",
     );
@@ -156,6 +176,57 @@ test.describe("переключатель и недели", () => {
     });
   }
 
+  test("«День»: стрелки по дням, «К сегодня», полоса недели открывает день", async ({ page }) => {
+    await page.goto("/schedule");
+    const nav = dayNav(page);
+    await expect(nav).toContainText("Сегодня");
+    await expect(nav.getByRole("link", { name: "К сегодня" })).toHaveCount(0);
+
+    await nav.getByRole("link", { name: /^Следующий день/ }).click();
+    const tomorrow = mskDateKey(addDays(new Date(), 1));
+    await expect(page).toHaveURL(new RegExp(`\\?day=${tomorrow}$`));
+    await expect(nav).toContainText("Завтра");
+
+    await nav.getByRole("link", { name: "К сегодня" }).click();
+    await expect(page).toHaveURL(/\/schedule$/);
+    await expect(nav).toContainText("Сегодня");
+
+    // Полоса дней: выбранный день — aria-current="page", касание открывает другой день
+    const strip = page.getByRole("navigation", { name: "Дни недели" });
+    await expect(strip.locator("[aria-current=page]")).toHaveCount(1);
+    await strip.getByRole("link").first().click();
+    const monday = mskDateKey(mskStartOfWeek(new Date()));
+    await expect(page).toHaveURL(new RegExp(monday === TODAY ? "/schedule$" : `\\?day=${monday}$`));
+    await expect(page.getByRole("list", { name: /^Пары: Понедельник/ })).toBeVisible();
+  });
+
+  test("из «Недели» полоса дней открывает день отдельно", async ({ page }) => {
+    await page.goto(WEEK_URL);
+    await weekLoaded(page);
+    await page
+      .getByRole("navigation", { name: "Дни недели" })
+      .getByRole("link", { name: /^чт/ })
+      .click();
+    await expect(page).toHaveURL(
+      new RegExp(THURSDAY === TODAY ? "/schedule$" : `day=${THURSDAY}$`),
+    );
+    await expect(page.getByRole("list", { name: /^Пары: / })).toHaveCount(1);
+    await transitionToOdintsovo(page);
+  });
+
+  for (const query of [
+    "day=мусор",
+    "day=2026-02-30",
+    "day=9999-01-01",
+    `day=${TODAY}&day=${TODAY}`,
+  ]) {
+    test(`?${query} — 200 и сегодня, не ошибка`, async ({ page }) => {
+      const res = await page.goto(`/schedule?${query}`);
+      expect(res?.status()).toBe(200);
+      await expect(dayNav(page)).toContainText("Сегодня");
+    });
+  }
+
   test("далёкая неделя без пар — пустое состояние с выходом к текущей", async ({ page }) => {
     // +1 год от текущего ещё разрешён, но в сиде пар там нет
     const year = Number(THIS_WEEK.slice(0, 4)) + 1;
@@ -167,7 +238,7 @@ test.describe("переключатель и недели", () => {
 });
 
 test.describe("360px и крупный текст", () => {
-  for (const route of ["/schedule", WEEK_URL]) {
+  for (const route of ["/schedule", WEEK_URL, THURSDAY_URL]) {
     for (const scale of ["100%", "200%"]) {
       test(`${route} при тексте ${scale} — без скролла вбок`, async ({ page }) => {
         await page.goto(route);
@@ -230,4 +301,21 @@ test("изоляция: Тимур не видит пар группы Алис�
   expect(timurText).not.toContain("Занятие отработаем на консультации");
   // Языковые группы Алисы — тоже не его
   expect(timurText).not.toMatch(/Англ\. B2-4|Франц\. A2-1/);
+});
+
+test("изоляция на ?day=: у Тимура в четверг нет Одинцова и перехода Алисы", async ({
+  page,
+  browser,
+}) => {
+  await page.goto(THURSDAY_URL);
+  await expect(lessonItems(page).first()).toBeVisible();
+  await transitionToOdintsovo(page);
+
+  const timur = await asTimur(browser);
+  await timur.goto(THURSDAY_URL);
+  await expect(dayNav(timur)).toBeVisible();
+  await expect(lessonItems(timur).first().or(timur.getByText("В этот день пар нет"))).toBeVisible();
+  const text = await timur.getByRole("main").innerText();
+  expect(text).not.toContain("Одинцово");
+  expect(text).not.toContain("Переход в другой корпус");
 });

@@ -3,7 +3,7 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
-import { formatIsoWeek } from "../../src/lib/msk";
+import { addDays, formatIsoWeek, mskDateKey, mskStartOfWeek } from "../../src/lib/msk";
 
 // T03: разделы студента открываются под сессией Алисы (по умолчанию в playwright.config.ts),
 // кабинет сотрудника — под Ириной.
@@ -24,8 +24,15 @@ const STUDENT_ROUTES = [
   "/profile",
   "/assistant",
 ];
-// Неделя расписания (T06) — отдельный вид того же маршрута: свои строки, полоса дней, «Изменения недели»
-const ALL_ROUTES = [...STUDENT_ROUTES, `/schedule?week=${formatIsoWeek(new Date())}`, "/staff"];
+// Неделя и отдельный день расписания (T06) — виды того же маршрута: свои строки, полоса дней,
+// «Изменения недели», строка перехода между корпусами (четверг)
+const THURSDAY = mskDateKey(addDays(mskStartOfWeek(new Date()), 3));
+const ALL_ROUTES = [
+  ...STUDENT_ROUTES,
+  `/schedule?week=${formatIsoWeek(new Date())}`,
+  `/schedule?day=${THURSDAY}`,
+  "/staff",
+];
 
 const BOTTOM = [
   ["Сейчас", "/"],
