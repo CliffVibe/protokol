@@ -27,7 +27,9 @@ export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date
           return (
             <li key={l.id} className="flex flex-col gap-1 py-3">
               <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <StatusChip tone={c.tone}>{c.label}</StatusChip>
+                <StatusChip tone={c.tone} icon={c.icon}>
+                  {c.label}
+                </StatusChip>
                 <span
                   className={l.change === "CANCELLED" ? "text-ink-muted line-through" : "text-ink"}
                 >

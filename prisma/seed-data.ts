@@ -959,8 +959,11 @@ function applyChanges({
   }
 
   // 3) У других групп — смена аудитории и преподавателя (для разнообразия в T06)
-  const timurToday =
-    onDay("grp-4meo1", addDays(today, 1))[0] ?? onDay("grp-4meo1", addDays(today, 2))[0];
+  // Ближайший следующий день с парами: в пятницу «завтра» и «послезавтра» у 4МЭО-1 может не быть пар,
+  // и смена аудитории тихо пропадала (найдено в T06)
+  const timurToday = [1, 2, 3, 4, 5, 6, 7]
+    .map((d) => onDay("grp-4meo1", addDays(today, d))[0])
+    .find((l) => l !== undefined);
   if (timurToday) {
     timurToday.change = "ROOM_CHANGED";
     timurToday.changeNote = `Была ${timurToday.room}`;

@@ -1,4 +1,5 @@
-// Подписи статусов главной «Сейчас»: текст + тон + иконка — цвет никогда не единственный носитель смысла.
+// Подписи статусов «Сейчас» и расписания: текст + тон + иконка — цвет никогда не единственный носитель смысла.
+import { CalendarClock, CircleX, DoorOpen, UserRoundCog, type LucideIcon } from "lucide-react";
 import type { ChangeKind, LessonKind, RequestStatus } from "@/generated/prisma/client";
 import type { StatusTone } from "@/components/status-chip";
 
@@ -10,11 +11,14 @@ export const LESSON_KIND: Record<LessonKind, string> = {
   CONSULTATION: "Консультация",
 };
 
-export const CHANGE: Record<Exclude<ChangeKind, "NONE">, { label: string; tone: StatusTone }> = {
-  MOVED: { label: "Перенос", tone: "warn" },
-  CANCELLED: { label: "Отмена", tone: "danger" },
-  ROOM_CHANGED: { label: "Другая аудитория", tone: "warn" },
-  TEACHER_CHANGED: { label: "Замена преподавателя", tone: "warn" },
+export type LessonChange = Exclude<ChangeKind, "NONE">;
+
+// У каждого изменения своя иконка: три «жёлтых» различимы и без цвета, и без чтения (T06)
+export const CHANGE: Record<LessonChange, { label: string; tone: StatusTone; icon: LucideIcon }> = {
+  MOVED: { label: "Перенос", tone: "warn", icon: CalendarClock },
+  CANCELLED: { label: "Отмена", tone: "danger", icon: CircleX },
+  ROOM_CHANGED: { label: "Другая аудитория", tone: "warn", icon: DoorOpen },
+  TEACHER_CHANGED: { label: "Замена преподавателя", tone: "warn", icon: UserRoundCog },
 };
 
 type ActiveStatus = Extract<RequestStatus, "SUBMITTED" | "ACCEPTED" | "IN_PROGRESS" | "READY">;

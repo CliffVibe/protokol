@@ -5,6 +5,8 @@ import { addDays, mskDateKey, mskStartOfDay, mskStartOfWeek } from "@/lib/msk";
 // Среда, суббота и воскресенье — сид должен давать живое демо в любой день (06-seed-data.md)
 const DATES = {
   wednesday: new Date("2026-11-04T09:30:00+03:00"),
+  // Пятница: «завтра» и «послезавтра» у 4МЭО-1 может не быть пар (T06)
+  friday: new Date("2026-11-06T09:30:00+03:00"),
   saturday: new Date("2026-11-07T09:30:00+03:00"),
   sunday: new Date("2026-11-08T09:30:00+03:00"),
   lateNight: new Date("2026-11-05T04:00:00+03:00"), // время ночного cron
@@ -102,6 +104,23 @@ describe("buildSeed", () => {
         expect(g.some((x) => x.examDate && sameDay(x.examDate, addDays(today, 3)))).toBe(true);
         const r = d.requests.filter((x) => x.studentId === DEMO.timur.studentId);
         expect(r.map((x) => x.status)).toContain("REJECTED");
+      });
+
+      it("для расписания (T06): смена аудитории у Тимура в ближайшие дни, переход в Одинцово у Алисы", () => {
+        const roomChanged = d.lessons.filter(
+          (l) => l.groupId === "grp-4meo1" && l.change === "ROOM_CHANGED",
+        );
+        expect(roomChanged).toHaveLength(1);
+        const at = +new Date(roomChanged[0]!.startsAt);
+        expect(at).toBeGreaterThanOrEqual(+addDays(today, 1));
+        expect(at).toBeLessThan(+addDays(today, 8));
+        const thisWeekOdintsovo = alisaLessons(d).filter(
+          (l) =>
+            l.building === "Одинцово" &&
+            +new Date(l.startsAt) >= +weekStart &&
+            +new Date(l.startsAt) < +weekEnd,
+        );
+        expect(thisWeekOdintsovo.length).toBeGreaterThan(0);
       });
 
       it("у Алисы 2 заявки, одна «Готова» — с документом для QR", () => {
