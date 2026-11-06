@@ -54,7 +54,7 @@ export async function requestByNumber(ctx: StudentCtx, number: string) {
       payload: true,
       createdAt: true,
       updatedAt: true,
-      type: { select: { title: true, slaDays: true, fields: true } },
+      type: { select: { code: true, title: true, slaDays: true, fields: true } },
       events: {
         orderBy: { createdAt: "asc" },
         select: { status: true, comment: true, createdAt: true },

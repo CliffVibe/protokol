@@ -4,6 +4,7 @@ import { cache } from "react";
 import { AlarmClock } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { requestStatus } from "@/components/now/labels";
+import { STAFF_READY_LABEL } from "@/components/staff/labels";
 import { RequestTimeline } from "@/components/requests/timeline";
 import { StatusActions } from "@/components/staff/status-actions";
 import { StatusChip } from "@/components/status-chip";
@@ -40,7 +41,9 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
   const r = await load((await params).number);
   if (!r) notFound();
   const now = new Date();
-  const status = requestStatus(r.status);
+  const base = requestStatus(r.status);
+  // «Готова — заберите» — для студента; сотруднику — «Готова к выдаче» (ux-reviewer, T08)
+  const status = r.status === "READY" ? { ...base, label: STAFF_READY_LABEL } : base;
   const s = r.student;
   const overdue = overdueDays({ ...r, slaDays: r.type.slaDays }, now);
   // Кто сделал шаг: сотрудник — по ФИО, студент — «студент»

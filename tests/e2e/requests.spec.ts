@@ -75,9 +75,10 @@ test("приёмка: Алиса подала → Ирина приняла → 
   await irina.getByRole("button", { name: "Принять" }).click();
   await expect(irina.getByRole("status")).toContainText("Статус изменён");
   await irina.getByRole("button", { name: "Взять в работу" }).click();
-  await expect(irina.getByRole("button", { name: "Готова" })).toBeVisible();
-  await irina.getByRole("button", { name: "Готова" }).click();
-  await expect(irina.getByRole("button", { name: "Выдана" })).toBeVisible();
+  await expect(irina.getByRole("button", { name: "Отметить готовой" })).toBeVisible();
+  await irina.getByRole("button", { name: "Отметить готовой" }).click();
+  await expect(irina.getByRole("button", { name: "Выдать справку" })).toBeVisible();
+  await expect(irina.getByText("Готова к выдаче").first()).toBeVisible();
   await expect(irina.getByRole("list", { name: "Ход заявки" })).toContainText(
     "Морозова Ирина Сергеевна",
   );

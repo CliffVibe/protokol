@@ -5,6 +5,7 @@ import type { Route } from "next";
 import { AlarmClock } from "lucide-react";
 import { formatRelativeDay, plural } from "@/lib/dates";
 import { requestStatus } from "@/components/now/labels";
+import { STAFF_READY_LABEL } from "./labels";
 import { StatusChip } from "@/components/status-chip";
 import { staffRequestHref } from "@/server/services/request-rules";
 import type { QueueItem } from "@/server/services/requests";
@@ -15,7 +16,9 @@ export function shortName(s: { lastName: string; firstName: string; middleName: 
 }
 
 export function QueueRow({ item: r, now }: { item: QueueItem; now: Date }) {
-  const status = requestStatus(r.status);
+  const base = requestStatus(r.status);
+  // «Готова — заберите» — для студента; сотруднику — «Готова к выдаче» (ux-reviewer, T08)
+  const status = r.status === "READY" ? { ...base, label: STAFF_READY_LABEL } : base;
   return (
     <li className="relative flex flex-col gap-1.5 py-4">
       <Link

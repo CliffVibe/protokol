@@ -7,13 +7,19 @@ type FormAlertProps = {
   /** Что делать: «Проверьте раскладку и попробуйте ещё раз». */
   children?: React.ReactNode;
   className?: string;
+  /** -1 — чтобы на сообщение можно было перевести фокус после ответа сервера */
+  tabIndex?: number;
 };
 
 // Ошибка всей формы (не конкретного поля). Тот же язык, что у плашки концепта — сноска с чертой,
 // но черта и иконка цвета --danger. role="alert": скринридер прочитает сразу после отправки.
-export function FormAlert({ title, children, className }: FormAlertProps) {
+export function FormAlert({ title, children, className, tabIndex }: FormAlertProps) {
   return (
-    <div role="alert" className={cn("flex gap-2.5 border-l-2 border-danger py-1 pl-3", className)}>
+    <div
+      role="alert"
+      tabIndex={tabIndex}
+      className={cn("flex gap-2.5 border-l-2 border-danger py-1 pl-3", className)}
+    >
       <CircleAlert aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
       <div className="flex flex-col gap-0.5">
         <p className="text-base font-bold text-ink">{title}</p>

@@ -19,9 +19,10 @@ type Row = {
 /** Что важно знать о заявке сейчас: срок, «заберите» или когда закрыта. */
 function whenText(r: Row, now: Date): string {
   // «Заберите» уже в чипе — здесь только когда стала готова
-  if (r.status === "READY") return `Готова ${formatRelativeDay(r.updatedAt, now)}`;
+  if (r.status === "READY") return `с ${formatRelativeDay(r.updatedAt, now)}`;
   if (r.dueAt) return `Готова к ${formatRelativeDay(r.dueAt, now)}`;
-  return `${requestStatus(r.status).label}: ${formatRelativeDay(r.updatedAt, now)}`;
+  // Статус уже в чипе — здесь только дата
+  return formatRelativeDay(r.updatedAt, now);
 }
 
 export function RequestRow({ request: r, now }: { request: Row; now: Date }) {

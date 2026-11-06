@@ -6,6 +6,7 @@ import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { QueueRow } from "@/components/staff/queue-row";
 import { Button } from "@/components/ui/button";
+import { plural } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { requireStaff } from "@/server/auth/guards";
 import { getQueue } from "@/server/services/requests";
@@ -18,7 +19,7 @@ export const metadata: Metadata = { title: "Кабинет деканата" };
 // Доступ — requireStaff() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
 
 const GROUPS = {
-  pending: { label: "В работе", statuses: ["SUBMITTED", "ACCEPTED", "IN_PROGRESS"] },
+  pending: { label: "Ждут действия", statuses: ["SUBMITTED", "ACCEPTED", "IN_PROGRESS"] },
   ready: { label: "Готовы к выдаче", statuses: ["READY"] },
   closed: { label: "Закрытые", statuses: ["ISSUED", "REJECTED", "CANCELLED"] },
   all: {
@@ -66,7 +67,7 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
         title="Очередь заявок"
         description={
           overdue
-            ? `Просрочено: ${overdue}. Они наверху списка.`
+            ? `${overdue} ${plural(overdue, ["заявка просрочена — она", "заявки просрочены — они", "заявок просрочено — они"])} наверху списка.`
             : "Заявки студентов ваших факультетов — по сроку."
         }
       />

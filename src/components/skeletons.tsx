@@ -247,10 +247,16 @@ export function QueueSkeleton() {
     <div role="status" className="flex flex-col gap-6">
       <span className="sr-only">Загружаем очередь заявок…</span>
       <PageHeaderSkeleton />
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-x-6 border-b border-line">
         {Array.from({ length: 4 }, (_, i) => (
-          <Skeleton key={i} className="h-11 w-28 rounded-lg" />
+          <Skeleton key={i} className="my-3 h-5 w-24" />
         ))}
+      </div>
+      {/* Фильтры: факультет, тип, «Показать» — та же высота, ничего не прыгает */}
+      <div className="flex flex-wrap items-end gap-3">
+        <Skeleton className="h-[4.25rem] w-56 max-w-full" />
+        <Skeleton className="h-[4.25rem] w-64 max-w-full flex-1" />
+        <Skeleton className="h-11 w-28 rounded-lg" />
       </div>
       <RequestRowsSkeleton rows={5} />
     </div>

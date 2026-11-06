@@ -1165,7 +1165,7 @@ function buildRequests({
         status: "READY",
         dayOffset: -1,
         time: "16:20",
-        comment: "Готова. Электронная версия с QR — в карточке заявки",
+        comment: "Готова. Заберите в деканате, кабинет 2104",
       },
     ],
   });
@@ -1282,7 +1282,7 @@ function buildNotifications({
       studentId: a,
       kind: "REQUEST_STATUS",
       title: "Справка готова",
-      body: "Справка об обучении на английском готова — заберите или скачайте PDF.",
+      body: "Справка об обучении на английском готова — заберите в деканате.",
       link: "/requests",
       createdAt: at(-1, "16:20"),
     },

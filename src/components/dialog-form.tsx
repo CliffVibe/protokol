@@ -40,6 +40,15 @@ export function DialogForm<S extends State>({
   const titleId = `dlg-${triggerLabel.replace(/\s+/g, "-")}`;
 
   // Успех — закрываем; данные на странице обновит revalidatePath
+  // Ответ с ошибкой: кнопка была недоступна, фокус упал на <body> — ведём его к тому, что исправить
+  useEffect(() => {
+    if (state.ok || (!state.error && !state.fieldErrors)) return;
+    const target =
+      dialogRef.current?.querySelector<HTMLElement>("[aria-invalid=true]") ??
+      dialogRef.current?.querySelector<HTMLElement>("[role=alert]");
+    target?.focus();
+  }, [state]);
+
   useEffect(() => {
     if (state.ok) dialogRef.current?.close();
   }, [state]);
@@ -73,7 +82,7 @@ export function DialogForm<S extends State>({
             <input key={name} type="hidden" name={name} value={value} />
           ))}
           {children?.(state)}
-          {state.error ? <FormAlert title={state.error} /> : null}
+          {state.error ? <FormAlert title={state.error} tabIndex={-1} /> : null}
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="ghost" onClick={() => dialogRef.current?.close()}>
               Не сейчас

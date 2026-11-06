@@ -49,7 +49,7 @@ export function StatusActions({
           <FormField
             id="comment"
             label="Комментарий студенту (необязательно)"
-            hint="Его увидят в заявке и в уведомлении: «Приняли, срок — 3 рабочих дня»."
+            hint="Его увидят в заявке и в уведомлении."
             error={state.fieldErrors?.comment}
           >
             {(control) => <TextArea {...control} name="comment" maxLength={500} />}

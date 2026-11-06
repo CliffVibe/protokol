@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Link from "next/link";
+import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PageHeader } from "@/components/page-header";
@@ -6,6 +8,7 @@ import { requestStatus } from "@/components/now/labels";
 import { CancelRequest } from "@/components/requests/cancel-request";
 import { RequestTimeline } from "@/components/requests/timeline";
 import { StatusChip } from "@/components/status-chip";
+import { Button } from "@/components/ui/button";
 import { formatRelativeDay } from "@/lib/dates";
 import { requireStudent } from "@/server/auth/guards";
 import { LANGUAGE_LABEL, requestNumberSchema } from "@/server/services/request-rules";
@@ -100,6 +103,20 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
           ))}
         </dl>
       </section>
+
+      {/* Отклонена — не тупик: сразу подать заново ту же справку (ux-reviewer, T08) */}
+      {r.status === "REJECTED" || r.status === "CANCELLED" ? (
+        <div className="flex flex-col items-start gap-2 border-t border-line pt-4">
+          <p className="text-sm text-ink-muted">
+            {r.status === "REJECTED"
+              ? "Исправьте то, что указано в причине, и отправьте заявку ещё раз."
+              : "Если справка всё-таки нужна — закажите её заново."}
+          </p>
+          <Button asChild variant="outline">
+            <Link href={`/requests/new?type=${r.type.code}` as Route}>Подать заново</Link>
+          </Button>
+        </div>
+      ) : null}
 
       {r.canCancel ? (
         <div className="flex flex-col items-start gap-2 border-t border-line pt-4">
