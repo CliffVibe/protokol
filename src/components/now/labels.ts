@@ -21,15 +21,17 @@ export const CHANGE: Record<LessonChange, { label: string; tone: StatusTone; ico
   TEACHER_CHANGED: { label: "Замена преподавателя", tone: "warn", icon: UserRoundCog },
 };
 
-type ActiveStatus = Extract<RequestStatus, "SUBMITTED" | "ACCEPTED" | "IN_PROGRESS" | "READY">;
-
-export const REQUEST_STATUS: Record<ActiveStatus, { label: string; tone: StatusTone }> = {
+// Все статусы заявки: тон + текст (иконку даёт тон StatusChip). «Выдана» — печать (seal, 04-design)
+export const REQUEST_STATUS: Record<RequestStatus, { label: string; tone: StatusTone }> = {
   SUBMITTED: { label: "Подана", tone: "neutral" },
   ACCEPTED: { label: "Принята", tone: "brand" },
   IN_PROGRESS: { label: "В работе", tone: "brand" },
   READY: { label: "Готова — заберите", tone: "ok" },
+  ISSUED: { label: "Выдана", tone: "seal" },
+  REJECTED: { label: "Отклонена", tone: "danger" },
+  CANCELLED: { label: "Отменена", tone: "neutral" },
 };
 
 export function requestStatus(status: RequestStatus) {
-  return REQUEST_STATUS[status as ActiveStatus] ?? { label: status, tone: "neutral" as const };
+  return REQUEST_STATUS[status];
 }

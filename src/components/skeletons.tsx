@@ -204,3 +204,55 @@ export function GradesSkeleton() {
     </div>
   );
 }
+
+/** Строки заявок — той же высоты, что RequestRow (название, номер, чип со сроком). */
+function RequestRowsSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="flex flex-col divide-y divide-line border-y border-line">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="flex flex-col gap-1.5 py-4">
+          <Skeleton className="h-5 w-3/4 max-w-full" />
+          <Skeleton className="h-4 w-1/2" />
+          <Skeleton className="h-7 w-40 rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** «Заявки» (T08): заголовок с кнопкой, «Активные» и «Архив». */
+export function RequestsSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-8 lg:max-w-3xl">
+      <span className="sr-only">Загружаем заявки…</span>
+      <div className="flex flex-wrap items-end justify-between gap-3">
+        <Skeleton className="h-[2.1rem] w-40 lg:h-[2.6rem]" />
+        <Skeleton className="h-12 w-48 rounded-lg" />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-32" />
+        <RequestRowsSkeleton rows={2} />
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="h-7 w-24" />
+        <RequestRowsSkeleton rows={1} />
+      </div>
+    </div>
+  );
+}
+
+/** Очередь заявок сотрудника (T08): заголовок, фильтры, строки. */
+export function QueueSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">Загружаем очередь заявок…</span>
+      <PageHeaderSkeleton />
+      <div className="flex flex-wrap gap-2">
+        {Array.from({ length: 4 }, (_, i) => (
+          <Skeleton key={i} className="h-11 w-28 rounded-lg" />
+        ))}
+      </div>
+      <RequestRowsSkeleton rows={5} />
+    </div>
+  );
+}
