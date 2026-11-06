@@ -39,8 +39,13 @@ model User {
   student      Student?
   staff        Staff?
   sessions     Session[]
-  failedLogins Int      @default(0)
-  lockedUntil  DateTime?
+}
+
+model LoginThrottle {      // блокировка входа по паре «логин + IP» (T03), не по аккаунту
+  key         String   @id  // sha256(логин + IP): ни логина, ни IP в открытом виде
+  failures    Int
+  windowStart DateTime      // окно 15 минут
+  lockedUntil DateTime?     // 5 неудач → 5 минут
 }
 
 model Session {            // храним ХЕШ токена, сам токен — только в cookie
@@ -175,6 +180,19 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 И не в layout: в App Router layout не перерисовывается при клиентской навигации и рендерится параллельно со страницей, а `ctx` из layout в page не передать. Поэтому guard вызывается в каждой page, Server Action и route handler; `cache()` убирает повторные запросы к БД в рамках одного рендера.
 
 Правило: `repos/*` — единственное место с `prisma.*`. Каждая функция первым аргументом получает `ctx`. ESLint-правило `no-restricted-imports` запрещает импорт `@/server/db` вне `repos/`.
+Исключения без `ctx`: `repos/system.ts` (`pingDb`) и `repos/auth.ts` — вход и сессии, где `ctx` ещё нет, его отсюда и получают. В `repos/auth.ts` только явные `select`; `passwordHash` возвращает одна функция (`findLoginCandidate`) и только для `services/auth.ts`.
+
+### Вход и сессии (T03)
+- **Токен:** 32 байта `randomBytes` → cookie `__Host-session` (`HttpOnly; Secure; SameSite=Lax; Path=/`), в БД — `sha256`. 7 дней; `getSession()` продлевает срок в БД не чаще раза в сутки, `proxy.ts` обновляет `Max-Age` cookie на переходах (из Server Component cookie ставить нельзя).
+- **Вход:** zod (логин ≤ 64, пароль ≤ 128 — длиннее argon2 не вызываем); нет логина → `verifyPassword` с фиктивным argon2id-хешем (одинаковое время ответа); ошибка всегда «Неверный логин или пароль».
+- **Блокировка — по паре «логин + IP»** (решение T03 по security-ревью T02): логины жюри публичные, блокировка на аккаунт дала бы любому запереть их вход. 5 неудач за 15 минут → 5 минут; плюс 400 мс задержки после неудачи. Работает и для несуществующих логинов.
+  Попытка «занимается» атомарно до argon2 (`reserveAttempt`: один `INSERT … ON CONFLICT DO UPDATE … RETURNING`) — параллельные запросы получают номера 1, 2, 3…, пароль проверяют только первые пять. Старые счётчики удаляются при неудачах, ночной пересев очищает таблицу.
+  **Ограничения (осознанно для концепта, security-reviewer T03):** нет общего лимита на IP — с одного адреса можно пробовать по 5 паролей на каждый логин; владелец IPv6 /64 меняет адрес на каждую попытку; жюри за общим NAT может задеть сосед по адресу. Если понадобится — мягкий лимит на IP в приложении или `rate_limit` в Caddy.
+- **Откуда IP:** последний адрес `X-Forwarded-For`. На проде его ставит Caddy (заголовок от непроверенного клиента Caddy 2 заменяет адресом соединения), порт приложения наружу не открыт (`expose`). Без Caddy (локально, CI) заголовок подделывается — допустимо: блокировка лишь замедляет перебор, доступ проверяет сессия. e2e пользуются этим, чтобы не копить неудачи на одном адресе.
+- **Неверная роль:** студент на `/staff` и сотрудник на страницах студента — редирект в свой кабинет (`notFound()` рисовался бы внутри чужой оболочки).
+- **Демо-вход** (`DEMO_MODE=1`): Server Action с `z.enum` из 4 фиксированных логинов; режим проверяется на сервере.
+- **CSP с nonce — в `proxy.ts`:** nonce нужен свой на каждый запрос, это умеет только Proxy (локальная документация Next 16.4, `guides/content-security-policy.md`). На проде `script-src`/`style-src` — только `'self'` + nonce; в dev — `'unsafe-eval'` и inline-стили (горячая замена CSS в Turbopack). Остальные заголовки S6 — в `next.config.ts` и Caddy. Доступ `proxy.ts` по-прежнему не проверяет.
+- **Мягкий редирект:** если guard срабатывает после начала стрима (из-за `loading.tsx`), ответ — 200 с `NEXT_REDIRECT` и `<meta http-equiv="refresh">`, без содержимого страницы. Браузер уходит на `/login`; e2e это проверяет.
 
 ## Маршруты
 
@@ -223,7 +241,7 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 
 | Что | Лицензия |
 |---|---|
-| Next.js, React, Prisma, zod, Tailwind | MIT / Apache-2.0 |
+| Next.js, React, Prisma, zod (4.6.7), Tailwind | MIT / Apache-2.0 |
 | shadcn/ui (CLI `shadcn`, dev), `radix-ui`, `cn` (shadcn-ui/cn) | MIT |
 | class-variance-authority | Apache-2.0 |
 | tw-animate-css | MIT |

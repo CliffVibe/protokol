@@ -76,7 +76,8 @@ src/
   server/
     auth/                    # сессии, хеширование, guards
     repos/                   # ВСЕ запросы к БД. Каждая функция принимает ctx с текущим пользователем
-                             #   (единственное исключение — repos/system.ts → pingDb(): данных пользователей не трогает)
+                             #   (исключения: repos/system.ts → pingDb(): данных пользователей не трогает;
+                             #    repos/auth.ts — вход и сессии, ctx ещё нет: только явный select, passwordHash — только для services/auth.ts)
     db.ts                    # единственный PrismaClient (Prisma 7 + @prisma/adapter-pg); импорт — только из repos/
   generated/prisma/          # сгенерированный клиент (не в git; `pnpm db:generate`)
     services/                # бизнес-логика (статусы заявок, расчёт успеваемости, ИИ)
