@@ -1,7 +1,8 @@
-import { PageSkeleton } from "@/components/skeletons";
+import { GradesSkeleton } from "@/components/skeletons";
 
-// Общий skeleton раздела, пока у него нет своего (заводят T06–T12 под точные размеры).
-// Лежит в разделе, а не в (student)/loading.tsx: тот мелькал бы перед skeleton «Сейчас» (ux-reviewer, T05).
+// Skeleton только у списка: он в группе (list), чтобы не оборачивать детали дисциплины.
+// Иначе ответ /grades/[id] начинал бы стримиться до проверки владельца, и чужой id получал бы
+// HTTP 200 вместо 404 (node_modules/next/dist/docs → loading.md, «Status codes»; S1).
 export default function Loading() {
-  return <PageSkeleton />;
+  return <GradesSkeleton />;
 }

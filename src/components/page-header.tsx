@@ -37,7 +37,8 @@ export function PageHeader({
       ) : null}
       <div className="flex flex-wrap items-end justify-between gap-x-4 gap-y-3">
         <div className="flex min-w-0 flex-col gap-1">
-          <Title className="text-2xl tracking-tight lg:text-3xl">{title}</Title>
+          {/* break-words: одно длинное слово («Эконометрика» при тексте 200%) переносится, а не растягивает экран (T07) */}
+          <Title className="text-2xl tracking-tight break-words lg:text-3xl">{title}</Title>
           {description ? <p className="text-base text-ink-muted">{description}</p> : null}
         </div>
         {action ? <div className="shrink-0">{action}</div> : null}

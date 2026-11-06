@@ -157,3 +157,50 @@ export function ScheduleSkeleton() {
     </div>
   );
 }
+
+/** Строки дисциплин — той же высоты, что DisciplineRow (название, тип, бар с числом, чип). */
+function DisciplineRowsSkeleton({ rows }: { rows: number }) {
+  return (
+    <div className="flex flex-col divide-y divide-line border-y border-line">
+      {Array.from({ length: rows }, (_, i) => (
+        <div key={i} className="flex flex-col gap-2 py-4">
+          <Skeleton className="h-5 w-3/4 max-w-full" />
+          <Skeleton className="h-4 w-1/2" />
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-2.5 flex-1" />
+            <Skeleton className="h-6 w-14" />
+          </div>
+          <Skeleton className="h-7 w-28 rounded-full" />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** «Учёба» (T07): заголовок, сводка «Как у меня дела», семестры, строки дисциплин — та же сетка. */
+export function GradesSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">Загружаем успеваемость…</span>
+      <PageHeaderSkeleton />
+      <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start lg:gap-x-12">
+        <div className="flex flex-col gap-3 lg:col-start-2 lg:row-start-1">
+          <Skeleton className="h-7 w-48 max-w-full" />
+          <div className="flex flex-col gap-4 border-t border-line pt-3">
+            <Skeleton className="h-8 w-64 max-w-full" />
+            <Skeleton className="h-5 w-32" />
+            <Skeleton className="h-7 w-52 max-w-full rounded-full" />
+          </div>
+        </div>
+        <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1">
+          <div className="flex gap-6 border-b border-line">
+            <Skeleton className="my-3 h-5 w-24" />
+            <Skeleton className="my-3 h-5 w-24" />
+          </div>
+          <Skeleton className="h-7 w-56 max-w-full" />
+          <DisciplineRowsSkeleton rows={4} />
+        </div>
+      </div>
+    </div>
+  );
+}

@@ -5,6 +5,7 @@ import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
 import type { StudySummary } from "@/server/services/academics";
+import { ScholarshipBadge } from "@/components/grades/scholarship-badge";
 import type { FeedRequest, NowFeed, SoonItem } from "@/server/services/now";
 import type { LessonRow } from "@/server/repos/schedule";
 import { FeedList, FeedSection } from "./feed-section";
@@ -202,22 +203,7 @@ export function StudyBlock({ study }: { study: StudySummary | null }) {
               `${study.semester}-й семестр: баллов пока нет`
             )}
           </p>
-          {study.scholarship.kept ? (
-            <StatusChip tone="ok" className="self-start">
-              Стипендия сохраняется
-            </StatusChip>
-          ) : (
-            <div className="flex flex-col gap-1.5">
-              <StatusChip tone="warn" className="self-start">
-                Стипендия под угрозой
-              </StatusChip>
-              <ul aria-label="Причины" className="list-disc pl-5 text-sm text-ink">
-                {study.scholarship.reasons.map((r) => (
-                  <li key={r}>{r}</li>
-                ))}
-              </ul>
-            </div>
-          )}
+          <ScholarshipBadge scholarship={study.scholarship} />
         </div>
       ) : (
         <p className="border-t border-line pt-3 text-base text-ink-muted">
