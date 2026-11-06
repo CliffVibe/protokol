@@ -1,5 +1,5 @@
 // День расписания: заголовок и пары под тонкими линиями — графы бланка, без карточек (как лента «Сейчас»).
-import { Footprints, Languages } from "lucide-react";
+import { CircleCheck, Footprints, GraduationCap, Languages } from "lucide-react";
 import { formatLongDay } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { ScheduleDay, Transition } from "@/server/services/schedule";
@@ -59,14 +59,17 @@ export function LessonRow({
   lesson: LessonView;
   transition: Transition | null;
 }) {
-  const { change, cancelled } = lesson;
+  const { change, cancelled, past } = lesson;
+  const quiet = cancelled || past;
   return (
     <li
       className={cn(
         "relative flex flex-wrap gap-x-4 gap-y-2 py-3",
-        // Полоса слева — третий носитель изменения после иконки и текста, не единственный
-        change && "border-l-4 pl-3",
-        change && (cancelled ? "border-l-danger" : "border-l-warn"),
+        // Полоса изменения — в поле страницы, слева от строки: столбец времени остаётся ровным.
+        // Это третий носитель смысла после иконки и текста, не единственный. Размеры в px — не растут при 200%.
+        change &&
+          "before:absolute before:inset-y-3 before:left-[-10px] before:w-[4px] before:rounded-full",
+        change && (cancelled ? "before:bg-danger" : "before:bg-warn"),
       )}
     >
       {transition ? <TransitionHint transition={transition} /> : null}
@@ -75,7 +78,8 @@ export function LessonRow({
         <span
           className={cn(
             "font-heading text-lg leading-tight font-bold",
-            cancelled ? "text-ink-muted line-through" : "text-ink",
+            quiet ? "text-ink-muted" : "text-ink",
+            cancelled && "line-through",
           )}
         >
           {lesson.start}
@@ -91,7 +95,8 @@ export function LessonRow({
           lesson={lesson}
           className={cn(
             "self-start text-base font-bold",
-            cancelled ? "text-ink-muted line-through" : "text-ink",
+            quiet ? "text-ink-muted" : "text-ink",
+            cancelled && "line-through",
           )}
         >
           {lesson.title}
@@ -104,9 +109,15 @@ export function LessonRow({
         </p>
         <p className="text-sm text-ink-muted">{lesson.teacher}</p>
 
-        {lesson.language || lesson.ongoing || change ? (
+        {lesson.language || lesson.ongoing || lesson.exam || (past && !cancelled) || change ? (
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
             {lesson.ongoing ? <StatusChip tone="brand">Идёт сейчас</StatusChip> : null}
+            {past && !cancelled ? <StatusChip icon={CircleCheck}>Прошла</StatusChip> : null}
+            {lesson.exam ? (
+              <StatusChip tone="brand" icon={GraduationCap}>
+                Экзамен
+              </StatusChip>
+            ) : null}
             {change ? (
               <StatusChip tone={change.tone} icon={CHANGE[change.kind].icon}>
                 {change.label}
@@ -132,13 +143,15 @@ export function LessonRow({
 }
 
 function TransitionHint({ transition }: { transition: Transition }) {
-  // Новый корпус уже написан в строке пары — здесь только «что делать» и сколько на это времени
+  // Время в дороге не выдумываем: показываем, сколько есть на переход и куда идти
   return (
-    <p className="flex basis-full items-start gap-2 text-sm font-bold text-brand">
+    <p className="flex basis-full items-start gap-2 text-sm text-brand">
       <Footprints aria-hidden className="mt-0.5 size-4 shrink-0" />
-      <span>
-        Переход между корпусами: перерыв {transition.breakMinutes} мин
-        <span className="sr-only">, из корпуса «{transition.from}»</span>
+      <span className="flex flex-col">
+        <span className="font-bold">
+          Переход между корпусами: перерыв {transition.breakMinutes} мин
+        </span>
+        <span>Куда: {transition.to}</span>
       </span>
     </p>
   );

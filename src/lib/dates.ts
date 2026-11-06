@@ -81,14 +81,20 @@ const DAY_NUMBER = new Intl.DateTimeFormat("ru-RU", {
   timeZone: UNIVERSITY_TIME_ZONE,
 });
 
-/** «9–15 ноября» / «30 ноября – 6 декабря» — неделя с понедельника `weekStart`. */
-export function formatWeekRange(weekStart: Date): string {
+const YEAR = new Intl.DateTimeFormat("ru-RU", { year: "numeric", timeZone: UNIVERSITY_TIME_ZONE });
+
+/**
+ * «9–15 ноября» / «30 ноября – 6 декабря» — неделя с понедельника `weekStart`.
+ * Неделя не текущего года — с годом: «17–23 мая 2027» (ux-reviewer, T06).
+ */
+export function formatWeekRange(weekStart: Date, now?: Date): string {
   const end = new Date(weekStart.getTime() + 6 * DAY_MS);
   const from = DAY_MONTH.format(weekStart);
   const to = DAY_MONTH.format(end);
   const [fromDay, ...fromMonth] = from.split(" ");
   const toMonth = to.split(" ").slice(1);
-  return fromMonth.join(" ") === toMonth.join(" ") ? `${fromDay}–${to}` : `${from} – ${to}`;
+  const range = fromMonth.join(" ") === toMonth.join(" ") ? `${fromDay}–${to}` : `${from} – ${to}`;
+  return now && YEAR.format(end) !== YEAR.format(now) ? `${range} ${YEAR.format(end)}` : range;
 }
 
 /** Для полосы дней: { weekday: "пн", day: "9" }. */

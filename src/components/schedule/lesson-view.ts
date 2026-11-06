@@ -1,6 +1,7 @@
 // Пара для экрана расписания: готовые строки по Москве. Объект простой и сериализуемый —
 // тот же уходит в клиентский лист с деталями, и время там не пересчитывается в поясе браузера.
 import { formatLongDay, formatTime, formatWas } from "@/lib/dates";
+import { mskDateKey } from "@/lib/msk";
 import type { LessonRow } from "@/server/repos/schedule";
 import type { StatusTone } from "@/components/status-chip";
 import { CHANGE, LESSON_KIND, type LessonChange } from "@/components/now/labels";
@@ -30,6 +31,12 @@ export type LessonView = {
   } | null;
   cancelled: boolean;
   ongoing: boolean;
+  /**
+   * Пара сегодня уже закончилась: экран отвечает «куда идти дальше» (ux-reviewer, T06).
+   * Прошедшие дни недели не помечаем — там это шум, а не подсказка.
+   */
+  past: boolean;
+  exam: boolean;
 };
 
 export function toLessonView(lesson: LessonRow, now: Date): LessonView {
@@ -61,5 +68,7 @@ export function toLessonView(lesson: LessonRow, now: Date): LessonView {
     change,
     cancelled,
     ongoing: !cancelled && lesson.startsAt <= now && now < lesson.endsAt,
+    past: lesson.endsAt <= now && mskDateKey(lesson.startsAt) === mskDateKey(now),
+    exam: lesson.kind === "EXAM",
   };
 }

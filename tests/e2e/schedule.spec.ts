@@ -120,7 +120,8 @@ test.describe("переключатель и недели", () => {
     ).toBeVisible();
 
     await toggle.getByRole("link", { name: "Неделя" }).click();
-    await expect(page).toHaveURL(new RegExp(`\\?week=${THIS_WEEK}$`));
+    // «Неделя» сразу ведёт к сегодняшнему дню — в пятницу не листать пять экранов
+    await expect(page).toHaveURL(new RegExp(`\\?week=${THIS_WEEK}#day-\\d{4}-\\d{2}-\\d{2}$`));
     const weeks = page.getByRole("navigation", { name: "Недели", exact: true });
     await expect(weeks).toContainText("Эта неделя");
     const range = await weeks.locator("p").first().innerText();

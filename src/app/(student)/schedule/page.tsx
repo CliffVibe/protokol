@@ -96,35 +96,36 @@ async function WeekView({ ctx, now, weekStart }: { ctx: StudentCtx; now: Date; w
   const todayKey = mskDateKey(now);
   const empty = days.every((d) => d.items.length === 0);
 
-  return (
-    <div className="flex flex-col gap-6">
-      <WeekNav weekStart={weekStart} currentWeekStart={mskStartOfWeek(now)} />
-      {empty ? (
+  const nav = <WeekNav weekStart={weekStart} currentWeekStart={mskStartOfWeek(now)} now={now} />;
+
+  if (empty)
+    return (
+      <div className="flex flex-col gap-6 lg:max-w-2xl">
+        {nav}
+        {/* «К текущей неделе» уже есть в шапке недели — вторая такая же кнопка не нужна (ux-reviewer, T06) */}
         <EmptyState
           title="На этой неделе пар нет"
-          description="Расписание на другие недели — стрелками выше."
-          action={
-            <Button asChild variant="outline">
-              <Link href={weekHref(now)}>К текущей неделе</Link>
-            </Button>
-          }
+          description="Другие недели — стрелками выше или «К текущей неделе»."
         />
-      ) : (
-        <>
-          <DayStrip days={days} todayKey={todayKey} />
-          {/* Изменения в DOM — до дней: на телефоне сверху, на ≥ 1024 — правая колонка (как «Ближайшее» в T05) */}
-          <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-x-12">
-            <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
-              <ChangesSummary changes={changes} now={now} />
-            </div>
-            <div className="flex min-w-0 flex-col gap-8 lg:col-start-1 lg:row-start-1">
-              {days.map((d) => (
-                <DaySection key={d.key} day={d} now={now} isToday={d.key === todayKey} />
-              ))}
-            </div>
-          </div>
-        </>
-      )}
+      </div>
+    );
+
+  // ≥ 1024: слева шапка недели, полоса дней и дни; справа — «Изменения недели».
+  // В DOM изменения идут до дней: на телефоне они сверху (как «Ближайшее» в T05); место задаёт сетка.
+  return (
+    <div className="flex flex-col gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,20rem)] lg:items-start lg:gap-x-12">
+      <div className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1">
+        {nav}
+        <DayStrip days={days} todayKey={todayKey} />
+      </div>
+      <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-1">
+        <ChangesSummary changes={changes} now={now} />
+      </div>
+      <div className="flex min-w-0 flex-col gap-8 pt-2 lg:col-start-1 lg:row-start-2">
+        {days.map((d) => (
+          <DaySection key={d.key} day={d} now={now} isToday={d.key === todayKey} />
+        ))}
+      </div>
     </div>
   );
 }

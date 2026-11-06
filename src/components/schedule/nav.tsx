@@ -18,7 +18,8 @@ export const weekHref = (d: Date, hash?: string) =>
 export function ScheduleToggle({ view, now }: { view: "today" | "week"; now: Date }) {
   const items = [
     { key: "today", label: "Сегодня", href: "/schedule" as Route },
-    { key: "week", label: "Неделя", href: weekHref(now) },
+    // Сразу к сегодняшнему дню: в пятницу не листать пять экранов (ux-reviewer, T06)
+    { key: "week", label: "Неделя", href: weekHref(now, `day-${mskDateKey(now)}`) },
   ] as const;
   return (
     <nav aria-label="Вид расписания">
@@ -58,43 +59,54 @@ function relativeWeek(offset: number): string | null {
 export function WeekNav({
   weekStart,
   currentWeekStart,
+  now,
 }: {
   weekStart: Date;
   currentWeekStart: Date;
+  now: Date;
 }) {
   const offset = Math.round((+weekStart - +currentWeekStart) / (7 * 24 * 3600 * 1000));
   const prev = addDays(weekStart, -7);
   const next = addDays(weekStart, 7);
   const relative = relativeWeek(offset);
   return (
-    <nav aria-label="Недели" className="flex flex-col gap-1">
-      <div className="flex items-center justify-between gap-2">
+    <nav aria-label="Недели">
+      <div className="flex items-start justify-between gap-2">
         {/* Размер цели — в px: при тексте 200% стрелки не растут и не наезжают на даты (урок T04) */}
         <Button asChild variant="outline" size="icon" className="size-[44px]">
-          <Link href={weekHref(prev)} aria-label={`Предыдущая неделя, ${formatWeekRange(prev)}`}>
+          <Link
+            href={weekHref(prev)}
+            aria-label={`Предыдущая неделя, ${formatWeekRange(prev, now)}`}
+          >
             <ChevronLeft aria-hidden className="size-5" />
           </Link>
         </Button>
         <div className="flex min-w-0 flex-1 flex-col items-center text-center break-words">
           <p className="font-heading text-xl font-bold text-ink tabular">
-            {formatWeekRange(weekStart)}
+            {formatWeekRange(weekStart, now)}
           </p>
-          {relative ? <p className="text-sm text-ink-muted">{relative}</p> : null}
+          {/* Высота строки постоянная: «К текущей неделе» появляется на месте, ничего ниже не сдвигается */}
+          <p className="flex min-h-11 flex-wrap items-center justify-center gap-x-3 text-sm">
+            {relative ? <span className="text-ink-muted">{relative}</span> : null}
+            {offset !== 0 ? (
+              <Link
+                href={weekHref(currentWeekStart)}
+                className="inline-flex min-h-11 items-center font-bold text-brand underline-offset-4 hover:underline"
+              >
+                К текущей неделе
+              </Link>
+            ) : null}
+          </p>
         </div>
         <Button asChild variant="outline" size="icon" className="size-[44px]">
-          <Link href={weekHref(next)} aria-label={`Следующая неделя, ${formatWeekRange(next)}`}>
+          <Link
+            href={weekHref(next)}
+            aria-label={`Следующая неделя, ${formatWeekRange(next, now)}`}
+          >
             <ChevronRight aria-hidden className="size-5" />
           </Link>
         </Button>
       </div>
-      {offset !== 0 ? (
-        <Link
-          href={weekHref(currentWeekStart)}
-          className="inline-flex min-h-11 items-center self-center text-sm font-bold text-brand underline-offset-4 hover:underline"
-        >
-          К текущей неделе
-        </Link>
-      ) : null}
     </nav>
   );
 }
@@ -102,7 +114,7 @@ export function WeekNav({
 /** Пн…сб якорями: на телефоне до четверга — одно касание, а не прокрутка всей недели. */
 export function DayStrip({ days, todayKey }: { days: ScheduleDay[]; todayKey: string }) {
   return (
-    <nav aria-label="Дни недели" className="lg:max-w-xl">
+    <nav aria-label="Дни недели">
       <ul className="flex flex-wrap">
         {days.map((d) => {
           const { weekday, day } = formatDayShort(d.start);
@@ -114,7 +126,7 @@ export function DayStrip({ days, todayKey }: { days: ScheduleDay[]; todayKey: st
                 href={`#day-${d.key}`}
                 aria-current={isToday ? "date" : undefined}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center rounded-lg border-b-2 px-1 py-1 text-center hover:bg-muted",
+                  "flex min-h-14 flex-col items-center justify-center border-b-2 px-1 py-1 text-center hover:bg-surface",
                   isToday ? "border-brand font-bold text-ink" : "border-transparent text-ink-muted",
                 )}
               >
@@ -151,7 +163,7 @@ export function ChangesSummary({ changes, now }: { changes: LessonRow[]; now: Da
               <li key={l.id}>
                 <a
                   href={`#day-${mskDateKey(l.startsAt)}`}
-                  className="flex min-h-11 flex-col gap-1 py-3 hover:bg-muted"
+                  className="flex min-h-11 flex-col gap-1 py-3 hover:bg-surface"
                 >
                   <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <StatusChip tone={c.tone} icon={c.icon}>

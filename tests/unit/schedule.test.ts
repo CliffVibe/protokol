@@ -189,3 +189,23 @@ describe("toLessonView", () => {
     expect(v.room).toBe("4012");
   });
 });
+
+describe("toLessonView — прошедшие и экзамен", () => {
+  const now = msk("2026-11-12T13:00:00");
+  it("закончилась сегодня — past; вчерашняя — нет (в неделе это шум)", () => {
+    expect(toLessonView(lesson("2026-11-12T09:00:00", "2026-11-12T10:20:00"), now).past).toBe(true);
+    expect(toLessonView(lesson("2026-11-11T09:00:00", "2026-11-11T10:20:00"), now).past).toBe(
+      false,
+    );
+    expect(toLessonView(lesson("2026-11-12T12:40:00", "2026-11-12T14:00:00"), now).past).toBe(
+      false,
+    );
+  });
+  it("экзамен помечен", () => {
+    const v = toLessonView(
+      lesson("2026-11-12T10:00:00", "2026-11-12T13:00:00", { kind: "EXAM" }),
+      now,
+    );
+    expect(v.exam).toBe(true);
+  });
+});

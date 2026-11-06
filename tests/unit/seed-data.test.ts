@@ -123,6 +123,19 @@ describe("buildSeed", () => {
         expect(thisWeekOdintsovo.length).toBeGreaterThan(0);
       });
 
+      it("пары Тимура (группа и язык) не пересекаются, в том числе с экзаменом", () => {
+        const timur = d.lessons
+          .filter(
+            (l) =>
+              (l.groupId === "grp-4meo1" || l.languageGroupId === "lg-en-c1-2") &&
+              l.change !== "CANCELLED",
+          )
+          .map((l) => [+new Date(l.startsAt), +new Date(l.endsAt)] as const)
+          .sort((a, b) => a[0] - b[0]);
+        for (let i = 1; i < timur.length; i++)
+          expect(timur[i]![0]).toBeGreaterThanOrEqual(timur[i - 1]![1]);
+      });
+
       it("у Алисы 2 заявки, одна «Готова» — с документом для QR", () => {
         const r = d.requests.filter((x) => x.studentId === DEMO.alisa.studentId);
         expect(r).toHaveLength(2);

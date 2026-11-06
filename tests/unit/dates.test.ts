@@ -37,3 +37,13 @@ describe("даты расписания (T06)", () => {
     expect(formatLessonCount(n)).toBe(text);
   });
 });
+
+describe("formatWeekRange с годом", () => {
+  const msk = (s: string) => new Date(`${s}+03:00`);
+  const now = msk("2026-11-06T12:00:00");
+  it("текущий год — без года, другой — с годом", () => {
+    expect(formatWeekRange(msk("2026-11-09T00:00:00"), now)).toBe("9–15 ноября");
+    expect(formatWeekRange(msk("2027-05-17T00:00:00"), now)).toBe("17–23 мая 2027");
+    expect(formatWeekRange(msk("2026-12-28T00:00:00"), now)).toBe("28 декабря – 3 января 2027");
+  });
+});

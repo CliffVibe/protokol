@@ -905,6 +905,19 @@ function buildLessons({
     groupId: "grp-4meo1",
   });
 
+  // В день экзамена у 4МЭО-1 обычных пар нет: экзамен 10:00–13:00 иначе накладывался на пары
+  // 09:00 и 10:40 (ux-reviewer, T06)
+  const examKey = mskDateKey(examDay);
+  for (let i = lessons.length - 1; i >= 0; i--) {
+    const l = lessons[i]!;
+    if (
+      l.groupId === "grp-4meo1" &&
+      l.kind !== "EXAM" &&
+      mskDateKey(new Date(l.startsAt)) === examKey
+    )
+      lessons.splice(i, 1);
+  }
+
   applyChanges({ lessons, today, todayWeekday, weekStart });
   return lessons;
 }
@@ -962,7 +975,7 @@ function applyChanges({
   // Ближайший следующий день с парами: в пятницу «завтра» и «послезавтра» у 4МЭО-1 может не быть пар,
   // и смена аудитории тихо пропадала (найдено в T06)
   const timurToday = [1, 2, 3, 4, 5, 6, 7]
-    .map((d) => onDay("grp-4meo1", addDays(today, d))[0])
+    .map((d) => onDay("grp-4meo1", addDays(today, d)).find((l) => l.kind !== "EXAM"))
     .find((l) => l !== undefined);
   if (timurToday) {
     timurToday.change = "ROOM_CHANGED";

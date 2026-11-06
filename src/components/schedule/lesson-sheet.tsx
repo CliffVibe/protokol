@@ -64,10 +64,7 @@ function SheetBody({ lesson, onClose }: { lesson: LessonView; onClose: () => voi
           <p className="text-sm text-ink-muted">{lesson.day}</p>
           <h2
             id="lesson-sheet-title"
-            className={cn(
-              "text-xl break-words hyphens-auto",
-              lesson.cancelled && "text-ink-muted line-through",
-            )}
+            className={cn("text-xl break-words", lesson.cancelled && "text-ink-muted line-through")}
           >
             {lesson.title}
           </h2>
