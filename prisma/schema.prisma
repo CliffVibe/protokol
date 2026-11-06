@@ -61,11 +61,11 @@ enum NotificationKind {
 // ── Пользователи и сессии ────────────────────────────────────────────────
 
 model User {
-  id           String    @id @default(cuid())
-  login        String    @unique
+  id           String   @id @default(cuid())
+  login        String   @unique
   passwordHash String // только argon2id (S2)
   role         Role
-  createdAt    DateTime  @default(now())
+  createdAt    DateTime @default(now())
 
   student       Student?
   staff         Staff?
@@ -266,9 +266,12 @@ model Request {
   status    RequestStatus   @default(SUBMITTED)
   events    RequestEvent[]
   document  IssuedDocument?
+  /// Одноразовый ключ формы: повторная отправка (двойной клик) не создаёт вторую заявку (T08)
+  clientKey String?
   createdAt DateTime        @default(now())
   updatedAt DateTime        @updatedAt
 
+  @@unique([studentId, clientKey])
   @@index([studentId, createdAt])
   @@index([status])
 }
