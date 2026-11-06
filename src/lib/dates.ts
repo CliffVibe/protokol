@@ -84,17 +84,27 @@ const DAY_NUMBER = new Intl.DateTimeFormat("ru-RU", {
 const YEAR = new Intl.DateTimeFormat("ru-RU", { year: "numeric", timeZone: UNIVERSITY_TIME_ZONE });
 
 /**
- * «9–15 ноября» / «30 ноября – 6 декабря» — неделя с понедельника `weekStart`.
- * Неделя не текущего года — с годом: «17–23 мая 2027» (ux-reviewer, T06).
+ * «13–20 января» / «30 ноября – 6 декабря» / «13 января» (один день). Год — если `to` не в году `now`:
+ * «17–23 мая 2027» (ux-reviewer, T06).
  */
+export function formatDayRange(from: Date, to: Date, now?: Date): string {
+  const a = DAY_MONTH.format(from);
+  const b = DAY_MONTH.format(to);
+  const [fromDay, ...fromMonth] = a.split(" ");
+  const toMonth = b.split(" ").slice(1);
+  const range =
+    a === b ? a : fromMonth.join(" ") === toMonth.join(" ") ? `${fromDay}–${b}` : `${a} – ${b}`;
+  return now && YEAR.format(to) !== YEAR.format(now) ? `${range} ${YEAR.format(to)}` : range;
+}
+
+/** «9–15 ноября» — неделя с понедельника `weekStart` (см. formatDayRange). */
 export function formatWeekRange(weekStart: Date, now?: Date): string {
-  const end = new Date(weekStart.getTime() + 6 * DAY_MS);
-  const from = DAY_MONTH.format(weekStart);
-  const to = DAY_MONTH.format(end);
-  const [fromDay, ...fromMonth] = from.split(" ");
-  const toMonth = to.split(" ").slice(1);
-  const range = fromMonth.join(" ") === toMonth.join(" ") ? `${fromDay}–${to}` : `${from} – ${to}`;
-  return now && YEAR.format(end) !== YEAR.format(now) ? `${range} ${YEAR.format(end)}` : range;
+  return formatDayRange(weekStart, new Date(weekStart.getTime() + 6 * DAY_MS), now);
+}
+
+/** «20 января» по Москве. */
+export function formatDayMonth(date: Date): string {
+  return DAY_MONTH.format(date);
 }
 
 /** Для полосы дней: { weekday: "пн", day: "9" }. */
@@ -102,17 +112,25 @@ export function formatDayShort(date: Date): { weekday: string; day: string } {
   return { weekday: WEEKDAY_SHORT.format(date), day: DAY_NUMBER.format(date) };
 }
 
-/** «1 пара», «3 пары», «5 пар». */
-export function formatLessonCount(n: number): string {
+/** Русское множественное: plural(3, ["пара", "пары", "пар"]) → «пары». */
+export function plural(n: number, [one, few, many]: [string, string, string]): string {
   const mod10 = n % 10;
   const mod100 = n % 100;
-  const word =
-    mod10 === 1 && mod100 !== 11
-      ? "пара"
-      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
-        ? "пары"
-        : "пар";
-  return `${n} ${word}`;
+  if (mod10 === 1 && mod100 !== 11) return one;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return few;
+  return many;
+}
+
+/** «1 пара», «3 пары», «5 пар». */
+export function formatLessonCount(n: number): string {
+  return `${n} ${plural(n, ["пара", "пары", "пар"])}`;
+}
+
+/** «сегодня» / «завтра» / «через 3 дня» / «через 5 дней» — по числу московских суток. */
+export function formatInDays(days: number): string {
+  if (days <= 0) return "сегодня";
+  if (days === 1) return "завтра";
+  return `через ${days} ${plural(days, ["день", "дня", "дней"])}`;
 }
 
 /** «было 09:00» — если тот же день, иначе «было вчера, 09:00» / «было пн, 9 нояб., 09:00». */
