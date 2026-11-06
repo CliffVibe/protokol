@@ -22,7 +22,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           {/* TODO(T09): пункт «Объявления» вместе с маршрутом */}
           {/* На телефоне: логотип — первой строкой, разделы и тема — второй; на ≥ 768 — всё в одну.
               Порядок в DOM совпадает с визуальным — Tab идёт так же, как видно. */}
-          <nav aria-label="Разделы кабинета" className="min-w-0 flex-1">
+          <nav aria-label="Разделы кабинета" className="shrink-0">
             <ul className="flex flex-wrap gap-1">
               <li>
                 <Link

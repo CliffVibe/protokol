@@ -248,6 +248,20 @@ test.describe("служебные страницы", () => {
       await expect(page.getByRole("navigation", { name: "Разделы кабинета" })).toBeVisible();
       await expect(mainNav(page)).toHaveCount(0);
     });
+
+    test("в шапке «Заявки» не уходит под переключатель темы (ux-reviewer T03)", async ({
+      page,
+    }) => {
+      await page.goto("/staff");
+      const nav = await page.getByRole("navigation", { name: "Разделы кабинета" }).boundingBox();
+      const theme = await page.getByRole("group", { name: "Тема" }).boundingBox();
+      expect(nav && theme).toBeTruthy();
+      const overlapX =
+        Math.min(nav!.x + nav!.width, theme!.x + theme!.width) - Math.max(nav!.x, theme!.x);
+      const overlapY =
+        Math.min(nav!.y + nav!.height, theme!.y + theme!.height) - Math.max(nav!.y, theme!.y);
+      expect(overlapX <= 0 || overlapY <= 0, "блоки шапки пересекаются").toBe(true);
+    });
   });
 });
 

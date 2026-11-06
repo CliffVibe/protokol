@@ -308,6 +308,51 @@ test.describe("вход и сессии (T03)", () => {
     });
   });
 
+  // ── Правки ux-reviewer T03: клавиатура и крупный текст на экране входа ──
+  test("поле получает видимое кольцо фокуса с клавиатуры", async ({ page }) => {
+    await page.goto("/login");
+    await page.keyboard.press("Tab"); // «Перейти к содержимому»
+    await page.keyboard.press("Tab");
+    const login = page.getByLabel("Логин");
+    await expect(login).toBeFocused();
+    const outline = await login.evaluate((el) => {
+      const cs = getComputedStyle(el);
+      return { style: cs.outlineStyle, width: parseFloat(cs.outlineWidth) };
+    });
+    expect(outline.style).not.toBe("none");
+    expect(outline.width).toBeGreaterThanOrEqual(2);
+  });
+
+  test("после ответа формы фокус там, где исправлять, а не на <body>", async ({ browser }) => {
+    const page = await freshPage(browser, randomIpHeaders());
+    await page.goto("/login");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page.getByLabel("Логин")).toBeFocused();
+
+    await fillLogin(page, "student.savelev", "wrong-password");
+    await expect(page.getByLabel("Пароль", { exact: true })).toBeFocused();
+  });
+
+  test("ошибка поля гаснет, когда его начали править", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("button", { name: "Войти", exact: true }).click();
+    await expect(page.getByText("Введите логин")).toBeVisible();
+    await page.getByLabel("Логин").pressSequentially("st");
+    await expect(page.getByText("Введите логин")).toHaveCount(0);
+    await expect(page.getByText("Введите пароль")).toBeVisible();
+  });
+
+  test("/login при тексте 200% — без скролла вбок", async ({ page }) => {
+    await page.goto("/login");
+    await page.evaluate(() => {
+      document.documentElement.style.fontSize = "200%";
+    });
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(0);
+  });
+
   test("вход и выход на 360px", async ({ page, isMobile }) => {
     test.skip(!isMobile, "проект mobile-360");
     await loginAs(page, "timur");

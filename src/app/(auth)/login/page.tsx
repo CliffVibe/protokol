@@ -2,12 +2,12 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ConceptBanner } from "@/components/concept-banner";
 import { LogoSeal } from "@/components/logo-seal";
-import { Button } from "@/components/ui/button";
 import { DEMO_ACCOUNTS, DEMO_SCENARIOS } from "@/lib/demo-accounts";
 import { demoLogin } from "@/server/actions/auth";
 import { homeFor } from "@/server/auth/guards";
 import { getSession } from "@/server/auth/session";
 import { isDemoMode } from "@/server/services/auth";
+import { DemoSubmit } from "./demo-submit";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Вход" };
@@ -20,10 +20,14 @@ export default async function LoginPage() {
 
   return (
     <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
-      <section aria-labelledby="login-title" className="flex w-full flex-col gap-6 lg:max-w-md">
-        <div className="flex items-center gap-4">
+      <section
+        aria-labelledby="login-title"
+        className="flex w-full min-w-0 flex-col gap-6 lg:max-w-md"
+      >
+        {/* flex-wrap + basis: при тексте 200% заголовок уходит под печать, а не вылезает вбок */}
+        <div className="flex flex-wrap items-center gap-4">
           <LogoSeal variant="stamp" className="size-24 lg:size-32" />
-          <div className="flex min-w-0 flex-col gap-1">
+          <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
             <h1 id="login-title" className="font-heading text-2xl font-bold text-ink lg:text-3xl">
               Вход в Протокол
             </h1>
@@ -37,7 +41,15 @@ export default async function LoginPage() {
 
         <p className="text-sm text-ink-muted">
           Тестовые аккаунты — в описании работы.
-          {demo ? " Или войдите в один клик — в блоке «Демо-режим»." : null}
+          {demo ? (
+            <>
+              {" Или войдите одним нажатием — "}
+              <a href="#demo-title" className="text-brand underline underline-offset-4">
+                в блоке «Демо-режим»
+              </a>
+              .
+            </>
+          ) : null}
         </p>
       </section>
 
@@ -50,10 +62,10 @@ function DemoPanel() {
   return (
     <section
       aria-labelledby="demo-title"
-      className="flex w-full flex-col gap-6 border-t border-line pt-8 lg:max-w-xl lg:border-t-0 lg:border-l lg:pt-0 lg:pl-16"
+      className="flex w-full min-w-0 flex-col gap-6 border-t border-line pt-8 lg:max-w-xl lg:border-t-0 lg:border-l lg:pt-0 lg:pl-16"
     >
       <div className="flex flex-col gap-2">
-        <h2 id="demo-title" className="font-heading text-xl font-bold text-ink">
+        <h2 id="demo-title" className="scroll-mt-6 font-heading text-xl font-bold text-ink">
           Демо-режим
         </h2>
         <p className="text-base text-ink-muted">
@@ -64,12 +76,16 @@ function DemoPanel() {
       <ul className="flex flex-col gap-3">
         {DEMO_ACCOUNTS.map((a) => (
           <li key={a.login}>
-            <form action={demoLogin} className="flex flex-wrap items-center gap-x-4 gap-y-1">
+            {/* До sm — подпись всегда под кнопкой (ровный ритм), с sm — в ряд */}
+            <form
+              action={demoLogin}
+              className="flex flex-col items-start gap-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4"
+            >
               <input type="hidden" name="login" value={a.login} />
-              <Button type="submit" variant="outline" className="min-w-44">
-                Войти как {a.name}
-              </Button>
-              <span className="text-sm text-ink-muted">{a.about}</span>
+              <DemoSubmit name={a.name} describedBy={`demo-${a.login}`} />
+              <span id={`demo-${a.login}`} className="text-sm text-ink-muted">
+                {a.about}
+              </span>
             </form>
           </li>
         ))}

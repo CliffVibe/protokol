@@ -10,7 +10,8 @@ function Input({ className, type = "text", ...props }: React.ComponentProps<"inp
       data-slot="input"
       className={cn(
         "h-12 w-full min-w-0 rounded-lg border border-input bg-surface px-3.5 text-base text-ink transition-colors duration-150 ease-out outline-none placeholder:text-ink-muted",
-        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring",
+        // outline-none в Tailwind v4 ставит outline-style: none, и без outline-solid кольца фокуса не видно
+        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring",
         "aria-invalid:border-danger aria-invalid:shadow-[inset_0_0_0_1px_var(--danger)] disabled:cursor-not-allowed disabled:opacity-50",
         className,
       )}
