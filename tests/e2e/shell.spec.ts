@@ -3,7 +3,8 @@
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
-import { addDays, formatIsoWeek, mskDateKey, mskStartOfWeek } from "../../src/lib/msk";
+import { addDays, formatIsoWeek, mskDateKey, mskStartOfWeek, mskYear } from "../../src/lib/msk";
+import { formatRequestNumber } from "../../src/server/services/request-rules";
 
 // T03: разделы студента открываются под сессией Алисы (по умолчанию в playwright.config.ts),
 // кабинет сотрудника — под Ириной.
@@ -33,6 +34,11 @@ const ALL_ROUTES = [
   `/schedule?day=${THURSDAY}`,
   // Детали дисциплины (T07) — у Алисы (сессия по умолчанию) это «Теория международных отношений»
   "/grades/dsc-tmo",
+  // Заявки (T08): каталог, форма, заявка Алисы и карточка у сотрудника (номера сида: seq 1 и 2)
+  "/requests/new",
+  "/requests/new?type=embassy",
+  `/requests/${encodeURIComponent(formatRequestNumber(mskYear(addDays(new Date(), -3)), 1))}`,
+  `/staff/requests/${encodeURIComponent(formatRequestNumber(mskYear(addDays(new Date(), -1)), 2))}`,
   "/staff",
 ];
 
@@ -138,7 +144,13 @@ test.describe("навигация студента", () => {
           els
             .filter((el) => !el.matches(".sr-only"))
             .map((el) => {
-              const r = el.getBoundingClientRect();
+              // Строка-ссылка (T06–T08): касание — по всей строке через растянутый ::after
+              // (absolute, inset 0) поверх ближайшего позиционированного предка. Меряем её.
+              const after = getComputedStyle(el, "::after");
+              const stretched =
+                after.content !== "none" && after.position === "absolute" && after.inset === "0px";
+              const area = stretched ? ((el as HTMLElement).offsetParent ?? el) : el;
+              const r = area.getBoundingClientRect();
               return {
                 text: (el.textContent ?? "").trim() || el.getAttribute("title"),
                 w: r.width,

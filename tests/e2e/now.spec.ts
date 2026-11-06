@@ -30,7 +30,8 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
     await expect(
       page.getByRole("region", { name: "Изменения" }).getByText("Перенос"),
     ).toBeVisible();
-    await expect(page.getByText("Готова — заберите")).toBeVisible();
+    // first(): параллельные тесты заявок (T08) могут ненадолго добавить Алисе свою «Готова»
+    await expect(page.getByText("Готова — заберите").first()).toBeVisible();
     await expect(page.getByText("Стипендия сохраняется")).toBeVisible();
   });
 

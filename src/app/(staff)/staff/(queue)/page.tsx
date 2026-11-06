@@ -79,7 +79,8 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
                 href={href({ status: g, faculty, type })}
                 aria-current={g === status ? "page" : undefined}
                 className={cn(
-                  "-mb-px inline-flex min-h-11 items-center border-b-2 text-base",
+                  // min-w-11: «Все» короче 44px — цель касания держим и для коротких подписей
+                  "-mb-px inline-flex min-h-11 min-w-11 items-center justify-center border-b-2 text-base",
                   g === status
                     ? "border-brand font-bold text-ink"
                     : "border-transparent text-ink-muted hover:text-ink",

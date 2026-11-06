@@ -1,8 +1,10 @@
-// proxy.ts (в Next 16 так называется middleware). ДВЕ задачи, и ни одна из них не проверка доступа:
+// proxy.ts (в Next 16 так называется middleware). ТРИ задачи, и ни одна из них не проверка доступа:
 //  1. Удобство: без cookie сессии — сразу на /login. Доступ ВСЕГДА проверяют requireStudent()/requireStaff()
 //     на сервере (docs/05-security.md → S1; история CVE-2025-29927 — обход middleware заголовком).
 //  2. CSP с nonce (S6): по документации Next 16.4 (guides/content-security-policy.md) nonce на каждый
 //     запрос можно выдать только здесь; статический CSP в next.config.ts сломал бы inline-скрипты Next.
+//  3. Битая %-последовательность в пути (/requests/%E0%A4) — сразу 400: иначе Next падает на разборе
+//     параметров страницы с 500 (T08).
 // Остальные заголовки S6 — в next.config.ts.
 import { NextResponse, type NextRequest } from "next/server";
 import {
@@ -34,8 +36,24 @@ export function buildCsp(nonce: string, { dev, https }: { dev: boolean; https: b
   ].join("; ");
 }
 
+/** Путь декодируется без ошибки (нет битых %-последовательностей). */
+export function isWellFormedPath(pathname: string): boolean {
+  try {
+    decodeURIComponent(pathname);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+  if (!isWellFormedPath(pathname)) {
+    return new NextResponse("Неверный адрес", {
+      status: 400,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
   const token = request.cookies.get(SESSION_COOKIE)?.value;
   const isPublic = PUBLIC_PATHS.some((re) => re.test(pathname));
 

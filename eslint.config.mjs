@@ -91,12 +91,15 @@ const eslintConfig = defineConfig([
   {
     // Где работа с БД разрешена: репозитории, клиент, сид/миграции и интеграционные тесты,
     // а также security.spec.ts — тест 6 из 05-security проверяет хеши паролей прямо в БД
+    // и requests.spec.ts + helpers/db.ts — двойная отправка считается в БД, тестовые заявки убираются (T08)
     files: [
       "src/server/repos/**",
       "src/server/db.ts",
       "prisma/**",
       "tests/integration/**",
       "tests/e2e/security.spec.ts",
+      "tests/e2e/requests.spec.ts",
+      "tests/e2e/helpers/db.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

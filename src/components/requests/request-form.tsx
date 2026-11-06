@@ -109,7 +109,7 @@ export function RequestForm({
         <input type="hidden" name="language" value={languages[0]} />
       )}
 
-      <Button type="submit" size="lg" loading={pending} className="self-start">
+      <Button type="submit" size="lg" loading={pending} className="w-full sm:w-auto sm:self-start">
         Отправить заявку
       </Button>
     </form>

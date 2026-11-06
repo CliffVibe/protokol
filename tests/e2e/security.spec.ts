@@ -8,6 +8,7 @@ import { expect, test, type Browser, type BrowserContext, type Page } from "@pla
 import pg from "pg";
 import { STORAGE } from "../../playwright.config";
 import { ACCOUNTS, ANON, fillLogin, loginAs, randomIpHeaders } from "./helpers/auth";
+import { deleteTestRequests } from "./helpers/db";
 
 const SESSION = "__Host-session";
 
@@ -17,15 +18,83 @@ async function freshPage(browser: Browser, headers?: Record<string, string>): Pr
   return ctx.newPage();
 }
 
+/** Заявки тестов 1–2 — удаляются после файла: e2e работают с той же базой, что и демо (T08). */
+const created: string[] = [];
+test.afterAll(async () => {
+  await deleteTestRequests(created);
+});
+
+/** Вход Тимура демо-кнопкой: тестам 1–2 не нужен пароль, а повторные входы по паролю упираются в лимит. */
+async function demoLoginAsTimur(page: Page) {
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Войти как Тимур" }).click();
+  await expect(page).toHaveURL(/\/$/);
+}
+
 test.describe("05-security: обязательные тесты", () => {
-  test.fixme("1. Студент Б открывает /requests/<номер заявки А> → 404 (T08: маршрут /requests/[number])", async () => {
-    // T08: номер заявки А брать через её же сессию (список /requests под Алисой), а не из сида,
-    // затем под Тимуром открыть /requests/<номер> → статус 404 и нет данных заявки в HTML.
+  test("1. Студент Б открывает /requests/<номер заявки А> → 404, данных заявки в ответе нет", async ({
+    page,
+    browser,
+  }) => {
+    // Номер и данные заявки Алисы — из её же сессии, после загрузки (урок T05), а не из сида
+    await page.goto("/requests");
+    const link = page.getByRole("list", { name: "Активные заявки" }).getByRole("link").first();
+    await expect(link).toBeVisible();
+    const href = (await link.getAttribute("href"))!;
+    const number = decodeURIComponent(href.split("/").pop()!);
+    await page.goto(href);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    const given = await page
+      .getByRole("region", { name: "Что вы указали" })
+      .locator("dd")
+      .last()
+      .innerText();
+    expect(given.length).toBeGreaterThan(3);
+
+    const timur = await freshPage(browser);
+    await demoLoginAsTimur(timur);
+    const res = await timur.goto(href);
+    expect(res?.status()).toBe(404);
+    await expect(timur.getByRole("heading", { name: "Такой заявки у вас нет" })).toBeVisible();
+    await expect(timur.getByRole("main")).not.toContainText(number);
+    expect(await timur.content()).not.toContain(given);
+    expect(await timur.title()).not.toContain(number);
   });
 
-  test.fixme("2. Студент Б вызывает Server Action отмены заявки А → ошибка, заявка не изменилась (T08)", async () => {
-    // T08: под Тимуром отправить action отмены с номером заявки Алисы; затем под Алисой —
-    // статус прежний.
+  test("2. Студент Б вызывает Server Action отмены заявки А → ошибка, заявка не изменилась", async ({
+    page,
+    browser,
+  }) => {
+    const submit = async (p: Page) => {
+      await p.goto("/requests/new?type=study_ru");
+      await p.getByLabel("Куда предоставляется").fill(`e2e-sec-${randomBytes(4).toString("hex")}`);
+      await p.getByRole("button", { name: "Отправить заявку" }).click();
+      await expect(p).toHaveURL(/\/requests\/%D0%A1-/);
+      const n = decodeURIComponent(new URL(p.url()).pathname.split("/").pop()!);
+      created.push(n);
+      return n;
+    };
+    const alisaNumber = await submit(page);
+
+    // Тимур открывает СВОЮ заявку, подменяет номер в форме отмены на номер Алисы и отправляет —
+    // ровно то, что сделал бы злоумышленник с настоящим Server Action
+    const timur = await freshPage(browser);
+    await demoLoginAsTimur(timur);
+    const timurNumber = await submit(timur);
+    await timur.getByRole("button", { name: "Отменить заявку" }).click();
+    const dialog = timur.getByRole("dialog");
+    await dialog.locator('input[name="number"]').evaluate((el, n) => {
+      (el as HTMLInputElement).value = n;
+    }, alisaNumber);
+    await dialog.getByRole("button", { name: "Отменить заявку" }).click();
+    await expect(dialog.getByRole("alert")).toContainText("Отменить нельзя");
+
+    // Заявка Алисы — по-прежнему «Подана» (смотрим под Алисой), заявка Тимура тоже не тронута
+    await page.goto(`/requests/${encodeURIComponent(alisaNumber)}`);
+    await expect(page.getByRole("button", { name: "Отменить заявку" })).toBeVisible();
+    await expect(page.getByText("Отменена", { exact: true })).toHaveCount(0);
+    await timur.goto(`/requests/${encodeURIComponent(timurNumber)}`);
+    await expect(timur.getByRole("button", { name: "Отменить заявку" })).toBeVisible();
   });
 
   test("3. Студент открывает /staff → не видит кабинет сотрудника", async ({ page }) => {
