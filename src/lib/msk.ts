@@ -43,3 +43,8 @@ export function mskDateKey(d: Date): string {
 export function mskYear(d: Date): number {
   return new Date(d.getTime() + MSK_OFFSET_MS).getUTCFullYear();
 }
+
+/** Час по Москве, 0–23. */
+export function mskHour(d: Date): number {
+  return new Date(d.getTime() + MSK_OFFSET_MS).getUTCHours();
+}
