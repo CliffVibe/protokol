@@ -95,6 +95,17 @@ export const requestNumberSchema = z.string().regex(/^С-\d{4}-\d{5,9}$/);
 
 // ── Статусы ──
 
+export const ALL_STATUSES = [
+  "SUBMITTED",
+  "ACCEPTED",
+  "IN_PROGRESS",
+  "READY",
+  "ISSUED",
+  "REJECTED",
+  "CANCELLED",
+] as const satisfies readonly RequestStatus[];
+export const statusSchema = z.enum(ALL_STATUSES);
+
 export const ACTIVE_STATUSES = ["SUBMITTED", "ACCEPTED", "IN_PROGRESS", "READY"] as const;
 export const ARCHIVE_STATUSES = ["ISSUED", "REJECTED", "CANCELLED"] as const;
 /** «В работе у деканата» — то, что ещё надо сделать (фильтр очереди по умолчанию). */
@@ -250,6 +261,9 @@ export function notificationFor(
       return { title: "Статус заявки изменён", body: typeTitle };
   }
 }
+
+/** Карточка заявки в кабинете сотрудника. */
+export const staffRequestHref = (number: string) => `/staff/requests/${encodeURIComponent(number)}`;
 
 /** Ссылка заявки внутри кабинета студента. */
 export const requestHref = (number: string) => `/requests/${encodeURIComponent(number)}`;
