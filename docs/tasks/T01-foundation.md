@@ -5,7 +5,7 @@
 ## Сделать
 - **Сначала:** `claude --version` ≥ последней; прочитать `docs/07-tooling.md`; `npm i -g typescript-language-server typescript`; включить плагины из `.claude/settings.json` (`/plugin`); `/mcp` → playwright и shadcn в статусе Connected.
 - Скелет Next.js собираем руками (то же, что даёт create-next-app: TS strict, App Router, Tailwind, ESLint, `src/`), версии без `^`, `"packageManager": "pnpm@11.28.10"`; `pnpm-workspace.yaml` из каркаса не перезаписывать.
-- 05.11 стартуем на **next 16.4.4**: 16.4.5 пропустит `minimumReleaseAge` только 06.11 после 21:02 МСК. Подъём до 16.4.5 — отдельным коммитом.
+- 05.11 стартуем на **next 16.4.4**: 16.4.5 пропустит `minimumReleaseAge` только 06.11 после 21:02 МСК. Подъём до 16.4.5 — отдельным коммитом. ☑ 06.11: `next` и `eslint-config-next` 16.4.5, все проверки и полный e2e — зелёные.
 - TypeScript 6.0.3 (TS 7 — нативный, без tsserver; совместимость с LSP и Next не проверена).
 - ESLint `no-restricted-imports`: `@/server/db` только из `src/server/repos/**`, `src/server/db.ts`, `prisma/**` (перенесено из T02: страховка на случай записи файлов в обход хука). Prettier — нужен хуку `format.mjs`.
 - shadcn/ui init; lucide-react; шрифты Manrope + Inter через `next/font`.
