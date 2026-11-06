@@ -3,7 +3,7 @@ import { Pin } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
-import { formatRelativeDay, formatTime } from "@/lib/dates";
+import { formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
 import type { StudySummary } from "@/server/services/academics";
 import type { FeedRequest, NowFeed, SoonItem } from "@/server/services/now";
 import type { LessonRow } from "@/server/repos/schedule";
@@ -11,6 +11,7 @@ import { FeedList, FeedSection } from "./feed-section";
 import { CHANGE, requestStatus } from "./labels";
 
 const when = (d: Date, now: Date) => `${formatRelativeDay(d, now)}, ${formatTime(d)}`;
+const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
 
 export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date }) {
   if (!changes.length) return null;
@@ -18,7 +19,7 @@ export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date
     <FeedSection
       id="changes-title"
       title="Изменения"
-      link={{ href: "/schedule", label: "Расписание" }}
+      link={{ href: "/schedule", label: "Всё расписание" }}
     >
       <FeedList label="Изменения в расписании на сегодня и завтра">
         {changes.map((l) => {
@@ -36,7 +37,7 @@ export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date
               <p className="font-bold text-ink">{l.discipline.name}</p>
               <p className="text-sm text-ink-muted">
                 {l.change === "MOVED" && l.originalStartsAt
-                  ? `Было ${formatTime(l.originalStartsAt)}. `
+                  ? `${capitalize(formatWas(l.originalStartsAt, l.startsAt, now))}. `
                   : null}
                 {l.change === "CANCELLED" ? null : `Ауд. ${l.room}, ${l.building}.`}
                 {l.changeNote ? ` ${l.changeNote}` : null}
@@ -49,7 +50,15 @@ export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date
   );
 }
 
-export function SoonBlock({ soon, now }: { soon: SoonItem[]; now: Date }) {
+export function SoonBlock({
+  soon,
+  now,
+  deadlinesFailed,
+}: {
+  soon: SoonItem[];
+  now: Date;
+  deadlinesFailed: boolean;
+}) {
   return (
     <FeedSection
       id="soon-title"
@@ -69,9 +78,16 @@ export function SoonBlock({ soon, now }: { soon: SoonItem[]; now: Date }) {
         </FeedList>
       ) : (
         <p className="border-t border-line pt-3 text-base text-ink-muted">
-          Ближайших дедлайнов и экзаменов нет.
+          {deadlinesFailed
+            ? "Дедлайны не загрузились — обновите страницу чуть позже."
+            : "Ближайших дедлайнов и экзаменов нет."}
         </p>
       )}
+      {deadlinesFailed && soon.length ? (
+        <p className="text-sm text-ink-muted">
+          Дедлайны не загрузились — показаны только экзамены.
+        </p>
+      ) : null}
     </FeedSection>
   );
 }
@@ -96,8 +112,10 @@ export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now:
                 <p className="font-bold text-ink">{r.type.title}</p>
                 <p className="text-sm text-ink-muted">
                   {r.status === "READY"
-                    ? "Можно забрать в деканате."
-                    : `Ожидаемый срок: ${formatRelativeDay(r.dueAt, now)}`}
+                    ? "Заберите в деканате своего факультета: пн–пт, с 10:00 до 17:00."
+                    : r.dueAt < now
+                      ? `Срок прошёл: ${formatRelativeDay(r.dueAt, now)}. Деканат уже видит заявку`
+                      : `Ожидаемый срок: ${formatRelativeDay(r.dueAt, now)}`}
                 </p>
               </li>
             );
@@ -124,6 +142,7 @@ export function AnnouncementsBlock({
   announcements,
   now,
 }: {
+  /** null — объявления не загрузились */
   announcements: NowFeed["announcements"];
   now: Date;
 }) {
@@ -133,7 +152,11 @@ export function AnnouncementsBlock({
       title="Объявления"
       link={{ href: "/notifications", label: "Все объявления" }}
     >
-      {announcements.length ? (
+      {announcements === null ? (
+        <p className="border-t border-line pt-3 text-base text-ink-muted">
+          Объявления не загрузились — обновите страницу чуть позже.
+        </p>
+      ) : announcements.length ? (
         <FeedList label="Объявления деканата">
           {announcements.map((a) => (
             <li key={a.id} className="flex flex-col gap-1 py-3">

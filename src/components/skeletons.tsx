@@ -69,3 +69,52 @@ export function PageSkeleton() {
     </div>
   );
 }
+
+/**
+ * Блок ленты «Сейчас»: заголовок и строки под тонкими линиями — без рамки и фона, как сама лента
+ * (ux-reviewer, T05: одинаковые карточки-заглушки прыгали и спорили с 04-design).
+ */
+export function FeedSectionSkeleton({
+  rows = 2,
+  className,
+}: {
+  rows?: number;
+  className?: string;
+}) {
+  return (
+    <div className={cn("flex flex-col gap-2", className)}>
+      <div className="flex min-h-11 items-center justify-between gap-4">
+        <Skeleton className="h-6 w-36 max-w-full" />
+        <Skeleton className="h-4 w-20 max-w-full" />
+      </div>
+      <div className="flex flex-col divide-y divide-line border-y border-line">
+        {Array.from({ length: rows }, (_, i) => (
+          <div key={i} className="flex flex-col gap-2 py-3">
+            <Skeleton className="h-7 w-32 max-w-full rounded-full" />
+            <Skeleton className="h-5 w-3/4" />
+            <Skeleton className="h-4 w-1/2" />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Ближайшая пара: карточка с крупным временем — по высоте как NowCard. */
+export function NowCardSkeleton({ className }: { className?: string }) {
+  return (
+    <div
+      className={cn(
+        "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 md:p-5",
+        className,
+      )}
+    >
+      <Skeleton className="h-4 w-28 max-w-full" />
+      <Skeleton className="h-10 w-48 max-w-full" />
+      <Skeleton className="h-6 w-2/3" />
+      <Skeleton className="h-4 w-24 max-w-full" />
+      <SkeletonText lines={2} />
+      <Skeleton className="h-4 w-28 max-w-full" />
+    </div>
+  );
+}

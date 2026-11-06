@@ -1,6 +1,6 @@
 import "server-only";
 import type { RequestStatus } from "@/generated/prisma/client";
-import { addDays, mskStartOfDay } from "@/lib/msk";
+import { addBusinessDays, addDays, mskStartOfDay } from "@/lib/msk";
 import type { StudentCtx } from "@/server/auth/guards";
 import { announcementsFor, deadlinesFor } from "@/server/repos/announcements";
 import { gradesOf } from "@/server/repos/grades";
@@ -12,7 +12,6 @@ import { summarizeStudy, type StudySummary } from "./academics";
 // Главная «Сейчас» (T05): всё, что важно студенту в эту минуту, одной функцией.
 // Все запросы — параллельно и только через репозитории с ctx (S1).
 
-const DAY_MS = 24 * 60 * 60 * 1000;
 /** На сколько дней вперёд ищем ближайшую пару, если сегодня всё прошло. */
 const LOOKAHEAD_DAYS = 8;
 const SOON_LIMIT = 3;
@@ -34,7 +33,11 @@ export type NowFeed = {
   changes: LessonRow[];
   soon: SoonItem[];
   requests: FeedRequest[];
-  announcements: { id: string; title: string; body: string; publishedAt: Date; pinned: boolean }[];
+  /** null — не загрузились: остальная лента всё равно показывается (ux-reviewer, T05) */
+  announcements:
+    { id: string; title: string; body: string; publishedAt: Date; pinned: boolean }[] | null;
+  /** Дедлайны не загрузились — «Скоро» показывает только экзамены и честно об этом говорит */
+  deadlinesFailed: boolean;
   study: StudySummary | null;
 };
 
@@ -54,25 +57,30 @@ export function pickChanges(lessons: LessonRow[], now: Date): LessonRow[] {
   return lessons.filter((l) => l.change !== "NONE" && l.startsAt >= from && l.startsAt < to);
 }
 
-/** «Готова — заберите» первой, дальше — по последнему изменению. */
+/** «Готова — заберите» первой, дальше — по последнему изменению. Срок — в рабочих днях. */
 export function sortRequests(rows: RequestRow[]): FeedRequest[] {
   const rank = (s: RequestStatus) => (s === "READY" ? 0 : 1);
   return rows
-    .map((r) => ({ ...r, dueAt: new Date(r.createdAt.getTime() + r.type.slaDays * DAY_MS) }))
+    .map((r) => ({ ...r, dueAt: addBusinessDays(r.createdAt, r.type.slaDays) }))
     .sort((a, b) => rank(a.status) - rank(b.status) || +b.updatedAt - +a.updatedAt);
 }
 
 export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promise<NowFeed | null> {
   const today = mskStartOfDay(now);
-  const [reader, lessons, requests, grades, announcements, deadlines] = await Promise.all([
-    readerOf(ctx),
-    lessonsBetween(ctx, today, addDays(today, LOOKAHEAD_DAYS)),
-    activeRequests(ctx),
-    gradesOf(ctx),
-    announcementsFor(ctx, now),
-    deadlinesFor(ctx, now),
+  // Главное (пара, заявки, оценки) — обязательно; объявления и дедлайны — по возможности:
+  // их сбой не должен прятать ближайшую пару.
+  const [[reader, lessons, requests, grades], [annResult, ddlResult]] = await Promise.all([
+    Promise.all([
+      readerOf(ctx),
+      lessonsBetween(ctx, today, addDays(today, LOOKAHEAD_DAYS)),
+      activeRequests(ctx),
+      gradesOf(ctx),
+    ]),
+    Promise.allSettled([announcementsFor(ctx, now), deadlinesFor(ctx, now)]),
   ]);
   if (!reader) return null;
+  const announcements = annResult.status === "fulfilled" ? annResult.value : null;
+  const deadlines = ddlResult.status === "fulfilled" ? ddlResult.value : [];
 
   const exams: SoonItem[] = grades
     .filter((g) => g.examDate && g.examDate >= now)
@@ -90,9 +98,9 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
   }));
   const soon = [...exams, ...dues].sort((a, b) => +a.at - +b.at).slice(0, SOON_LIMIT);
 
-  const pinned = announcements.filter((a) => a.pinned);
-  const latest = announcements.find((a) => !a.pinned);
-  const shownAnnouncements = [...pinned, ...(latest ? [latest] : [])];
+  const pinned = announcements?.filter((a) => a.pinned) ?? [];
+  const latest = announcements?.find((a) => !a.pinned);
+  const shownAnnouncements = announcements ? [...pinned, ...(latest ? [latest] : [])] : null;
 
   return {
     firstName: reader.firstName,
@@ -101,6 +109,7 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
     soon,
     requests: sortRequests(requests),
     announcements: shownAnnouncements,
+    deadlinesFailed: ddlResult.status === "rejected",
     study: summarizeStudy(grades),
   };
 }

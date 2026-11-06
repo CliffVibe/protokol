@@ -1,5 +1,6 @@
+import Link from "next/link";
 import { CircleAlert, MapPin, UserRound } from "lucide-react";
-import { formatCountdown, formatRelativeDay, formatTime } from "@/lib/dates";
+import { formatCountdown, formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { NextLesson } from "@/server/services/now";
 import { Countdown } from "./countdown";
@@ -17,7 +18,7 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
       ? "Идёт сейчас"
       : day === "сегодня"
         ? "Следующая пара"
-        : `Ближайшая пара, ${day}`;
+        : `Ближайшая пара — ${day}`;
 
   return (
     <article
@@ -71,7 +72,7 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
           <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           <span>
             {moved
-              ? `Перенос: было ${formatTime(lesson.originalStartsAt!)}`
+              ? `Перенос: ${formatWas(lesson.originalStartsAt!, lesson.startsAt, now)}`
               : lesson.change === "ROOM_CHANGED"
                 ? "Другая аудитория"
                 : "Замена преподавателя"}
@@ -79,6 +80,13 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
           </span>
         </p>
       ) : null}
+      {/* Главный блок тоже ведёт в раздел — за 1 касание (ux-reviewer, T05) */}
+      <Link
+        href="/schedule"
+        className="inline-flex min-h-11 items-center self-start text-sm font-bold text-brand underline-offset-4 hover:underline"
+      >
+        Всё расписание
+      </Link>
     </article>
   );
 }

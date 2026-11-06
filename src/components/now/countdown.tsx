@@ -5,7 +5,8 @@ import { useEffect, useState } from "react";
 import { formatCountdown } from "@/lib/dates";
 
 // «через 25 мин» / «идёт, до конца 40 мин». Первое значение считает сервер (нет рассинхрона гидрации),
-// дальше — раз в минуту в браузере. Пара закончилась — просим у сервера свежую ленту.
+// дальше — раз в минуту в браузере. Пара началась или закончилась — просим у сервера свежую ленту
+// (заголовок «Следующая пара» → «Идёт сейчас», потом — следующая пара).
 // Без aria-live: объявлять каждую минуту скринридером было бы шумом.
 export function Countdown({
   startsAt,
@@ -22,11 +23,13 @@ export function Countdown({
   useEffect(() => {
     const start = new Date(startsAt);
     const end = new Date(endsAt);
+    let started = new Date() >= start;
     const tick = () => {
       const now = new Date();
-      if (now >= end) {
+      if (now >= end || (!started && now >= start)) {
+        started = true;
         router.refresh();
-        return;
+        if (now >= end) return;
       }
       setText(formatCountdown(start, end, now));
     };

@@ -1,4 +1,4 @@
-import { PageHeaderSkeleton, SkeletonCard, SkeletonList } from "@/components/skeletons";
+import { FeedSectionSkeleton, NowCardSkeleton, PageHeaderSkeleton } from "@/components/skeletons";
 
 // Загрузка «Сейчас»: та же сетка, что у ленты, — ничего не прыгает, когда данные приходят.
 export default function Loading() {
@@ -11,12 +11,12 @@ export default function Loading() {
       <span className="sr-only">Загружаем ваш день…</span>
       <PageHeaderSkeleton className="lg:col-span-2" />
       <div className="flex flex-col gap-8 lg:col-start-2 lg:row-span-3 lg:row-start-2">
-        <SkeletonCard />
-        <SkeletonList rows={2} />
+        <NowCardSkeleton />
+        <FeedSectionSkeleton rows={3} />
       </div>
-      <SkeletonList rows={2} />
-      <SkeletonList rows={2} />
-      <SkeletonList rows={1} />
+      <FeedSectionSkeleton rows={2} />
+      <FeedSectionSkeleton rows={3} />
+      <FeedSectionSkeleton rows={1} />
     </div>
   );
 }

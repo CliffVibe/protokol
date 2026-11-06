@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { EmptyState } from "@/components/empty-state";
 import {
@@ -10,6 +11,7 @@ import {
 } from "@/components/now/blocks";
 import { NowCard } from "@/components/now/now-card";
 import { PageHeader } from "@/components/page-header";
+import { Button } from "@/components/ui/button";
 import { formatLongDay, greetingFor } from "@/lib/dates";
 import { requireStudent } from "@/server/auth/guards";
 import { getNowFeed } from "@/server/services/now";
@@ -17,8 +19,8 @@ import { getNowFeed } from "@/server/services/now";
 export const metadata: Metadata = { title: "Сейчас" };
 
 // Главная «Сейчас» (T05, сценарий 1 «Утро»): за 0 касаний — что важно в эту минуту.
-// Мобильный: блоки сверху вниз по срочности. Десктоп ≥ 1024: справа колонка «Сегодня»
-// (пара, изменения, скоро). В DOM «Сегодня» идёт первой — так же читают скринридер и Tab;
+// Мобильный: блоки сверху вниз по срочности. Десктоп ≥ 1024: справа колонка «Ближайшее»
+// (пара, изменения, скоро). В DOM «Ближайшее» идёт первой — так же читают скринридер и Tab;
 // колонку на место ставит сетка, а не CSS order (урок T04, ai-errors.md).
 // Доступ — requireStudent() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
 export default async function NowPage() {
@@ -36,19 +38,24 @@ export default async function NowPage() {
       />
 
       <section
-        aria-label="Сегодня"
+        aria-label="Ближайшее"
         className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-3 lg:row-start-2"
       >
         {feed.next ? (
           <NowCard next={feed.next} now={now} />
         ) : (
           <EmptyState
-            title="На этой неделе пар больше нет"
-            description="Можно выдохнуть. Расписание на следующую неделю — в разделе «Расписание»."
+            title="В ближайшие дни пар нет"
+            description="Можно выдохнуть. Следующую неделю смотрите в расписании."
+            action={
+              <Button asChild variant="outline">
+                <Link href="/schedule">Всё расписание</Link>
+              </Button>
+            }
           />
         )}
         <ChangesBlock changes={feed.changes} now={now} />
-        <SoonBlock soon={feed.soon} now={now} />
+        <SoonBlock soon={feed.soon} now={now} deadlinesFailed={feed.deadlinesFailed} />
       </section>
 
       <RequestsBlock requests={feed.requests} now={now} />

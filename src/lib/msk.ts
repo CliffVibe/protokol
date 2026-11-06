@@ -48,3 +48,14 @@ export function mskYear(d: Date): number {
 export function mskHour(d: Date): number {
   return new Date(d.getTime() + MSK_OFFSET_MS).getUTCHours();
 }
+
+/** +N рабочих дней (пн–пт по Москве): срок заявки не выпадает на воскресенье (ux-reviewer, T05). */
+export function addBusinessDays(d: Date, days: number): Date {
+  let result = d;
+  let left = days;
+  while (left > 0) {
+    result = addDays(result, 1);
+    if (mskWeekday(result) <= 5) left -= 1;
+  }
+  return result;
+}

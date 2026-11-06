@@ -1,7 +1,8 @@
 // Главная «Сейчас» (T05): правило стипендии, адресаты объявлений, выбор пары, человеческие даты.
 import { describe, expect, it } from "vitest";
 import { matchesAudience } from "@/lib/audience";
-import { formatCountdown, formatRelativeDay, greetingFor } from "@/lib/dates";
+import { formatCountdown, formatRelativeDay, formatWas, greetingFor } from "@/lib/dates";
+import { addBusinessDays } from "@/lib/msk";
 import { summarizeStudy, type GradeRow } from "@/server/services/academics";
 import { pickChanges, pickNext, sortRequests } from "@/server/services/now";
 import type { LessonRow } from "@/server/repos/schedule";
@@ -184,6 +185,20 @@ describe("человеческие даты", () => {
     expect(formatRelativeDay(msk("2026-11-06T09:00"), now)).toBe("сегодня");
     expect(formatRelativeDay(msk("2026-11-07T01:00"), now)).toBe("завтра");
     expect(formatRelativeDay(msk("2026-11-09T09:00"), now)).toMatch(/пн.*9 нояб/);
+  });
+  it("«было» — с днём, если пару перенесли с другого дня", () => {
+    const now = msk("2026-11-06T08:00");
+    expect(formatWas(msk("2026-11-06T09:00"), msk("2026-11-06T17:40"), now)).toBe("было 09:00");
+    expect(formatWas(msk("2026-11-05T09:00"), msk("2026-11-06T17:40"), now)).toBe(
+      "было вчера, 09:00",
+    );
+    expect(formatWas(msk("2026-11-02T09:00"), msk("2026-11-06T17:40"), now)).toMatch(
+      /^было пн, 2 нояб\.?, 09:00$/,
+    );
+  });
+  it("срок заявки — в рабочих днях: пт + 3 = ср, вс + 3 = ср", () => {
+    expect(addBusinessDays(msk("2026-11-06T10:00"), 3)).toEqual(msk("2026-11-11T10:00"));
+    expect(addBusinessDays(msk("2026-11-01T10:00"), 3)).toEqual(msk("2026-11-04T10:00"));
   });
   it("обратный отсчёт", () => {
     const s = msk("2026-11-06T10:00");

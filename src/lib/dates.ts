@@ -35,11 +35,12 @@ export function formatTime(date: Date): string {
   return TIME.format(date);
 }
 
-/** «сегодня» / «завтра» / «пн, 9 нояб.» — относительно `now`, по московским суткам. */
+/** «сегодня» / «завтра» / «вчера» / «пн, 9 нояб.» — относительно `now`, по московским суткам. */
 export function formatRelativeDay(date: Date, now: Date): string {
   const diff = Math.round((+mskStartOfDay(date) - +mskStartOfDay(now)) / DAY_MS);
   if (diff === 0) return "сегодня";
   if (diff === 1) return "завтра";
+  if (diff === -1) return "вчера";
   return SHORT_DAY.format(date);
 }
 
@@ -64,4 +65,12 @@ export function formatCountdown(startsAt: Date, endsAt: Date, now: Date): string
   if (now >= startsAt && now < endsAt) return `идёт, до конца ${span(minutes(+endsAt - +now))}`;
   if (now < startsAt) return `через ${span(minutes(+startsAt - +now))}`;
   return "закончилась";
+}
+
+/** «было 09:00» — если тот же день, иначе «было вчера, 09:00» / «было пн, 9 нояб., 09:00». */
+export function formatWas(original: Date, actual: Date, now: Date): string {
+  const sameDay = +mskStartOfDay(original) === +mskStartOfDay(actual);
+  return sameDay
+    ? `было ${formatTime(original)}`
+    : `было ${formatRelativeDay(original, now)}, ${formatTime(original)}`;
 }

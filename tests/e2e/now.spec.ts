@@ -36,21 +36,22 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
 
   for (const [link, path] of [
     ["Все заявки", "/requests"],
-    ["Расписание", "/schedule"],
+    ["Всё расписание", "/schedule"],
     ["Успеваемость", "/grades"],
     ["Все объявления", "/notifications"],
   ] as const) {
     test(`блок ведёт в раздел за 1 касание: «${link}» → ${path}`, async ({ page }) => {
       await page.goto("/");
-      await page.getByRole("main").getByRole("link", { name: link, exact: true }).click();
+      // first(): «Всё расписание» есть и в NowCard (главный блок), и в «Изменениях»
+      await page.getByRole("main").getByRole("link", { name: link, exact: true }).first().click();
       await expect(page).toHaveURL(new RegExp(`${path}$`));
     });
   }
 
-  test("на десктопе колонка «Сегодня» справа от заявок", async ({ page, isMobile }) => {
+  test("на десктопе колонка «Ближайшее» справа от заявок", async ({ page, isMobile }) => {
     test.skip(isMobile, "только ≥ 1024");
     await page.goto("/");
-    const today = await page.getByRole("region", { name: "Сегодня" }).boundingBox();
+    const today = await page.getByRole("region", { name: "Ближайшее" }).boundingBox();
     const requests = await page.getByRole("region", { name: "Мои заявки" }).boundingBox();
     expect(today!.x).toBeGreaterThan(requests!.x + requests!.width - 1);
   });
@@ -63,6 +64,10 @@ test("Вера: аккуратные пустые состояния, без ч�
   await expect(page.getByRole("heading", { name: "Заявок пока нет" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Заказать справку" })).toBeVisible();
   await expect(page.getByText("Оценок пока нет")).toBeVisible();
+  // Из колонки «Ближайшее» в расписание можно попасть и без блока «Изменения»
+  await expect(
+    page.getByRole("region", { name: "Ближайшее" }).getByRole("link", { name: "Всё расписание" }),
+  ).toBeVisible();
   expect(await page.getByRole("main").innerText()).not.toMatch(REQUEST_NUMBER);
 });
 

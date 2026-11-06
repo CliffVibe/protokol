@@ -29,7 +29,7 @@ export default async function LoginPage() {
           <LogoMark variant="sheet" className="size-24 lg:size-32" />
           <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
             <h1 id="login-title" className="font-heading text-2xl font-bold text-ink lg:text-3xl">
-              Вход в Протокол
+              Вход в&nbsp;Протокол
             </h1>
             <p className="text-base text-ink-muted">Цифровой деканат: учёба, справки и связь.</p>
           </div>

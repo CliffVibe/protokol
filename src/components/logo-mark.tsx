@@ -12,7 +12,8 @@ const P =
 /** Лист и загнутый угол в сетке 64 — общие для знака, крупного листа и icon.svg. */
 export const LOGO_SHEET_PATH = "M12 5h27l14 14v40H12Z";
 export const LOGO_FOLD_PATH = "M39 5v14h14";
-export const LOGO_P_TRANSFORM = "translate(32.5 38) scale(0.62) translate(-32 -32.4)";
+// «П» крупно (0.8): на 16 px знак иначе читался как обычная иконка файла (ux-reviewer, T05)
+export const LOGO_P_TRANSFORM = "translate(32.5 37.5) scale(0.8) translate(-32 -32.4)";
 export const LOGO_P_PATH = P;
 
 type LogoMarkProps = {
