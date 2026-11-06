@@ -8,7 +8,7 @@ import { FormAlert } from "@/components/form-alert";
 import { FormField } from "@/components/form-field";
 import { PasswordInput } from "@/components/password-input";
 import { ErrorState } from "@/components/error-state";
-import { LogoSeal } from "@/components/logo-seal";
+import { LogoMark } from "@/components/logo-mark";
 import { UnreadBadge } from "@/components/nav/unread-badge";
 import { PageHeader } from "@/components/page-header";
 import { SiteFooter } from "@/components/site-footer";
@@ -102,10 +102,10 @@ export default async function DevUiPage() {
 
         <Section title="Логотип">
           <div className="flex flex-wrap items-end gap-6 rounded-xl border border-line bg-surface p-4">
-            <LogoSeal variant="stamp" className="size-40 -rotate-6" label="Печать «Протокол»" />
-            <LogoSeal className="size-12" />
-            <LogoSeal className="size-8" />
-            <LogoSeal className="size-4" />
+            <LogoMark variant="sheet" className="size-40" label="Логотип «Протокол»" />
+            <LogoMark className="size-12" />
+            <LogoMark className="size-8" />
+            <LogoMark className="size-4" />
             <BrandMark href="/" subtitle="Цифровой деканат" />
           </div>
         </Section>

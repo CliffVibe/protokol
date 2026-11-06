@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ConceptBanner } from "@/components/concept-banner";
-import { LogoSeal } from "@/components/logo-seal";
+import { LogoMark } from "@/components/logo-mark";
 import { DEMO_ACCOUNTS, DEMO_SCENARIOS } from "@/lib/demo-accounts";
 import { demoLogin } from "@/server/actions/auth";
 import { homeFor } from "@/server/auth/guards";
@@ -26,7 +26,7 @@ export default async function LoginPage() {
       >
         {/* flex-wrap + basis: при тексте 200% заголовок уходит под печать, а не вылезает вбок */}
         <div className="flex flex-wrap items-center gap-4">
-          <LogoSeal variant="stamp" className="size-24 lg:size-32" />
+          <LogoMark variant="sheet" className="size-24 lg:size-32" />
           <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
             <h1 id="login-title" className="font-heading text-2xl font-bold text-ink lg:text-3xl">
               Вход в Протокол
