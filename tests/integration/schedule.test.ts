@@ -4,7 +4,7 @@ import { randomBytes } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
-import { addDays, mskStartOfWeek, mskWeekday } from "@/lib/msk";
+import { addDays, mskStartOfDay, mskStartOfWeek, mskWeekday } from "@/lib/msk";
 import { DEMO, SEED_PASSWORD_ENVS } from "../../prisma/seed-data";
 import { runSeed } from "../../prisma/seed";
 
@@ -12,7 +12,7 @@ const url = process.env.TEST_DATABASE_URL;
 
 describe.skipIf(!url)("расписание в PostgreSQL", async () => {
   process.env.DATABASE_URL = url;
-  const { getTodaySchedule, getWeekSchedule } = await import("@/server/services/schedule");
+  const { getDaySchedule, getWeekSchedule } = await import("@/server/services/schedule");
   const { loadStudentCtx } = await import("@/server/repos/auth");
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
   const now = new Date();
@@ -49,9 +49,22 @@ describe.skipIf(!url)("расписание в PostgreSQL", async () => {
   });
 
   it("Алиса, сегодня: всегда учебный день, перенос на месте", async () => {
-    const today = await getTodaySchedule(await ctxOf(DEMO.alisa.userId), now);
+    const today = await getDaySchedule(await ctxOf(DEMO.alisa.userId), mskStartOfDay(now));
     expect(today.day.items.length).toBeGreaterThan(0);
     expect(today.day.items.some((i) => i.lesson.change === "MOVED")).toBe(true);
+    // Полоса недели — с выбранным днём
+    expect(today.week.some((d) => d.key === today.day.key)).toBe(true);
+  });
+
+  it("Алиса, четверг отдельно: переход с временем перерыва — от конца пары до начала следующей", async () => {
+    const thursday = await getDaySchedule(await ctxOf(DEMO.alisa.userId), addDays(thisWeek, 3));
+    const items = thursday.day.items;
+    const i = items.findIndex((x) => x.transition?.to === "Одинцово");
+    expect(i).toBeGreaterThan(0);
+    const t = items[i]!.transition!;
+    expect(+t.endsAt).toBe(+items[i]!.lesson.startsAt);
+    expect(+t.startsAt).toBe(+items[i - 1]!.lesson.endsAt);
+    expect(t.breakMinutes).toBe((+t.endsAt - +t.startsAt) / 60_000);
   });
 
   it("изоляция: КАЖДАЯ пара недель Тимура — из его групп (с положительным контролем)", async () => {

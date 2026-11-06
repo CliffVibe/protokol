@@ -1,6 +1,7 @@
 // День расписания: заголовок и пары под тонкими линиями — графы бланка, без карточек (как лента «Сейчас»).
+import { Fragment } from "react";
 import { CircleCheck, Footprints, GraduationCap, Languages } from "lucide-react";
-import { formatLongDay } from "@/lib/dates";
+import { formatLongDay, formatTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { ScheduleDay, Transition } from "@/server/services/schedule";
 import { CHANGE } from "@/components/now/labels";
@@ -13,11 +14,14 @@ export function DaySection({
   now,
   isToday,
   headingLevel = 2,
+  showTitle = true,
 }: {
   day: ScheduleDay;
   now: Date;
   isToday: boolean;
   headingLevel?: 2 | 3;
+  /** В «Дне» дата уже крупно в шапке со стрелками — заголовок остаётся только для скринридера */
+  showTitle?: boolean;
 }) {
   const Heading = `h${headingLevel}` as const;
   const title = formatLongDay(day.start);
@@ -28,11 +32,11 @@ export function DaySection({
       aria-labelledby={titleId}
       className="flex scroll-mt-4 flex-col gap-2"
     >
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+      <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1", !showTitle && "sr-only")}>
         <Heading id={titleId} className="text-xl">
           {title}
         </Heading>
-        {isToday ? (
+        {isToday && showTitle ? (
           <span className="border-b-2 border-brand text-sm font-bold text-brand">Сегодня</span>
         ) : null}
       </div>
@@ -42,7 +46,10 @@ export function DaySection({
           className="flex flex-col divide-y divide-line border-y border-line"
         >
           {day.items.map(({ lesson, transition }) => (
-            <LessonRow key={lesson.id} lesson={toLessonView(lesson, now)} transition={transition} />
+            <Fragment key={lesson.id}>
+              {transition ? <TransitionRow transition={transition} /> : null}
+              <LessonRow lesson={toLessonView(lesson, now)} />
+            </Fragment>
           ))}
         </ul>
       ) : (
@@ -52,13 +59,7 @@ export function DaySection({
   );
 }
 
-export function LessonRow({
-  lesson,
-  transition,
-}: {
-  lesson: LessonView;
-  transition: Transition | null;
-}) {
+export function LessonRow({ lesson }: { lesson: LessonView }) {
   const { change, cancelled, past } = lesson;
   const quiet = cancelled || past;
   return (
@@ -72,8 +73,6 @@ export function LessonRow({
         change && (cancelled ? "before:bg-danger" : "before:bg-warn"),
       )}
     >
-      {transition ? <TransitionHint transition={transition} /> : null}
-
       <p className="flex w-[4.5rem] shrink-0 flex-col tabular">
         <span
           className={cn(
@@ -142,18 +141,35 @@ export function LessonRow({
   );
 }
 
-function TransitionHint({ transition }: { transition: Transition }) {
-  // Время в дороге не выдумываем: показываем, сколько есть на переход и куда идти
+/**
+ * Переход между корпусами — своя строка между двумя парами, той же сеткой: слева — когда
+ * (перерыв от конца одной пары до начала другой), справа — откуда и куда. Время в дороге не выдумываем.
+ * Раньше подсказка стояла внутри следующей пары, и было непонятно, между какими парами переход
+ * (человек на проверке с телефона, T06).
+ */
+function TransitionRow({ transition }: { transition: Transition }) {
+  const from = formatTime(transition.startsAt);
+  const to = formatTime(transition.endsAt);
   return (
-    <p className="flex basis-full items-start gap-2 text-sm text-brand">
-      <Footprints aria-hidden className="mt-0.5 size-4 shrink-0" />
-      <span className="flex flex-col">
-        <span className="font-bold">
-          Переход между корпусами: перерыв {transition.breakMinutes} мин
+    <li className="flex flex-wrap gap-x-4 gap-y-1 py-2.5 text-sm text-brand">
+      <p className="sr-only">
+        Переход между корпусами с {from} до {to}, перерыв {transition.breakMinutes} мин: из{" "}
+        {transition.from} в {transition.to}
+      </p>
+      <p aria-hidden className="flex w-[4.5rem] shrink-0 flex-col tabular">
+        <span>{from}</span>
+        <span>{to}</span>
+      </p>
+      <div aria-hidden className="flex min-w-[min(12rem,100%)] flex-1 flex-col">
+        <span className="flex items-start gap-1.5 font-bold">
+          <Footprints className="mt-0.5 size-4 shrink-0" />
+          Переход в другой корпус · {transition.breakMinutes} мин
         </span>
-        <span>Куда: {transition.to}</span>
-      </span>
-    </p>
+        <span>
+          {transition.from} → {transition.to}
+        </span>
+      </div>
+    </li>
   );
 }
 

@@ -1,10 +1,16 @@
-// Навигация расписания: «Сегодня / Неделя», переход по неделям, полоса дней, изменения недели.
+// Навигация расписания: «День / Неделя», переход по дням и неделям, полоса дней, изменения недели.
 // Всё — обычные ссылки: работает без JS, с клавиатуры, и адрес недели можно переслать.
 import Link from "next/link";
 import type { Route } from "next";
 import { ChevronLeft, ChevronRight, CircleAlert } from "lucide-react";
-import { formatDayShort, formatRelativeDay, formatTime, formatWeekRange } from "@/lib/dates";
-import { addDays, formatIsoWeek, mskDateKey } from "@/lib/msk";
+import {
+  formatDayShort,
+  formatLongDay,
+  formatRelativeDay,
+  formatTime,
+  formatWeekRange,
+} from "@/lib/dates";
+import { addDays, formatIsoWeek, mskDateKey, mskStartOfDay } from "@/lib/msk";
 import { cn } from "@/lib/utils";
 import type { LessonRow } from "@/server/repos/schedule";
 import type { ScheduleDay } from "@/server/services/schedule";
@@ -15,11 +21,22 @@ import { Button } from "@/components/ui/button";
 export const weekHref = (d: Date, hash?: string) =>
   `/schedule?week=${formatIsoWeek(d)}${hash ? `#${hash}` : ""}` as Route;
 
-export function ScheduleToggle({ view, now }: { view: "today" | "week"; now: Date }) {
+/** Адрес дня; сегодня — просто /schedule (один адрес на один экран). */
+export const dayHref = (d: Date, now: Date) =>
+  (mskDateKey(d) === mskDateKey(now) ? "/schedule" : `/schedule?day=${mskDateKey(d)}`) as Route;
+
+export function ScheduleToggle({
+  view,
+  dayHref,
+  weekHref,
+}: {
+  view: "day" | "week";
+  dayHref: Route;
+  weekHref: Route;
+}) {
   const items = [
-    { key: "today", label: "Сегодня", href: "/schedule" as Route },
-    // Сразу к сегодняшнему дню: в пятницу не листать пять экранов (ux-reviewer, T06)
-    { key: "week", label: "Неделя", href: weekHref(now, `day-${mskDateKey(now)}`) },
+    { key: "day", label: "День", href: dayHref },
+    { key: "week", label: "Неделя", href: weekHref },
   ] as const;
   return (
     <nav aria-label="Вид расписания">
@@ -49,6 +66,80 @@ export function ScheduleToggle({ view, now }: { view: "today" | "week"; now: Dat
   );
 }
 
+function relativeDay(offset: number): string | null {
+  if (offset === 0) return "Сегодня";
+  if (offset === 1) return "Завтра";
+  if (offset === -1) return "Вчера";
+  return null;
+}
+
+/** Шапка дня: ‹ день › по одному дню, «К сегодня» — на месте подписи, без сдвига вёрстки. */
+export function DayNav({ dayStart, now }: { dayStart: Date; now: Date }) {
+  const offset = Math.round((+dayStart - +mskStartOfDay(now)) / (24 * 3600 * 1000));
+  const prev = addDays(dayStart, -1);
+  const next = addDays(dayStart, 1);
+  return (
+    <ArrowsNav
+      label="Соседние дни"
+      prev={{ href: dayHref(prev, now), label: `Предыдущий день, ${formatLongDay(prev)}` }}
+      next={{ href: dayHref(next, now), label: `Следующий день, ${formatLongDay(next)}` }}
+      title={formatLongDay(dayStart)}
+      relative={relativeDay(offset)}
+      back={offset !== 0 ? { href: "/schedule" as Route, label: "К сегодня" } : null}
+    />
+  );
+}
+
+/** Общая шапка дня и недели: стрелки 44px по краям, посередине — заголовок и подпись. */
+function ArrowsNav({
+  label,
+  prev,
+  next,
+  title,
+  relative,
+  back,
+}: {
+  label: string;
+  prev: { href: Route; label: string };
+  next: { href: Route; label: string };
+  title: string;
+  relative: string | null;
+  back: { href: Route; label: string } | null;
+}) {
+  return (
+    <nav aria-label={label}>
+      <div className="flex items-start justify-between gap-2">
+        {/* Размер цели — в px: при тексте 200% стрелки не растут и не наезжают на даты (урок T04) */}
+        <Button asChild variant="outline" size="icon" className="size-[44px]">
+          <Link href={prev.href} aria-label={prev.label}>
+            <ChevronLeft aria-hidden className="size-5" />
+          </Link>
+        </Button>
+        <div className="flex min-w-0 flex-1 flex-col items-center text-center break-words">
+          <p className="font-heading text-xl font-bold text-ink tabular">{title}</p>
+          {/* Высота строки постоянная: ссылка «назад» появляется на месте, ничего ниже не сдвигается */}
+          <p className="flex min-h-11 flex-wrap items-center justify-center gap-x-3 text-sm">
+            {relative ? <span className="text-ink-muted">{relative}</span> : null}
+            {back ? (
+              <Link
+                href={back.href}
+                className="inline-flex min-h-11 items-center font-bold text-brand underline-offset-4 hover:underline"
+              >
+                {back.label}
+              </Link>
+            ) : null}
+          </p>
+        </div>
+        <Button asChild variant="outline" size="icon" className="size-[44px]">
+          <Link href={next.href} aria-label={next.label}>
+            <ChevronRight aria-hidden className="size-5" />
+          </Link>
+        </Button>
+      </div>
+    </nav>
+  );
+}
+
 function relativeWeek(offset: number): string | null {
   if (offset === 0) return "Эта неделя";
   if (offset === 1) return "Следующая неделя";
@@ -68,66 +159,52 @@ export function WeekNav({
   const offset = Math.round((+weekStart - +currentWeekStart) / (7 * 24 * 3600 * 1000));
   const prev = addDays(weekStart, -7);
   const next = addDays(weekStart, 7);
-  const relative = relativeWeek(offset);
   return (
-    <nav aria-label="Недели">
-      <div className="flex items-start justify-between gap-2">
-        {/* Размер цели — в px: при тексте 200% стрелки не растут и не наезжают на даты (урок T04) */}
-        <Button asChild variant="outline" size="icon" className="size-[44px]">
-          <Link
-            href={weekHref(prev)}
-            aria-label={`Предыдущая неделя, ${formatWeekRange(prev, now)}`}
-          >
-            <ChevronLeft aria-hidden className="size-5" />
-          </Link>
-        </Button>
-        <div className="flex min-w-0 flex-1 flex-col items-center text-center break-words">
-          <p className="font-heading text-xl font-bold text-ink tabular">
-            {formatWeekRange(weekStart, now)}
-          </p>
-          {/* Высота строки постоянная: «К текущей неделе» появляется на месте, ничего ниже не сдвигается */}
-          <p className="flex min-h-11 flex-wrap items-center justify-center gap-x-3 text-sm">
-            {relative ? <span className="text-ink-muted">{relative}</span> : null}
-            {offset !== 0 ? (
-              <Link
-                href={weekHref(currentWeekStart)}
-                className="inline-flex min-h-11 items-center font-bold text-brand underline-offset-4 hover:underline"
-              >
-                К текущей неделе
-              </Link>
-            ) : null}
-          </p>
-        </div>
-        <Button asChild variant="outline" size="icon" className="size-[44px]">
-          <Link
-            href={weekHref(next)}
-            aria-label={`Следующая неделя, ${formatWeekRange(next, now)}`}
-          >
-            <ChevronRight aria-hidden className="size-5" />
-          </Link>
-        </Button>
-      </div>
-    </nav>
+    <ArrowsNav
+      label="Недели"
+      prev={{ href: weekHref(prev), label: `Предыдущая неделя, ${formatWeekRange(prev, now)}` }}
+      next={{ href: weekHref(next), label: `Следующая неделя, ${formatWeekRange(next, now)}` }}
+      title={formatWeekRange(weekStart, now)}
+      relative={relativeWeek(offset)}
+      back={offset !== 0 ? { href: weekHref(currentWeekStart), label: "К текущей неделе" } : null}
+    />
   );
 }
 
-/** Пн…сб якорями: на телефоне до четверга — одно касание, а не прокрутка всей недели. */
-export function DayStrip({ days, todayKey }: { days: ScheduleDay[]; todayKey: string }) {
+/**
+ * Пн…сб недели: касание открывает день отдельно (?day=) — и из «Дня», и из «Недели»
+ * (человек на проверке T06: «удобно смотреть отдельно по дням»).
+ * Выбранный день — чернильная черта и полужирный; сегодня — точка под числом и скрытое «сегодня»:
+ * не только цветом.
+ */
+export function DayStrip({
+  days,
+  now,
+  selectedKey,
+}: {
+  days: ScheduleDay[];
+  now: Date;
+  selectedKey?: string;
+}) {
+  const todayKey = mskDateKey(now);
   return (
     <nav aria-label="Дни недели">
       <ul className="flex flex-wrap">
         {days.map((d) => {
           const { weekday, day } = formatDayShort(d.start);
           const isToday = d.key === todayKey;
+          const selected = d.key === selectedKey;
           const changed = d.items.some((i) => i.lesson.change !== "NONE");
           return (
             <li key={d.key} className="min-w-[44px] flex-1">
-              <a
-                href={`#day-${d.key}`}
-                aria-current={isToday ? "date" : undefined}
+              <Link
+                href={dayHref(d.start, now)}
+                aria-current={selected ? "page" : isToday ? "date" : undefined}
                 className={cn(
                   "flex min-h-14 flex-col items-center justify-center border-b-2 px-1 py-1 text-center hover:bg-surface",
-                  isToday ? "border-brand font-bold text-ink" : "border-transparent text-ink-muted",
+                  selected
+                    ? "border-brand font-bold text-ink"
+                    : "border-transparent text-ink-muted",
                 )}
               >
                 <span className="text-sm">{weekday}</span>
@@ -135,12 +212,17 @@ export function DayStrip({ days, todayKey }: { days: ScheduleDay[]; todayKey: st
                   {day}
                   {changed ? <CircleAlert aria-hidden className="size-3.5 text-warn" /> : null}
                 </span>
+                {/* Место под точку есть у каждого дня — полоса не прыгает */}
+                <span
+                  aria-hidden
+                  className={cn("mt-0.5 size-[5px] rounded-full", isToday && "bg-brand")}
+                />
                 <span className="sr-only">
                   {isToday ? ", сегодня" : ""}
                   {changed ? ", есть изменения" : ""}
                   {d.items.length ? "" : ", пар нет"}
                 </span>
-              </a>
+              </Link>
             </li>
           );
         })}

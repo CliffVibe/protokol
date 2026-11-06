@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { formatIsoWeek, isoWeekOf, isoWeekStart, isoWeeksInYear } from "@/lib/msk";
-import { parseWeekParam } from "@/lib/schedule-params";
+import { formatIsoWeek, isoWeekOf, isoWeekStart, isoWeeksInYear, mskDayFromKey } from "@/lib/msk";
+import { parseDayParam, parseWeekParam } from "@/lib/schedule-params";
 
 const msk = (s: string) => new Date(`${s}+03:00`);
 
@@ -61,5 +61,39 @@ describe("parseWeekParam", () => {
     ["далеко в будущем", "9999-W01"],
   ])("%s → null (показываем текущую неделю)", (_, raw) => {
     expect(parseWeekParam(raw, now)).toBeNull();
+  });
+});
+
+describe("parseDayParam — ?day=YYYY-MM-DD", () => {
+  const now = msk("2026-11-06T12:00:00");
+
+  it("правильная дата → полночь по Москве", () => {
+    expect(parseDayParam("2026-11-05", now)).toEqual(msk("2026-11-05T00:00:00"));
+    expect(parseDayParam("2027-01-01", now)).toEqual(msk("2027-01-01T00:00:00"));
+    expect(parseDayParam("2028-02-29", msk("2027-06-01T12:00:00"))).toEqual(
+      msk("2028-02-29T00:00:00"),
+    );
+  });
+
+  it.each([
+    ["нет параметра", undefined],
+    ["пусто", ""],
+    ["мусор", "вчера"],
+    ["30 февраля", "2026-02-30"],
+    ["29 февраля не в високосный", "2027-02-29"],
+    ["13-й месяц", "2026-13-01"],
+    ["нулевой день", "2026-11-00"],
+    ["без ведущего нуля", "2026-11-5"],
+    ["хвост", "2026-11-05T10:00"],
+    ["массив (?day=a&day=b)", ["2026-11-05", "2026-11-06"]],
+    ["далеко в прошлом", "2024-11-05"],
+    ["далеко в будущем", "9999-01-01"],
+  ])("%s → null (показываем сегодня)", (_, raw) => {
+    expect(parseDayParam(raw, now)).toBeNull();
+  });
+
+  it("mskDayFromKey — обратно к mskDateKey, без сдвига на часовой пояс", () => {
+    expect(mskDayFromKey("2026-11-05")).toEqual(msk("2026-11-05T00:00:00"));
+    expect(mskDayFromKey("2026-02-30")).toBeNull();
   });
 });

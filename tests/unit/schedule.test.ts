@@ -73,8 +73,14 @@ describe("buildTransitions — «Переход между корпусами»"
     const b = lesson("2026-11-12T10:40:00", "2026-11-12T12:00:00", { building: ODI });
     const c = lesson("2026-11-12T12:40:00", "2026-11-12T14:00:00");
     const t = buildTransitions([c, a, b]);
-    expect(t.get(b.id)).toEqual({ from: MAIN, to: ODI, breakMinutes: 20 });
-    expect(t.get(c.id)).toEqual({ from: ODI, to: MAIN, breakMinutes: 40 });
+    expect(t.get(b.id)).toEqual({
+      from: MAIN,
+      to: ODI,
+      startsAt: a.endsAt,
+      endsAt: b.startsAt,
+      breakMinutes: 20,
+    });
+    expect(t.get(c.id)).toMatchObject({ from: ODI, to: MAIN, breakMinutes: 40 });
     expect(t.has(a.id)).toBe(false);
   });
 
@@ -94,6 +100,19 @@ describe("buildTransitions — «Переход между корпусами»"
     });
     const c = lesson("2026-11-12T12:40:00", "2026-11-12T14:00:00");
     expect(buildTransitions([a, cancelled, c]).size).toBe(0);
+  });
+
+  it("через отменённую пару: перерыв — от последней неотменённой пары", () => {
+    const a = lesson("2026-11-12T09:00:00", "2026-11-12T10:20:00");
+    const cancelled = lesson("2026-11-12T10:40:00", "2026-11-12T12:00:00", {
+      change: "CANCELLED",
+    });
+    const c = lesson("2026-11-12T12:40:00", "2026-11-12T14:00:00", { building: ODI });
+    expect(buildTransitions([a, cancelled, c]).get(c.id)).toMatchObject({
+      startsAt: a.endsAt,
+      endsAt: c.startsAt,
+      breakMinutes: 140,
+    });
   });
 });
 

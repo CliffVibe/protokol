@@ -39,6 +39,18 @@ export function mskDateKey(d: Date): string {
   return new Date(d.getTime() + MSK_OFFSET_MS).toISOString().slice(0, 10);
 }
 
+/**
+ * Полночь по Москве для ключа YYYY-MM-DD или `null`, если такой даты нет (2026-02-30, 2026-13-01).
+ * Обратно к `mskDateKey`: адрес дня в расписании — ?day=2026-11-05.
+ */
+export function mskDayFromKey(key: string): Date | null {
+  const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(key);
+  if (!match) return null;
+  const [, y, m, d] = match.map(Number) as [number, number, number, number];
+  const day = new Date(Date.UTC(y, m - 1, d) - MSK_OFFSET_MS);
+  return mskDateKey(day) === key ? day : null;
+}
+
 /** Год по Москве. */
 export function mskYear(d: Date): number {
   return new Date(d.getTime() + MSK_OFFSET_MS).getUTCFullYear();

@@ -1,7 +1,7 @@
-// Разбор ?week=YYYY-Www для /schedule (T06, S5: любой ввод — через zod).
-// Битое значение — не ошибка: показываем текущую неделю, а не 500 и не редирект.
+// Разбор ?week=YYYY-Www и ?day=YYYY-MM-DD для /schedule (T06, S5: любой ввод — через zod).
+// Битое значение — не ошибка: показываем текущую неделю или сегодня, а не 500 и не редирект.
 import { z } from "zod";
-import { isoWeekStart, isoWeeksInYear, mskYear } from "./msk";
+import { isoWeekStart, isoWeeksInYear, mskDayFromKey, mskYear } from "./msk";
 
 const WEEK_PARAM = /^(\d{4})-W(\d{2})$/;
 
@@ -27,4 +27,23 @@ export function parseWeekParam(raw: unknown, now: Date): Date | null {
   const { year, week } = parsed.data;
   if (Math.abs(year - mskYear(now)) > YEAR_SPAN) return null;
   return isoWeekStart(year, week);
+}
+
+const DAY_PARAM = /^\d{4}-\d{2}-\d{2}$/;
+
+export const dayParamSchema = z
+  .string()
+  .regex(DAY_PARAM)
+  .transform((s) => mskDayFromKey(s))
+  .refine((d): d is Date => d !== null);
+
+/**
+ * Полночь по Москве дня из параметра `day` или `null`, если параметра нет или он битый
+ * (массив, мусор, 2026-02-30, год дальше ±1 от текущего).
+ */
+export function parseDayParam(raw: unknown, now: Date): Date | null {
+  const parsed = dayParamSchema.safeParse(raw);
+  if (!parsed.success) return null;
+  if (Math.abs(mskYear(parsed.data) - mskYear(now)) > YEAR_SPAN) return null;
+  return parsed.data;
 }
