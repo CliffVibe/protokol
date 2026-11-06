@@ -6,8 +6,10 @@ import { BrandMark } from "@/components/brand-mark";
 import { LogoutButton } from "@/components/logout-button";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
+import { ResetDemo } from "@/components/staff/reset-demo";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getThemePreference } from "@/lib/theme-server";
+import { isDemoMode } from "@/server/services/auth";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   const theme = await getThemePreference();
@@ -37,6 +39,8 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             </ul>
           </nav>
           <div className="ml-auto flex min-w-0 flex-wrap items-center justify-end gap-2">
+            {/* «Сбросить демо» — только при DEMO_MODE=1; действие само проверяет роль и режим */}
+            {isDemoMode() ? <ResetDemo /> : null}
             <ThemeSwitcher value={theme} compact className="w-[9.5rem]" />
             <LogoutButton />
           </div>

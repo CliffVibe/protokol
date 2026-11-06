@@ -125,15 +125,6 @@ export const TRANSITIONS: Record<RequestStatus, readonly RequestStatus[]> = {
 export const canTransition = (from: RequestStatus, to: RequestStatus) =>
   TRANSITIONS[from].includes(to);
 
-/** Глагол на кнопке сотрудника — по целевому статусу. */
-export const ACTION_LABEL: Partial<Record<RequestStatus, string>> = {
-  ACCEPTED: "Принять",
-  IN_PROGRESS: "Взять в работу",
-  READY: "Готова",
-  ISSUED: "Выдана",
-  REJECTED: "Отклонить",
-};
-
 export const rejectReasonSchema = z
   .string({ error: "Напишите причину" })
   .trim()

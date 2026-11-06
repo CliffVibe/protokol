@@ -61,11 +61,13 @@ export async function setRequestStatusAction(
   return { ok: true };
 }
 
+export type ResetState = { error?: string };
+
 /**
  * «Сбросить демо» — только сотрудник и только при DEMO_MODE=1. Пересев очищает и сессии,
  * поэтому дальше — на вход.
  */
-export async function resetDemoAction(): Promise<void> {
+export async function resetDemoAction(): Promise<ResetState> {
   const ctx = await requireStaff();
   if (process.env.DEMO_MODE !== "1") notFound();
   await resetDemoData(ctx);
