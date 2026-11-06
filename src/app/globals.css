@@ -214,3 +214,8 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Лист с деталями пары (T06): пока открыт модальный <dialog>, страница под ним не прокручивается */
+html:has(dialog[open]) {
+  overflow: hidden;
+}

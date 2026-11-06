@@ -67,6 +67,48 @@ export function formatCountdown(startsAt: Date, endsAt: Date, now: Date): string
   return "закончилась";
 }
 
+const DAY_MONTH = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  month: "long",
+  timeZone: UNIVERSITY_TIME_ZONE,
+});
+const WEEKDAY_SHORT = new Intl.DateTimeFormat("ru-RU", {
+  weekday: "short",
+  timeZone: UNIVERSITY_TIME_ZONE,
+});
+const DAY_NUMBER = new Intl.DateTimeFormat("ru-RU", {
+  day: "numeric",
+  timeZone: UNIVERSITY_TIME_ZONE,
+});
+
+/** «9–15 ноября» / «30 ноября – 6 декабря» — неделя с понедельника `weekStart`. */
+export function formatWeekRange(weekStart: Date): string {
+  const end = new Date(weekStart.getTime() + 6 * DAY_MS);
+  const from = DAY_MONTH.format(weekStart);
+  const to = DAY_MONTH.format(end);
+  const [fromDay, ...fromMonth] = from.split(" ");
+  const toMonth = to.split(" ").slice(1);
+  return fromMonth.join(" ") === toMonth.join(" ") ? `${fromDay}–${to}` : `${from} – ${to}`;
+}
+
+/** Для полосы дней: { weekday: "пн", day: "9" }. */
+export function formatDayShort(date: Date): { weekday: string; day: string } {
+  return { weekday: WEEKDAY_SHORT.format(date), day: DAY_NUMBER.format(date) };
+}
+
+/** «1 пара», «3 пары», «5 пар». */
+export function formatLessonCount(n: number): string {
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  const word =
+    mod10 === 1 && mod100 !== 11
+      ? "пара"
+      : mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)
+        ? "пары"
+        : "пар";
+  return `${n} ${word}`;
+}
+
 /** «было 09:00» — если тот же день, иначе «было вчера, 09:00» / «было пн, 9 нояб., 09:00». */
 export function formatWas(original: Date, actual: Date, now: Date): string {
   const sameDay = +mskStartOfDay(original) === +mskStartOfDay(actual);

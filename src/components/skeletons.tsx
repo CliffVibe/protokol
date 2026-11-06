@@ -118,3 +118,42 @@ export function NowCardSkeleton({ className }: { className?: string }) {
     </div>
   );
 }
+
+/**
+ * Расписание (T06): заголовок, переключатель, полоса недели и два дня строками той же высоты,
+ * что LessonRow (время столбцом слева, три строки текста справа) — ничего не прыгает.
+ */
+export function ScheduleSkeleton() {
+  return (
+    <div role="status" className="flex flex-col gap-6">
+      <span className="sr-only">Загружаем расписание…</span>
+      <PageHeaderSkeleton />
+      <div className="flex gap-6 border-b border-line">
+        <Skeleton className="my-3 h-5 w-20" />
+        <Skeleton className="my-3 h-5 w-16" />
+      </div>
+      <div className="flex flex-col gap-8">
+        {[3, 2].map((rows, d) => (
+          <div key={d} className="flex flex-col gap-2">
+            <Skeleton className="h-7 w-56 max-w-full" />
+            <div className="flex flex-col divide-y divide-line border-y border-line">
+              {Array.from({ length: rows }, (_, i) => (
+                <div key={i} className="flex gap-4 py-3">
+                  <div className="flex w-[4.5rem] shrink-0 flex-col gap-1.5">
+                    <Skeleton className="h-6 w-14" />
+                    <Skeleton className="h-4 w-10" />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
+                    <Skeleton className="h-5 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
