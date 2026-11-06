@@ -6,7 +6,13 @@ const NOTICE =
 
 test("главная открывается и показывает плашку концепта", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { level: 1, name: "Сейчас" })).toBeVisible();
+  // T05: заголовок «Сейчас» — приветствие по времени суток
+  await expect(
+    page.getByRole("heading", {
+      level: 1,
+      name: /^(Доброе утро|Добрый день|Добрый вечер|Доброй ночи), /,
+    }),
+  ).toBeVisible();
   await expect(page.getByRole("note")).toHaveText(NOTICE);
   await expect(page.locator("html")).toHaveAttribute("lang", "ru");
 });

@@ -1,4 +1,5 @@
-import { existsSync } from "node:fs";
+import { readdirSync } from "node:fs";
+import { join, relative, sep } from "node:path";
 import { describe, expect, it } from "vitest";
 import { BOTTOM_NAV, MORE, MORE_ITEMS, SIDE_NAV, isActive } from "@/components/nav/nav-items";
 import { unreadLabel } from "@/components/nav/unread-badge";
@@ -21,10 +22,23 @@ describe("навигация студента", () => {
   });
 
   it("у каждого пункта есть страница в (student)", () => {
-    for (const { href } of [...BOTTOM_NAV, ...SIDE_NAV]) {
-      const file = `src/app/(student)${href === "/" ? "" : href}/page.tsx`;
-      expect(existsSync(file), file).toBe(true);
-    }
+    // Адрес страницы — путь без групп в скобках: (student)/(now)/page.tsx — это «/» (T05)
+    const root = "src/app/(student)";
+    const walk = (dir: string): string[] =>
+      readdirSync(dir, { withFileTypes: true }).flatMap((e) =>
+        e.isDirectory()
+          ? walk(join(dir, e.name))
+          : e.name === "page.tsx"
+            ? [join(dir, e.name)]
+            : [],
+      );
+    const routes = new Set(
+      walk(root).map((f) => {
+        const segs = relative(root, f).split(sep).slice(0, -1);
+        return "/" + segs.filter((s) => !/^\(.*\)$/.test(s)).join("/");
+      }),
+    );
+    for (const { href } of [...BOTTOM_NAV, ...SIDE_NAV]) expect(routes, href).toContain(href);
   });
 
   it("активный пункт: «Сейчас» — только /, «Ещё» — и его подпункты", () => {

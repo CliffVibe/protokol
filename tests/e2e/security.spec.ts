@@ -290,7 +290,12 @@ test.describe("вход и сессии (T03)", () => {
       await student.goto("/login");
       await student.getByRole("button", { name: "Войти как Тимур" }).click();
       await expect(student).toHaveURL(/\/$/);
-      await expect(student.getByRole("heading", { level: 1, name: "Сейчас" })).toBeVisible();
+      await expect(
+        student.getByRole("heading", {
+          level: 1,
+          name: /^(Доброе утро|Добрый день|Добрый вечер|Доброй ночи), /,
+        }),
+      ).toBeVisible();
     });
 
     test("подменённый логин в демо-форме не пускает", async ({ page }) => {
