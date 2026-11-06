@@ -45,10 +45,10 @@ test("приёмка: у Тимура виден долг и «Стипенди�
   await expect(s.getByRole("link", { name: "Долг: Эконометрика" })).toBeVisible();
   await expect(s).toContainText("Стипендия под угрозой");
   const reasons = s.getByRole("list", { name: "Причины" });
-  await expect(reasons).toContainText("Международные финансы: 54/100");
+  await expect(reasons).toContainText("Международные финансы: 54 из 100, нужно 60");
   await expect(reasons).toContainText("Долг: Эконометрика");
   // Ближайший экзамен — через 3 дня (сид: экзамен Тимура через 3 дня)
-  await expect(s).toContainText(/Ближайшее — экзамен «Мировая экономика», через 3 дня/);
+  await expect(s).toContainText(/Ближайшее — экзамен «Мировая экономика», через 3\sдня/);
 });
 
 test("Тимур: сначала проблемные — «Международные финансы» первой, «Ниже 60» и сколько не хватает", async ({
@@ -92,7 +92,7 @@ test("семестры: переключатель меняет список и 
   await expect(page.getByRole("list", { name: "Дисциплины, 2-й семестр" })).toContainText(
     "Отлично (5)",
   );
-  await expect(page.getByRole("heading", { level: 2, name: /2-й семестр, закрыт/ })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 2, name: /2-й семестр, закрыт/ })).toHaveCount(1);
   // Сводка «Как у меня дела» — по-прежнему про текущий семестр
   await expect(summary(page)).toContainText("за 3-й семестр");
   await tabs.getByRole("link", { name: "3-й семестр" }).click();
@@ -115,11 +115,13 @@ test("детали: из долга — экзаменатор, дата, ито
   const page = await as(browser, "Тимур");
   await page.goto("/grades");
   await summary(page).getByRole("link", { name: "Долг: Эконометрика" }).click();
-  await expect(page).toHaveURL(/\/grades\/[a-z0-9-]+$/);
+  // Ссылка из сводки — сразу к семестру с долгом, а не к зелёному текущему (ux-reviewer, T07)
+  await expect(page).toHaveURL(/\/grades\/[a-z0-9-]+#sem-6$/);
   await expect(page.getByRole("heading", { level: 1, name: "Эконометрика" })).toBeVisible();
   const closed = page.getByRole("region", { name: /6-й семестр/ });
   await expect(closed).toContainText("Неудовлетворительно (2)");
-  await expect(closed).toContainText("Это долг");
+  await expect(closed).toBeInViewport();
+  await expect(closed).toContainText("Из-за долга стипендия под угрозой");
   await expect(closed).toContainText("Преподаватель");
   await expect(page.getByRole("region", { name: /7-й семестр, текущий/ })).toBeVisible();
   await page.getByRole("link", { name: "Учёба" }).first().click();

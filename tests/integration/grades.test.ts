@@ -35,7 +35,10 @@ describe.skipIf(!url)("успеваемость в PostgreSQL", async () => {
     expect(o.debts.map((g) => g.discipline.name)).toEqual(["Эконометрика"]);
     expect(o.summary?.scholarship).toEqual({
       kept: false,
-      reasons: expect.arrayContaining(["Долг: Эконометрика", "Международные финансы: 54/100"]),
+      reasons: expect.arrayContaining([
+        "Долг: Эконометрика",
+        "Международные финансы: 54 из 100, нужно 60",
+      ]),
     });
     expect(o.semesters).toEqual([7, 6]);
   });

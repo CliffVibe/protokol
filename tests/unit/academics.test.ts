@@ -50,7 +50,7 @@ describe("summarizeStudy — правило стипендии на границ
     expect(summarizeStudy([g({ ratingPoints: 60 })])!.scholarship.kept).toBe(true);
     expect(summarizeStudy([g({ ratingPoints: 59, name: "Финансы" })])!.scholarship).toEqual({
       kept: false,
-      reasons: ["Финансы: 59/100"],
+      reasons: ["Финансы: 59 из 100, нужно 60"],
     });
   });
 
@@ -113,8 +113,8 @@ describe("светофор дисциплины", () => {
     expect(pointsToThreshold(54)).toBe(6);
     expect(pointsToThreshold(60)).toBe(0);
     expect(pointsToThreshold(null)).toBe(0);
-    expect(missingText(6)).toBe("Не хватает 6 баллов до 60");
-    expect(missingText(1)).toBe("Не хватает 1 балла до 60");
+    expect(missingText(6)).toBe("Не хватает 6\u00a0баллов до\u00a060");
+    expect(missingText(1)).toBe("Не хватает 1\u00a0балла до\u00a060");
   });
 });
 
@@ -194,9 +194,9 @@ describe("sessionSummary", () => {
     );
     expect(formatInDays(0)).toBe("сегодня");
     expect(formatInDays(1)).toBe("завтра");
-    expect(formatInDays(3)).toBe("через 3 дня");
-    expect(formatInDays(21)).toBe("через 21 день");
-    expect(formatInDays(11)).toBe("через 11 дней");
+    expect(formatInDays(3)).toBe("через 3\u00a0дня");
+    expect(formatInDays(21)).toBe("через 21\u00a0день");
+    expect(formatInDays(11)).toBe("через 11\u00a0дней");
   });
 });
 

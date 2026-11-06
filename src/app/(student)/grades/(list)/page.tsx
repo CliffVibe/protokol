@@ -59,21 +59,23 @@ export default async function GradesPage({ searchParams }: PageProps<"/grades">)
           className="flex min-w-0 flex-col gap-4 lg:col-start-1 lg:row-start-1"
         >
           <SemesterTabs semesters={semesters} selected={selected} current={current} />
-          <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h2 id="semester-title" className="text-xl">
-              {selected}-й семестр
-              <span className="font-sans text-base font-normal text-ink-muted">
-                {isCurrent ? ", текущий" : ", закрыт"}
-              </span>
-            </h2>
-            {/* У текущего семестра средний — крупно в «Как у меня дела»; здесь — только у закрытых */}
-            {average !== null && !isCurrent ? (
-              <p className="text-sm text-ink-muted">
-                Средний рейтинг: <span className="font-bold text-ink tabular">{average}</span> из
-                100
-              </p>
-            ) : null}
-          </div>
+          {/* Видимый заголовок повторял бы активную вкладку (ux-reviewer, T07) — он для скринридера */}
+          <h2 id="semester-title" className="sr-only">
+            {selected}-й семестр, {isCurrent ? "текущий" : "закрыт"}
+          </h2>
+          {/* У текущего семестра средний — крупно в «Как у меня дела»; здесь — только у закрытых */}
+          {!isCurrent ? (
+            <p className="text-sm text-ink-muted">
+              Семестр закрыт.
+              {average !== null ? (
+                <>
+                  {" "}
+                  Средний рейтинг: <span className="font-bold text-ink tabular">{average}</span> из
+                  100.
+                </>
+              ) : null}
+            </p>
+          ) : null}
           {rows.length ? (
             <ul
               aria-label={`Дисциплины, ${selected}-й семестр`}

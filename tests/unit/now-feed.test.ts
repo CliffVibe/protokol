@@ -44,7 +44,7 @@ describe("summarizeStudy — вымышленное правило стипен�
     expect(s?.debts).toBe(1);
     expect(s?.scholarship).toEqual({
       kept: false,
-      reasons: ["Долг: Эконометрика", "Финансы: 54/100"],
+      reasons: ["Долг: Эконометрика", "Финансы: 54 из 100, нужно 60"],
     });
   });
 

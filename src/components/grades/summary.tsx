@@ -43,13 +43,17 @@ export function GradesSummary({
           <div className="flex flex-col gap-1.5">
             <p className="flex items-center gap-1.5 font-bold text-danger">
               <CircleX aria-hidden className="size-4 shrink-0" />
-              {debts.length} {plural(debts.length, ["долг", "долга", "долгов"])}
+              {debts.length}
+              {" "}
+              {plural(debts.length, ["долг", "долга", "долгов"])}
             </p>
             <ul aria-label="Долги" className="flex flex-col gap-1">
               {debts.map((g) => (
                 <li key={`${g.discipline.id}-${g.semester}`} className="flex flex-col">
                   <Link
-                    href={disciplineHref(g.discipline.id)}
+                    // Сразу к семестру с долгом: первым в деталях стоит текущий, и без якоря
+                    // человек видел бы зелёное «В норме» (ux-reviewer, T07)
+                    href={disciplineHref(g.discipline.id, g.semester)}
                     className="inline-flex min-h-11 items-center self-start text-base font-bold text-brand underline-offset-4 hover:underline"
                   >
                     Долг: {g.discipline.name}
@@ -79,7 +83,7 @@ export function GradesSummary({
 function SessionLine({ session, now }: { session: SessionSummary; now: Date }) {
   const parts = (Object.keys(session.counts) as (keyof typeof session.counts)[])
     .filter((k) => session.counts[k] > 0)
-    .map((k) => `${session.counts[k]} ${plural(session.counts[k], ASSESSMENT_PLURAL[k])}`);
+    .map((k) => `${session.counts[k]}\u00a0${plural(session.counts[k], ASSESSMENT_PLURAL[k])}`);
   const dates = session.from && session.to ? formatDayRange(session.from, session.to, now) : null;
   return (
     <div className="flex flex-col gap-1 text-sm text-ink">

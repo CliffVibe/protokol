@@ -130,7 +130,8 @@ export function formatLessonCount(n: number): string {
 export function formatInDays(days: number): string {
   if (days <= 0) return "сегодня";
   if (days === 1) return "завтра";
-  return `через ${days} ${plural(days, ["день", "дня", "дней"])}`;
+  // Неразрывный пробел: «через 3» и «дня» не разъезжаются по строкам
+  return `через ${days}\u00a0${plural(days, ["день", "дня", "дней"])}`;
 }
 
 /** «было 09:00» — если тот же день, иначе «было вчера, 09:00» / «было пн, 9 нояб., 09:00». */

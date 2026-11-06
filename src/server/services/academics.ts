@@ -58,7 +58,9 @@ export function summarizeStudy(grades: GradeRow[]): StudySummary | null {
   }
   for (const g of current) {
     if (g.ratingPoints !== null && g.ratingPoints < SCHOLARSHIP_MIN_RATING) {
-      reasons.push(`${g.discipline.name}: ${g.ratingPoints}/100`);
+      reasons.push(
+        `${g.discipline.name}: ${g.ratingPoints} из 100, нужно ${SCHOLARSHIP_MIN_RATING}`,
+      );
     }
   }
 

@@ -78,8 +78,12 @@ function SemesterBlock({
     ? Math.round((+mskStartOfDay(grade.examDate) - +mskStartOfDay(now)) / 86_400_000)
     : null;
   return (
-    <section aria-labelledby={titleId} className="flex flex-col gap-3">
-      <h2 id={titleId} className="text-xl">
+    <section
+      id={titleId}
+      aria-labelledby={`${titleId}-title`}
+      className="flex scroll-mt-6 flex-col gap-3"
+    >
+      <h2 id={`${titleId}-title`} className="text-xl">
         {grade.semester}-й семестр
         <span className="font-sans text-base font-normal text-ink-muted">
           {isCurrent ? ", текущий" : ", закрыт"}
@@ -108,7 +112,7 @@ function SemesterBlock({
         ) : null}
         {isDebt(grade) ? (
           <p className="text-base text-ink">
-            <span className="font-bold">Это долг: он снимает стипендию, пока не закрыт.</span>{" "}
+            <span className="font-bold">Из-за долга стипендия под угрозой, пока он не закрыт.</span>{" "}
             Пересдачу назначает деканат — подайте заявление в разделе{" "}
             <Link
               href="/requests"
