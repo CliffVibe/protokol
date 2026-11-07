@@ -84,9 +84,12 @@ src/
     db.ts                    # единственный PrismaClient (Prisma 7 + @prisma/adapter-pg); импорт — только из repos/
   generated/prisma/          # сгенерированный клиент (не в git; `pnpm db:generate`)
     services/                # бизнес-логика (статусы заявок, расчёт успеваемости, ИИ)
+      ai/                    # помощник T12: контекст ТОЛЬКО текущего студента, FAQ, правила, GigaChat (fetch), черновик сотруднику
   components/ui/             # shadcn
   components/                # наши компоненты
   lib/                       # утилиты без доступа к БД
+content/faq/                 # вымышленная база ответов помощника (markdown + frontmatter)
+certs/                       # «Russian Trusted Root CA» для TLS GigaChat (публичный, NODE_EXTRA_CA_CERTS)
 prisma.config.ts             # Prisma 7: строка подключения, путь миграций, команда сида
 prisma/schema.prisma  prisma/seed.ts  prisma/seed-data.ts (чистая функция buildSeed, без БД и секретов)
 tests/unit/  tests/integration/  tests/e2e/

@@ -86,6 +86,12 @@ Next.js 16 кладёт 474 файла документации, совпада�
 | @react-pdf/renderer | 4.9.0 | Проверен на T10 (06.11): Диего Мураччоле, MIT, provenance SLSA, релиз 27.08.2026, install-скриптов нет; дерево 53 пакета, ~33 МБ в node_modules; `pnpm audit --prod` — 0. В Next 16 уже во внешних серверных пакетах — в клиентский бандл не попадает |
 | uqr | 0.1.3 | T10: unjs (pi0, antfu), MIT, 0 зависимостей, 79 КБ, релиз 03.04.2026, install-скриптов нет. Provenance нет ни у одной версии — `trustPolicy: no-downgrade` не срабатывает (понижения нет). Выбран вместо `qrcode` 1.5.4 (тянет yargs, pngjs; PNG и CLI нам не нужны) — решение человека 06.11 |
 
+### Внешний сервис ИИ и сертификат (T12, 07.11)
+| Что | Проверка | Как используем |
+|---|---|---|
+| **GigaChat API** (Сбер), ключ физлица, scope `GIGACHAT_API_PERS`, модель `GigaChat-2` (Lite) | **Без SDK**: хватает `fetch` (OAuth + SSE) — новой зависимости нет, проверять по цепочке поставок нечего | Ключ — только `.env` сервера (`GIGACHAT_AUTH_KEY`, вписывает человек); в промпт — только данные текущего студента (S8); лимит 20/ч; без ключа — режим FAQ. e2e — всегда `ASSISTANT_PROVIDER=faq` |
+| **«Russian Trusted Root CA»** (Минцифры России) → `certs/russian_trusted_root_ca.pem` | Скачан с «да» человека 07.11 с `https://gu-st.ru/content/lending/russian_trusted_root_ca_pem.crt` (CDN Госуслуг, ссылка со страницы `gosuslugi.ru/crt`). PEM, 2088 байт. Самоподписанный корневой: `CN=Russian Trusted Root CA, O=The Ministry of Digital Development and Communications, C=RU`, действует 01.03.2022 – 27.02.2032. SHA-256 сертификата `D2:6D:2D:02:31:B7:C3:9F:92:CC:73:85:12:BA:54:10:35:19:E4:40:5D:68:B5:BD:70:3E:97:88:CA:8E:CF:31`; SHA-256 файла: как скачан (CRLF) — `936a43fe…6afc6504`, в git (LF) — `08199775…3dbf0eb4`; отпечаток самого сертификата от концов строк не зависит | Только **дополнительно** к системным корневым — через `NODE_EXTRA_CA_CERTS` (образ, `pnpm start`). Проверку TLS не отключаем (`rejectUnauthorized`, `NODE_TLS_REJECT_UNAUTHORIZED` — запрещено). Проверено: без сертификата Node → `SELF_SIGNED_CERT_IN_CHAIN`, с ним `gigachat.devices.sberbank.ru` отвечает 401 (ждёт токен). Срок — до 2032, при перевыпуске Минцифры заменить файл |
+
 ### Что защита цепочки поставок поймала на T01 (05.11.2026) — для отчёта
 | Что сработало | На чём | Что сделали |
 |---|---|---|
