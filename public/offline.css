@@ -1,0 +1,78 @@
+/* Страница «Нет сети» (T11). Токены «Бланк» из globals.css — копией: страница живёт без приложения. */
+:root {
+  --bg: #eef1ec;
+  --ink: #161a17;
+  --ink-muted: #5b635c;
+  --brand: #22356b;
+  --line: #d6dbd2;
+  color-scheme: light dark;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0a0d17;
+    --ink: #e9ecf4;
+    --ink-muted: #a4acc0;
+    --brand: #8dbdf0;
+    --line: #2a3350;
+  }
+}
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--ink);
+  font:
+    16px/1.5 system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+}
+main {
+  flex: 1;
+  width: 100%;
+  max-width: 32rem;
+  margin: 0 auto;
+  padding: 3rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+h1 {
+  margin: 0.5rem 0 0;
+  font-size: 1.75rem;
+  line-height: 1.2;
+}
+p {
+  margin: 0;
+}
+.muted,
+footer {
+  color: var(--ink-muted);
+  font-size: 0.875rem;
+}
+.button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 1rem;
+  border-radius: 0.5rem;
+  background: var(--brand);
+  color: var(--bg);
+  font-weight: 700;
+  text-decoration: none;
+}
+.button:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+footer {
+  padding: 1rem;
+  border-top: 1px solid var(--line);
+  text-align: center;
+}

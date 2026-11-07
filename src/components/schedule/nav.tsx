@@ -10,7 +10,7 @@ import {
   formatTime,
   formatWeekRange,
 } from "@/lib/dates";
-import { addDays, formatIsoWeek, mskDateKey, mskStartOfDay } from "@/lib/msk";
+import { addDays, formatIsoWeek, mskDateKey, mskStartOfDay, mskStartOfWeek } from "@/lib/msk";
 import { cn } from "@/lib/utils";
 import type { LessonRow } from "@/server/repos/schedule";
 import type { ScheduleDay } from "@/server/services/schedule";
@@ -24,6 +24,25 @@ export const weekHref = (d: Date, hash?: string) =>
 /** Адрес дня; сегодня — просто /schedule (один адрес на один экран). */
 export const dayHref = (d: Date, now: Date) =>
   (mskDateKey(d) === mskDateKey(now) ? "/schedule" : `/schedule?day=${mskDateKey(d)}`) as Route;
+
+/**
+ * Адреса расписания на две недели (текущая и следующая) — их service worker сохраняет для офлайна (T11):
+ * «сегодня», каждый день и обе недели. Тот же формат, что у ссылок выше, — календарь в воркере не нужен.
+ */
+export function offlineScheduleUrls(now: Date): string[] {
+  const weekStart = mskStartOfWeek(now);
+  const days = Array.from(
+    { length: 14 },
+    (_, i) => `/schedule?day=${mskDateKey(addDays(weekStart, i))}`,
+  );
+  return [
+    "/schedule",
+    `/schedule?day=${mskDateKey(now)}`,
+    `/schedule?week=${formatIsoWeek(weekStart)}`,
+    `/schedule?week=${formatIsoWeek(addDays(weekStart, 7))}`,
+    ...days,
+  ].filter((u, i, all) => all.indexOf(u) === i);
+}
 
 export function ScheduleToggle({
   view,

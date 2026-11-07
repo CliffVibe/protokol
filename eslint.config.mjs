@@ -108,6 +108,10 @@ const eslintConfig = defineConfig([
       "tests/e2e/reschedule.spec.ts",
       // T10: готовая справка Алисы из сида (токен), временная справка для отзыва и её уборка
       "tests/e2e/certificates.spec.ts",
+      // T11: токены календаря и пары групп из сида (изоляция подписки), временный студент для перевыпуска
+      "tests/e2e/calendar.spec.ts",
+      // T11: пара Алисы на следующей неделе — что ждать в офлайн-копии, которую онлайн не открывали
+      "tests/e2e/pwa.spec.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

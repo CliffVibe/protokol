@@ -1,6 +1,7 @@
 // «Как у меня дела» (T07): средний рейтинг текущего семестра, долги, стипендия, сессия.
 // Всегда про текущий семестр — переключатель семестров меняет только список ниже.
 import Link from "next/link";
+import type { Route } from "next";
 import { CircleCheck, CircleX } from "lucide-react";
 import { formatDayMonth, formatDayRange, formatInDays, formatTime, plural } from "@/lib/dates";
 import type { GradeRow, SessionSummary, StudySummary } from "@/server/services/academics";
@@ -13,11 +14,14 @@ export function GradesSummary({
   session,
   debts,
   now,
+  whatIf,
 }: {
   summary: StudySummary;
   session: SessionSummary | null;
   debts: GradeRow[];
   now: Date;
+  /** Есть дисциплины без итога — ведём к «Что если…» (T11) */
+  whatIf: boolean;
 }) {
   return (
     <section aria-labelledby="how-title" className="flex min-w-0 flex-col gap-3">
@@ -72,7 +76,18 @@ export function GradesSummary({
           </p>
         )}
 
-        <ScholarshipBadge scholarship={summary.scholarship} />
+        <div className="flex flex-col gap-1">
+          <ScholarshipBadge scholarship={summary.scholarship} />
+          {whatIf ? (
+            // С закрытого семестра — тоже: симулятор есть только у текущего
+            <Link
+              href={"/grades#what-if" as Route}
+              className="inline-flex min-h-[44px] items-center self-start text-base font-bold text-brand underline-offset-4 hover:underline"
+            >
+              Что если сдать сессию…
+            </Link>
+          ) : null}
+        </div>
 
         {session ? <SessionLine session={session} now={now} /> : null}
       </div>

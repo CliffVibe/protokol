@@ -78,6 +78,10 @@ describe("CSP (S6)", () => {
     expect(prod).toContain("upgrade-insecure-requests");
     expect(prod).not.toContain("unsafe");
   });
+  it("service worker и манифест (T11): свои директивы — 'strict-dynamic' отключает 'self' в script-src", () => {
+    expect(prod).toContain("worker-src 'self'");
+    expect(prod).toContain("manifest-src 'self'");
+  });
   it("dev: eval и inline-стили только для разработки", () => {
     const dev = buildCsp("abc", { dev: true, https: false });
     expect(dev).toContain("'unsafe-eval'");

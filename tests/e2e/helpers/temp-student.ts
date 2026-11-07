@@ -49,7 +49,8 @@ export async function tempStudent(browser: Browser, baseURL: string): Promise<Te
       await c.query(
         `INSERT INTO "Student" (id, "userId", "lastName", "firstName", "recordBookNo", "groupId", "calendarToken")
          VALUES ($1, $2, 'Проверкина', 'Проба', $3, $4, $5)`,
-        [studentId, userId, `E2E-${key}`, groupId, randomBytes(16).toString("base64url")],
+        // calendarToken — как у настоящих студентов: 32 байта (T11, перевыпуск ссылки проверяется на нём)
+        [studentId, userId, `E2E-${key}`, groupId, randomBytes(32).toString("base64url")],
       );
       await c.query(`INSERT INTO "Session" (id, "userId", "expiresAt") VALUES ($1, $2, $3)`, [
         createHash("sha256").update(token).digest("hex"),

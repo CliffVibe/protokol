@@ -22,6 +22,9 @@ export default defineConfig({
     locale: "ru-RU",
     timezoneId: "Europe/Moscow",
     trace: "retain-on-failure",
+    // Service worker (T11) — только в pwa.spec.ts: иначе каждый тест расписания докачивал бы две недели
+    // страниц, а ответы шли бы мимо page.route
+    serviceWorkers: "block",
   },
   projects: [
     // Вход через настоящую форму один раз; сессии Алисы и Ирины переиспользуют остальные тесты

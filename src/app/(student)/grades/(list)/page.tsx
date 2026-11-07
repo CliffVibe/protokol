@@ -4,7 +4,9 @@ import { PageHeader } from "@/components/page-header";
 import { DisciplineRow } from "@/components/grades/discipline-row";
 import { SemesterTabs } from "@/components/grades/semester-tabs";
 import { GradesSummary } from "@/components/grades/summary";
+import { WhatIf } from "@/components/grades/what-if";
 import { parseSemesterParam } from "@/lib/grades-params";
+import { isPending } from "@/lib/scholarship";
 import { requireStudent } from "@/server/auth/guards";
 import { averageRating, sessionSummary, sortForAttention } from "@/server/services/academics";
 import { getGradesOverview } from "@/server/services/grades";
@@ -40,6 +42,8 @@ export default async function GradesPage({ searchParams }: PageProps<"/grades">)
     isCurrent,
   );
   const average = averageRating(rows);
+  // «Что если…» (T11) — только про текущий семестр и только когда есть что «сдать»
+  const whatIf = grades.some((g) => g.semester === current && isPending(g));
   const session = sessionSummary(
     grades.filter((g) => g.semester === current),
     now,
@@ -52,7 +56,13 @@ export default async function GradesPage({ searchParams }: PageProps<"/grades">)
       <PageHeader title="Учёба" />
       <div className="flex flex-col gap-8 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start lg:gap-x-12">
         <div className="lg:sticky lg:top-6 lg:col-start-2 lg:row-start-1">
-          <GradesSummary summary={summary} session={session} debts={debts} now={now} />
+          <GradesSummary
+            summary={summary}
+            session={session}
+            debts={debts}
+            now={now}
+            whatIf={whatIf}
+          />
         </div>
         <section
           aria-labelledby="semester-title"
@@ -90,6 +100,7 @@ export default async function GradesPage({ searchParams }: PageProps<"/grades">)
               В этом семестре оценок нет.
             </p>
           )}
+          {isCurrent && whatIf ? <WhatIf grades={grades} semester={current} /> : null}
         </section>
       </div>
     </div>

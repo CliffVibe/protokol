@@ -5,6 +5,7 @@ import { BrandMark } from "@/components/brand-mark";
 import { LogoutButton } from "@/components/logout-button";
 import { BottomNav } from "@/components/nav/bottom-nav";
 import { HeaderBell } from "@/components/nav/header-bell";
+import { PwaShell } from "@/components/pwa/pwa-shell";
 import { SideNav } from "@/components/nav/side-nav";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
@@ -50,6 +51,8 @@ export default async function StudentLayout({ children }: { children: React.Reac
       </div>
 
       <BottomNav unreadCount={unreadCount} />
+      {/* PWA (T11): service worker и офлайн-плашка — оболочка, не проверка доступа */}
+      <PwaShell />
     </div>
   );
 }

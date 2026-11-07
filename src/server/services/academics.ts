@@ -1,28 +1,21 @@
 // Успеваемость: средний рейтинг, долги, стипендия. Чистые функции — без БД (их же использует T07).
 //
-// ПРАВИЛО СТИПЕНДИИ ВЫМЫШЛЕННОЕ (концепт, не правила вуза; записано и в docs/01-concept.md):
-// стипендия сохраняется, если
-//   1) нет долгов ни в одном прошлом семестре (оценка 2 или «не зачтено»),
-//   2) в прошлой сессии нет оценок ниже 4,
-//   3) в текущем семестре рейтинг по каждой дисциплине не ниже 60 из 100.
-// Иначе — «под угрозой» с причинами. Нет ни одной оценки (первокурсник до сессии) — статуса нет.
+// Само правило стипендии — в src/lib/scholarship.ts: тот же код считает «Что если…» на клиенте (T11),
+// поэтому оно не дублируется. Здесь — сводка и экран «Успеваемость».
 import type { AssessmentKind } from "@/generated/prisma/client";
+import {
+  SCHOLARSHIP_MIN_MARK,
+  SCHOLARSHIP_MIN_RATING,
+  isDebt,
+  isLowMark,
+  scholarshipAsOf,
+  type GradeRow,
+  type Scholarship,
+} from "@/lib/scholarship";
 import { mskStartOfDay } from "@/lib/msk";
 
-export const SCHOLARSHIP_MIN_RATING = 60;
-export const SCHOLARSHIP_MIN_MARK = 4;
-
-export type GradeRow = {
-  semester: number;
-  kind: AssessmentKind;
-  ratingPoints: number | null;
-  finalMark: number | null;
-  passed: boolean | null;
-  examDate: Date | null;
-  discipline: { id: string; name: string };
-};
-
-export type Scholarship = { kept: true } | { kept: false; reasons: string[] };
+export { SCHOLARSHIP_MIN_MARK, SCHOLARSHIP_MIN_RATING, isDebt };
+export type { GradeRow, Scholarship };
 
 export type StudySummary = {
   semester: number;
@@ -44,31 +37,11 @@ export function averageRating(rows: GradeRow[]): number | null {
 export function summarizeStudy(grades: GradeRow[]): StudySummary | null {
   const semester = currentSemester(grades);
   if (semester === null) return null;
-  const current = grades.filter((g) => g.semester === semester);
-  const past = grades.filter((g) => g.semester < semester);
-  const lastSession = past.filter((g) => g.semester === semester - 1);
-
-  const reasons: string[] = [];
-  const debts = past.filter(isDebt);
-  for (const g of debts) reasons.push(`Долг: ${g.discipline.name}`);
-  for (const g of lastSession) {
-    if (g.finalMark !== null && g.finalMark > 2 && g.finalMark < SCHOLARSHIP_MIN_MARK) {
-      reasons.push(`Оценка ${g.finalMark} в прошлой сессии: ${g.discipline.name}`);
-    }
-  }
-  for (const g of current) {
-    if (g.ratingPoints !== null && g.ratingPoints < SCHOLARSHIP_MIN_RATING) {
-      reasons.push(
-        `${g.discipline.name}: ${g.ratingPoints} из 100, нужно ${SCHOLARSHIP_MIN_RATING}`,
-      );
-    }
-  }
-
   return {
     semester,
-    averageRating: averageRating(current),
-    debts: debts.length,
-    scholarship: reasons.length ? { kept: false, reasons } : { kept: true },
+    averageRating: averageRating(grades.filter((g) => g.semester === semester)),
+    debts: grades.filter((g) => g.semester < semester && isDebt(g)).length,
+    scholarship: scholarshipAsOf(grades, semester),
   };
 }
 
@@ -82,13 +55,10 @@ export function summarizeStudy(grades: GradeRow[]): StudySummary | null {
 
 export type Attention = "debt" | "low" | "mark3" | "ok";
 
-export const isDebt = (g: Pick<GradeRow, "finalMark" | "passed">) =>
-  g.finalMark === 2 || g.passed === false;
-
 export function gradeAttention(g: GradeRow, isCurrent: boolean): Attention {
   if (isDebt(g)) return "debt";
   if (isCurrent && g.ratingPoints !== null && g.ratingPoints < SCHOLARSHIP_MIN_RATING) return "low";
-  if (g.finalMark !== null && g.finalMark > 2 && g.finalMark < SCHOLARSHIP_MIN_MARK) return "mark3";
+  if (isLowMark(g)) return "mark3";
   return "ok";
 }
 

@@ -219,3 +219,9 @@
 html:has(dialog[open]) {
   overflow: hidden;
 }
+
+/* Офлайн-плашка (T11) висит над нижней навигацией: футеру — запас, чтобы плашка концепта не пряталась.
+   Вне @layer: правило из base проиграло бы утилите pb-6 у футера */
+html[data-offline] footer {
+  padding-bottom: 7rem;
+}

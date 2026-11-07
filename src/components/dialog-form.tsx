@@ -16,6 +16,8 @@ type Props<S extends State> = {
   /** Уникальный id диалога, когда на экране несколько диалогов с одной подписью кнопки */
   dialogId?: string;
   triggerVariant?: "outline" | "ghost" | "destructive" | "default";
+  /** Классы кнопки-триггера: например, перенос длинной подписи при тексте 200% */
+  triggerClassName?: string;
   title: string;
   description?: ReactNode;
   confirmLabel: string;
@@ -32,6 +34,7 @@ export function DialogForm<S extends State>({
   triggerAriaLabel,
   dialogId,
   triggerVariant = "outline",
+  triggerClassName,
   title,
   description,
   confirmLabel,
@@ -65,6 +68,7 @@ export function DialogForm<S extends State>({
         ref={triggerRef}
         type="button"
         variant={triggerVariant}
+        className={triggerClassName}
         aria-haspopup="dialog"
         aria-label={triggerAriaLabel}
         onClick={() => dialogRef.current?.showModal()}

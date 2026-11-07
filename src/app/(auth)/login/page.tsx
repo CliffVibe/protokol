@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { ConceptBanner } from "@/components/concept-banner";
 import { LogoMark } from "@/components/logo-mark";
+import { ClearOfflineData } from "@/components/pwa/clear-offline-data";
 import { DEMO_ACCOUNTS, DEMO_SCENARIOS } from "@/lib/demo-accounts";
 import { demoLogin } from "@/server/actions/auth";
 import { homeFor } from "@/server/auth/guards";
@@ -36,6 +37,8 @@ export default async function LoginPage() {
         </div>
 
         <ConceptBanner />
+        {/* После выхода — стереть офлайн-копию расписания (T11): общий компьютер */}
+        <ClearOfflineData />
 
         <LoginForm />
 

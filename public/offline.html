@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="ru">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Нет сети — Протокол</title>
+    <link rel="icon" href="/icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="/offline.css" />
+  </head>
+  <body>
+    <!-- Страница без сети (T11): её отдаёт service worker (public/sw.js) на любую навигацию, кроме
+         расписания. Без скриптов и inline-стилей — CSP не мешает. -->
+    <main>
+      <img src="/icon.svg" alt="" width="56" height="56" />
+      <h1>Нет сети</h1>
+      <p>
+        Эта страница без интернета не открывается. Расписание на две недели сохранено на устройстве.
+      </p>
+      <p><a class="button" href="/schedule">Открыть расписание</a></p>
+      <p class="muted">Когда сеть вернётся, обновите страницу.</p>
+    </main>
+    <footer>
+      Концепт для конкурса. Не является официальным сервисом МГИМО. Все данные вымышлены.
+    </footer>
+  </body>
+</html>

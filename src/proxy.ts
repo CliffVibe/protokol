@@ -28,6 +28,10 @@ export function buildCsp(nonce: string, { dev, https }: { dev: boolean; https: b
     "img-src 'self' blob: data:",
     "font-src 'self'",
     "connect-src 'self'",
+    // Service worker (T11): при 'strict-dynamic' в script-src слово 'self' там не действует, а worker-src
+    // без своей директивы берёт script-src — регистрация /sw.js упала бы. Поэтому — явно.
+    "worker-src 'self'",
+    "manifest-src 'self'",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
@@ -92,7 +96,8 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Всё, кроме статики Next, значка и robots — им не нужны ни редирект, ни nonce
-    "/((?!_next/static|_next/image|icon.svg|favicon.ico|robots.txt).*)",
+    // Всё, кроме статики Next, значков, robots и файлов PWA (T11) — им не нужны ни редирект, ни nonce.
+    // Манифест, воркер и офлайн-страницу браузер берёт и без входа (на странице входа, при обновлении воркера)
+    "/((?!_next/static|_next/image|icon.svg|apple-icon.png|icons/|favicon.ico|robots.txt|manifest.webmanifest|sw.js|offline.html|offline.css).*)",
   ],
 };

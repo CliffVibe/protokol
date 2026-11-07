@@ -12,8 +12,10 @@ import {
   ScheduleToggle,
   WeekNav,
   dayHref,
+  offlineScheduleUrls,
   weekHref,
 } from "@/components/schedule/nav";
+import { OfflineSchedule } from "@/components/pwa/offline-schedule";
 import { Button } from "@/components/ui/button";
 import { formatLessonCount, formatTime } from "@/lib/dates";
 import { addDays, mskDateKey, mskStartOfDay, mskStartOfWeek } from "@/lib/msk";
@@ -38,6 +40,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
     const thisWeek = +weekStart === +mskStartOfWeek(now);
     return (
       <Shell
+        now={now}
         toggle={
           <ScheduleToggle
             view="week"
@@ -55,6 +58,7 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   const dayStart = parseDayParam(day, now) ?? mskStartOfDay(now);
   return (
     <Shell
+      now={now}
       toggle={
         <ScheduleToggle
           view="day"
@@ -68,12 +72,14 @@ export default async function SchedulePage({ searchParams }: PageProps<"/schedul
   );
 }
 
-function Shell({ toggle, children }: { toggle: ReactNode; children: ReactNode }) {
+function Shell({ now, toggle, children }: { now: Date; toggle: ReactNode; children: ReactNode }) {
   return (
     <div className="flex flex-col gap-6">
       <PageHeader title="Расписание" />
       {toggle}
       <LessonSheetProvider>{children}</LessonSheetProvider>
+      {/* Офлайн (T11): воркер сохраняет две недели; без сети — плашка «показываем сохранённое… обновлено» */}
+      <OfflineSchedule urls={offlineScheduleUrls(now)} savedAt={now.toISOString()} />
     </div>
   );
 }

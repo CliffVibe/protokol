@@ -31,6 +31,8 @@ const PUBLIC_PAGES: Record<string, string> = {
 const PUBLIC_ROUTES: Record<string, string> = {
   "app/api/health/route.ts:GET":
     "проверка БД для Docker healthcheck, данных пользователей не трогает",
+  "app/api/calendar/[token]/route.ts:GET":
+    "подписка на расписание по токену 256 бит (S7): календарь читает её без входа, наружу — только пары",
 };
 
 /** Server Actions без guard — осознанно. Ключ: «путь:имя». */
