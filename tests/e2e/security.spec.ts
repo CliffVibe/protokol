@@ -118,7 +118,7 @@ test.describe("05-security: обязательные тесты", () => {
 
   test.describe("4. Неавторизованный", () => {
     test.use({ storageState: ANON });
-    for (const route of ["/", "/grades", "/staff", "/requests", "/profile"]) {
+    for (const route of ["/", "/grades", "/staff", "/requests", "/profile", "/assistant"]) {
       test(`${route} → /login`, async ({ page }) => {
         await page.goto(route);
         await expect(page).toHaveURL(/\/login$/);
@@ -151,10 +151,16 @@ test.describe("05-security: обязательные тесты", () => {
     // HTML: страница входа анонимно и разделы под Алисой (этот тест — с её сессией)
     const pages: string[] = [];
     pages.push(await (await request.get("/login", { headers: { cookie: "" } })).text());
-    for (const route of ["/", "/grades", "/more", "/profile"]) {
+    for (const route of ["/", "/grades", "/more", "/profile", "/assistant"]) {
       await page.goto(route);
       pages.push(await page.content());
     }
+    // Ответ помощника (T12) — тоже «страница»: ключ GigaChat не должен попасть и в него
+    const reply = await page.request.post("/api/assistant", {
+      data: { messages: [{ role: "user", content: "Как оформить академ?" }] },
+    });
+    expect(reply.status()).toBe(200);
+    pages.push(await reply.text());
 
     // JS и CSS бандлы прод-сборки — с диска (.next/static), все файлы
     const files: string[] = [];

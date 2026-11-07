@@ -9,14 +9,22 @@ type FormAlertProps = {
   className?: string;
   /** -1 — чтобы на сообщение можно было перевести фокус после ответа сервера */
   tabIndex?: number;
+  /** false — без role="alert": сообщение уже внутри журнала помощника (T12) и не должно звучать дважды */
+  announce?: boolean;
 };
 
 // Ошибка всей формы (не конкретного поля). Тот же язык, что у плашки концепта — сноска с чертой,
 // но черта и иконка цвета --danger. role="alert": скринридер прочитает сразу после отправки.
-export function FormAlert({ title, children, className, tabIndex }: FormAlertProps) {
+export function FormAlert({
+  title,
+  children,
+  className,
+  tabIndex,
+  announce = true,
+}: FormAlertProps) {
   return (
     <div
-      role="alert"
+      role={announce ? "alert" : undefined}
       tabIndex={tabIndex}
       className={cn("flex gap-2.5 border-l-2 border-danger py-1 pl-3", className)}
     >

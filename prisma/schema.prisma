@@ -72,6 +72,7 @@ model User {
   sessions         Session[]
   requestEvents    RequestEvent[]   @relation("RequestEventActor")
   revokedDocuments IssuedDocument[] @relation("DocumentRevokedBy")
+  assistantUsage   AssistantUsage[]
 }
 
 /// Храним sha256(token); сам токен — только в cookie __Host-session (S3).
@@ -94,6 +95,17 @@ model LoginThrottle {
   windowStart DateTime
   lockedUntil DateTime?
   updatedAt   DateTime  @updatedAt
+}
+
+/// Вызовы GigaChat для лимита 20 в час (S8, T12). Только время — ни вопроса, ни ответа не храним.
+/// Старше часа удаляются при следующем вызове того же пользователя.
+model AssistantUsage {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
 }
 
 // ── Структура вуза ───────────────────────────────────────────────────────

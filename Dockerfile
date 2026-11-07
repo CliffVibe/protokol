@@ -39,6 +39,10 @@ RUN addgroup -S -g 1001 nodejs && adduser -S -u 1001 -G nodejs nextjs
 COPY --from=build --chown=nextjs:nodejs /app/public ./public
 COPY --from=build --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=build --chown=nextjs:nodejs /app/.next/static ./.next/static
+# TLS GigaChat (T12): «Russian Trusted Root CA» Минцифры — дополнительно к системным корневым,
+# проверку TLS не отключаем. Публичный сертификат, источник и отпечаток — docs/07-tooling.md
+COPY --from=build /app/certs/russian_trusted_root_ca.pem /app/certs/russian_trusted_root_ca.pem
+ENV NODE_EXTRA_CA_CERTS=/app/certs/russian_trusted_root_ca.pem
 USER nextjs
 EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=5s --start-period=20s --retries=3 \

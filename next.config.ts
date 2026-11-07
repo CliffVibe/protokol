@@ -16,6 +16,8 @@ const nextConfig: NextConfig = {
   outputFileTracingIncludes: {
     // Ключ — glob по пути маршрута: скобки экранированы, иначе [number] — класс символов
     "/requests/\\[number\\]/pdf": ["./assets/fonts/**/*"],
+    // База ответов помощника (T12): статьи читаются с диска в обработчике помощника
+    "/api/assistant": ["./content/faq/**/*"],
   },
   // Заголовки безопасности (S6 из docs/05-security.md). CSP с nonce — в src/proxy.ts:
   // nonce нужен свой на каждый запрос, а здесь заголовки статические.

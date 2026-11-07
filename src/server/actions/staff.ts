@@ -11,6 +11,7 @@ import {
   staffRequestHref,
   statusSchema,
 } from "@/server/services/request-rules";
+import { draftReply } from "@/server/services/ai/draft";
 import { revokeCertificate, setStatus } from "@/server/services/requests";
 
 // Server Actions сотрудника (T08). Первой инструкцией — requireStaff() (guards.test.ts).
@@ -97,4 +98,28 @@ export async function resetDemoAction(): Promise<ResetState> {
       error: `Демо сбросили совсем недавно — повторить можно через ${result.retryInMinutes} мин.`,
     };
   redirect("/login");
+}
+
+export type DraftState = { text?: string; notice?: string; error?: string };
+
+/**
+ * «Подготовить черновик» (T12): текст комментария к следующему шагу заявки. Ничего не меняет —
+ * только возвращает текст; отправляет сотрудник сам кнопкой перехода (setRequestStatusAction).
+ * Чужой факультет или битый номер — та же «не найдена», без подробностей.
+ */
+export async function draftReplyAction(number: unknown, to: unknown): Promise<DraftState> {
+  const ctx = await requireStaff();
+  const n = requestNumberSchema.safeParse(number);
+  const t = statusSchema.safeParse(to);
+  if (!n.success || !t.success) return { error: "Не получилось — обновите страницу" };
+  const result = await draftReply(ctx, n.data, t.data);
+  if (!result.ok) {
+    return {
+      error:
+        result.reason === "not_found"
+          ? "Заявка не найдена — обновите страницу"
+          : "Статус уже изменили — обновите страницу",
+    };
+  }
+  return { text: result.text, ...(result.notice ? { notice: result.notice } : {}) };
 }

@@ -56,8 +56,9 @@ export default defineConfig({
     ? undefined
     : {
         command: "pnpm build && pnpm start",
-        // DEMO_MODE=1 — e2e проверяют и кнопки «Войти как…»
-        env: { PORT: String(PORT), DEMO_MODE: "1" },
+        // DEMO_MODE=1 — e2e проверяют и кнопки «Войти как…»; ASSISTANT_PROVIDER=faq — помощник без GigaChat:
+        // ответы детерминированы, токены не тратятся, ключ из .env в e2e не участвует (T12)
+        env: { PORT: String(PORT), DEMO_MODE: "1", ASSISTANT_PROVIDER: "faq" },
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,
         timeout: 240_000,
