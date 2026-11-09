@@ -2,7 +2,7 @@
 # Образ собирается в GitHub Actions (.github/workflows/image.yml) и публикуется в GHCR.
 # На VPS сборки нет: только docker compose pull (см. docs/03-architecture.md → «Деплой»).
 
-FROM node:24-alpine AS base
+FROM node:26-alpine AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 # pnpm той же версии, что в package.json → packageManager
 RUN npm install -g pnpm@11.28.10 && apk add --no-cache libc6-compat
@@ -29,7 +29,7 @@ USER node
 CMD ["pnpm", "db:deploy"]
 
 # Приложение (цель по умолчанию — последняя стадия)
-FROM node:24-alpine AS runner
+FROM node:26-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
