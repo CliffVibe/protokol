@@ -20,7 +20,7 @@ export function BrandMark({
     >
       <LogoMark className="size-9" />
       <span className="flex flex-col leading-tight">
-        <span className="font-heading text-lg font-bold">Протокол</span>
+        <span className="font-heading text-base font-semibold">Протокол</span>
         {subtitle ? <span className="text-xs text-ink-muted">{subtitle}</span> : null}
       </span>
     </Link>

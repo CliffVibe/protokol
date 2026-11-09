@@ -114,7 +114,7 @@ export function WhatIf({ grades, semester }: { grades: GradeRow[]; semester: num
       className="flex scroll-mt-6 flex-col gap-4 border-t border-line pt-6"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="what-if-title" className="text-xl">
+        <h2 id="what-if-title" className="text-lg">
           Что если…
         </h2>
         <p className="text-base text-ink-muted">

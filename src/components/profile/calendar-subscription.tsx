@@ -20,7 +20,7 @@ export function CalendarSubscription({
       className="flex flex-col gap-4 border-t border-line pt-6"
     >
       <div className="flex flex-col gap-1">
-        <h2 id="calendar-title" className="text-xl">
+        <h2 id="calendar-title" className="text-lg">
           Расписание в календаре телефона
         </h2>
         <p className="max-w-[40rem] text-base text-ink">

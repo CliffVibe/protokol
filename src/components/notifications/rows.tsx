@@ -85,7 +85,7 @@ export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: 
           <button
             type="submit"
             className={cn(
-              "text-left break-words text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand",
+              "w-full text-left break-words hyphens-auto text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand",
               unread ? "text-lg leading-snug font-bold" : "text-base font-normal",
             )}
           >
@@ -156,7 +156,7 @@ export function AnnouncementItem({
           {formatRelativeDay(a.publishedAt, now)}, {formatTime(a.publishedAt)}
         </span>
       </p>
-      <h2 className="font-heading text-lg font-bold break-words text-ink">{a.title}</h2>
+      <h2 className="font-heading text-lg font-semibold break-words text-ink">{a.title}</h2>
       <Markdown text={a.body} />
     </li>
   );

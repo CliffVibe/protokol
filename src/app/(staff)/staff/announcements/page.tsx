@@ -29,14 +29,14 @@ export default async function StaffAnnouncementsPage() {
       />
 
       <section aria-labelledby="new-announcement" className="flex flex-col gap-4">
-        <h2 id="new-announcement" className="text-xl">
+        <h2 id="new-announcement" className="text-lg">
           Новое объявление
         </h2>
         <AnnouncementForm options={options} />
       </section>
 
       <section aria-labelledby="my-announcements" className="flex flex-col gap-4 lg:max-w-3xl">
-        <h2 id="my-announcements" className="text-xl">
+        <h2 id="my-announcements" className="text-lg">
           Мои объявления
         </h2>
         {mine.length ? (
@@ -54,7 +54,7 @@ export default async function StaffAnnouncementsPage() {
                     {formatRelativeDay(a.publishedAt, now)}, {formatTime(a.publishedAt)}
                   </span>
                 </p>
-                <h3 className="font-heading text-lg font-bold break-words">{a.title}</h3>
+                <h3 className="font-heading text-lg font-semibold break-words">{a.title}</h3>
                 <p className="flex items-start gap-1.5 text-sm text-ink-muted">
                   <Users aria-hidden className="mt-0.5 size-4 shrink-0" />
                   <span>

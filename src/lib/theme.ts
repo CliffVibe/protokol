@@ -9,9 +9,9 @@ export const THEME_COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
 export const THEME_PREFERENCES = ["light", "dark", "system"] as const;
 export type ThemePreference = (typeof THEME_PREFERENCES)[number];
 
-/** Значение --bg из globals.css: шапки на «бумаге», адресная строка сливается с ними
+/** Значение --bg из globals.css: шапки на фоне страницы, адресная строка сливается с ними
  *  (сверяет tests/unit/theme.test.ts). */
-export const THEME_COLORS = { light: "#EEF1EC", dark: "#0A0D17" } as const;
+export const THEME_COLORS = { light: "#FFFFFF", dark: "#06071C" } as const;
 
 export function parseTheme(value: string | undefined): ThemePreference {
   return value === "light" || value === "dark" ? value : "system";

@@ -25,7 +25,7 @@ export function GradesSummary({
 }) {
   return (
     <section aria-labelledby="how-title" className="flex min-w-0 flex-col gap-3">
-      <h2 id="how-title" className="text-xl">
+      <h2 id="how-title" className="text-lg">
         Как у меня дела
       </h2>
       <div className="flex flex-col gap-4 border-t border-line pt-3">
@@ -33,7 +33,7 @@ export function GradesSummary({
           {summary.averageRating !== null ? (
             <>
               Средний рейтинг за {summary.semester}-й семестр:{" "}
-              <span className="font-heading text-2xl font-bold tabular">
+              <span className="font-heading text-2xl font-semibold tabular">
                 {summary.averageRating}
               </span>{" "}
               из 100

@@ -242,7 +242,7 @@ test.describe("тема", () => {
     expect(cookie?.value).toBe("dark");
     await expect(page.locator('meta[name="theme-color"]').first()).toHaveAttribute(
       "content",
-      "#0A0D17",
+      "#06071C",
     );
 
     await page.reload();
@@ -257,7 +257,7 @@ test.describe("тема", () => {
   test("без мигания: класс темы и theme-color уже в HTML с сервера", async ({ request }) => {
     const dark = await (await request.get("/login", { headers: { cookie: "theme=dark" } })).text();
     expect(dark).toMatch(/<html[^>]*class="[^"]*\bdark\b/);
-    expect(dark).toMatch(/<meta name="theme-color" content="#0A0D17"/);
+    expect(dark).toMatch(/<meta name="theme-color" content="#06071C"/);
 
     const system = await (await request.get("/login")).text();
     expect(system).not.toMatch(/<html[^>]*class="[^"]*\b(dark|light)\b/);

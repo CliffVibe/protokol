@@ -4,10 +4,11 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PageHeader } from "@/components/page-header";
-import { FileDown, ShieldX } from "lucide-react";
+import { CircleCheck, FileDown, ShieldX } from "lucide-react";
 import { requestStatus } from "@/components/now/labels";
 import { CancelRequest } from "@/components/requests/cancel-request";
 import { RequestTimeline } from "@/components/requests/timeline";
+import { StampRings } from "@/components/stamp-rings";
 import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { formatRelativeDay } from "@/lib/dates";
@@ -64,31 +65,54 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
         <h2 id="state-title" className="sr-only">
           Статус
         </h2>
-        <StatusChip
-          tone={status.tone}
-          icon={"icon" in status ? status.icon : undefined}
-          className="self-start"
-        >
-          {status.label}
-        </StatusChip>
-        {r.status === "READY" ? (
-          <p className="text-base text-ink">
-            <span className="font-bold">Справка готова.</span> Заберите её в деканате своего
-            факультета — с паспортом или студенческим билетом.
-            {r.canDownload
-              ? " Электронную копию с QR-кодом проверки можно скачать уже сейчас."
-              : null}
-          </p>
-        ) : null}
-        {r.canDownload ? (
-          // Обычная ссылка, не <Link>: PDF отдаёт route handler, предзагрузка ему не нужна
-          <Button asChild variant="outline" className="self-start">
-            <a href={`${requestHref(r.number)}/pdf`} download>
-              <FileDown aria-hidden />
-              Скачать справку (PDF)
-            </a>
-          </Button>
-        ) : null}
+        {r.status === "READY" && !r.document?.revoked ? (
+          // «Готова» — главный хороший момент заявки: мятный блок (Б′, 10.11), в нём единственная
+          // заливная кнопка экрана. Фокус — обводкой цвета текста: ультрамарин на мяте в тёмной теме не виден
+          <div className="relative flex flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-mint p-5 text-on-mint">
+            <StampRings className="text-on-mint" />
+            <p className="relative flex items-center gap-2.5 font-heading text-lg font-semibold">
+              <CircleCheck aria-hidden className="size-6 shrink-0" />
+              {status.label}
+            </p>
+            <p className="relative text-base">
+              Заберите справку в деканате своего факультета — с паспортом или студенческим билетом.
+              {r.canDownload
+                ? " Электронную копию с QR-кодом проверки можно скачать уже сейчас."
+                : null}
+            </p>
+            {r.canDownload ? (
+              // Обычная ссылка, не <Link>: PDF отдаёт route handler, предзагрузка ему не нужна
+              <Button
+                asChild
+                size="lg"
+                className="relative mt-1 w-full whitespace-normal focus-visible:outline-on-mint sm:w-auto sm:self-start"
+              >
+                <a href={`${requestHref(r.number)}/pdf`} download>
+                  <FileDown aria-hidden />
+                  Скачать справку (PDF)
+                </a>
+              </Button>
+            ) : null}
+          </div>
+        ) : (
+          <>
+            <StatusChip
+              tone={status.tone}
+              icon={"icon" in status ? status.icon : undefined}
+              className="self-start"
+            >
+              {status.label}
+            </StatusChip>
+            {r.canDownload ? (
+              <Button asChild variant="outline" className="self-start">
+                <a href={`${requestHref(r.number)}/pdf`} download>
+                  <FileDown aria-hidden />
+                  Скачать справку (PDF)
+                </a>
+              </Button>
+            ) : null}
+          </>
+        )}
         {r.document?.revoked ? (
           // Отзыв — сноска с чертой --danger, как ошибка формы, но без role="alert": это состояние, а не
           // ответ на действие. Причину видит только сам студент; на /verify — лишь «Отозвана» (S7)
@@ -120,7 +144,7 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
       </section>
 
       <section aria-labelledby="timeline-title" className="flex flex-col gap-3">
-        <h2 id="timeline-title" className="text-xl">
+        <h2 id="timeline-title" className="text-lg">
           Как движется заявка
         </h2>
         <div className="border-t border-line pt-4">
@@ -129,7 +153,7 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
       </section>
 
       <section aria-labelledby="given-title" className="flex flex-col gap-3">
-        <h2 id="given-title" className="text-xl">
+        <h2 id="given-title" className="text-lg">
           Что вы указали
         </h2>
         <dl className="flex flex-col gap-3 border-t border-line pt-4 text-base">

@@ -146,7 +146,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
           {fresh.length ? (
             <section aria-labelledby="fresh-title" className="flex flex-col gap-1">
               <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
-                <h2 id="fresh-title" className="text-xl">
+                <h2 id="fresh-title" className="text-lg">
                   Новые
                 </h2>
                 {markAll}

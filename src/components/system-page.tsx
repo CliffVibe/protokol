@@ -45,7 +45,7 @@ export function SystemPage({ code, icon: Icon, tone, title, children, actions }:
               <p className="text-sm text-ink-muted tabular">{code}</p>
               <h1
                 id="system-title"
-                className="text-2xl break-words hyphens-auto text-ink [hyphenate-limit-chars:10_4_4] lg:text-3xl"
+                className="text-xl break-words hyphens-auto text-ink [hyphenate-limit-chars:10_4_4] lg:text-2xl"
               >
                 {title}
               </h1>

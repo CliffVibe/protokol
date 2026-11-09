@@ -85,7 +85,7 @@ export function DialogForm<S extends State>({
         className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-black/50"
       >
         <form action={formAction} noValidate className="flex flex-col gap-4 p-5">
-          <h2 id={titleId} className="text-xl break-words">
+          <h2 id={titleId} className="text-lg break-words">
             {title}
           </h2>
           {description ? <div className="text-base text-ink">{description}</div> : null}

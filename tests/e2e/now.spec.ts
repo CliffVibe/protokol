@@ -34,7 +34,8 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
     ).toBeVisible();
     // first(): параллельные тесты заявок (T08) могут ненадолго добавить Алисе свою «Готова»
     await expect(page.getByText("Готова — заберите").first()).toBeVisible();
-    await expect(page.getByText("Стипендия сохраняется")).toBeVisible();
+    // visible: блок «Учёба» в DOM дважды — в правой колонке (≥ 1024) и в ленте (< 1024), один скрыт (Б′)
+    await expect(page.getByText("Стипендия сохраняется").filter({ visible: true })).toBeVisible();
   });
 
   for (const [link, path] of [
@@ -67,7 +68,7 @@ test("Вера: аккуратные пустые состояния, без ч�
   await expect(page.getByRole("heading", { level: 1, name: /, Вера$/ })).toBeVisible();
   await expect(page.getByRole("heading", { name: "Заявок пока нет" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Заказать справку" })).toBeVisible();
-  await expect(page.getByText("Оценок пока нет")).toBeVisible();
+  await expect(page.getByText("Оценок пока нет").filter({ visible: true })).toBeVisible();
   // Из колонки «Ближайшее» в расписание можно попасть и без блока «Изменения»
   await expect(
     page.getByRole("region", { name: "Ближайшее" }).getByRole("link", { name: "Всё расписание" }),
@@ -90,7 +91,8 @@ test("изоляция: Тимур не видит номера заявок А�
   // Объявление только для 2МО-3 — у Алисы есть, у Тимура нет
   expect(await page.getByRole("main").innerText()).toContain("Изменение расписания группы 2МО-3");
   expect(timurText).not.toContain("Изменение расписания группы 2МО-3");
-  await expect(timur.getByText("Стипендия под угрозой")).toBeVisible();
+  // visible: блок «Учёба» в DOM дважды — колонка ≥ 1024 и лента < 1024 (Б′)
+  await expect(timur.getByText("Стипендия под угрозой").filter({ visible: true })).toBeVisible();
 });
 
 test("LCP < 2,5 с на эмуляции телефона (CPU ×4, медленный 4G)", async ({ page, isMobile }) => {

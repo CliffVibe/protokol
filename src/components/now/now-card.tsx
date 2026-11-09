@@ -1,13 +1,16 @@
 import Link from "next/link";
-import { CircleAlert, MapPin, UserRound } from "lucide-react";
+import { ChevronRight, CircleAlert, MapPin, UserRound } from "lucide-react";
 import { formatCountdown, formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
-import { cn } from "@/lib/utils";
 import type { NextLesson } from "@/server/services/now";
 import { Countdown } from "./countdown";
 import { LESSON_KIND } from "./labels";
+import { StampRings } from "@/components/stamp-rings";
 
-// Ближайшая пара — единственная «карточка» и главный акцент экрана: время крупно, остальное тихо.
-// Перенос — полоса --warn слева + иконка + «было 09:30» (не только цвет).
+// Ближайшая пара — единственная заливная плашка экрана (Б′, 10.11): ультрамарин, время крупно Unbounded,
+// «через N мин» — мятой («хорошо и вовремя»). Кольца-оттиск в углу — тихий намёк на печать бланка.
+// Перенос и замена — строкой с иконкой и словом «Перенос» в светлой рамке: жёлтый текст на ультрамарине
+// в тёмной теме не набирает 4.5:1, поэтому смысл несут иконка и текст, а не цвет.
+// Фокус на плашке — белой обводкой: ультрамариновая (--ring) на ультрамарине не видна.
 export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
   const { lesson, state } = next;
   const day = formatRelativeDay(lesson.startsAt, now);
@@ -23,20 +26,17 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
   return (
     <article
       aria-labelledby="now-card-title"
-      className={cn(
-        "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 md:p-5",
-        (moved || changedPlace) && "border-l-4 border-l-warn",
-      )}
+      className="relative flex flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-plate p-5 text-on-plate md:p-6"
     >
-      <h2 id="now-card-title" className="text-sm font-bold text-ink-muted">
-        {heading}
-      </h2>
-      <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
-        <p className="font-heading text-3xl font-bold text-ink tabular">
-          {formatTime(lesson.startsAt)}
-          <span className="text-xl text-ink-muted">–{formatTime(lesson.endsAt)}</span>
-        </p>
-        <p className="text-base font-bold text-brand">
+      <StampRings className="text-on-plate" />
+      <div className="relative flex flex-wrap items-center gap-2">
+        <h2
+          id="now-card-title"
+          className="rounded-full bg-on-plate/15 px-3 py-1 font-sans text-sm font-medium tracking-normal text-on-plate"
+        >
+          {heading}
+        </h2>
+        <p className="rounded-full bg-mint px-3 py-1 text-sm font-semibold text-on-mint">
           <Countdown
             startsAt={lesson.startsAt.toISOString()}
             endsAt={lesson.endsAt.toISOString()}
@@ -44,35 +44,40 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
           />
         </p>
       </div>
-      <div className="flex flex-col gap-0.5">
-        <p className="font-heading text-xl font-bold break-words text-ink">
-          {lesson.discipline.name}
-        </p>
-        <p className="text-sm text-ink-muted">
+      <p className="relative mt-2 flex flex-wrap items-baseline gap-x-1 font-heading tabular">
+        {/* min(52px в rem, 18vw): при тексте 200% время растёт, но не шире плашки на 360 (иначе обрезалось) */}
+        <span className="text-[length:min(var(--text-4xl),18vw)] leading-none font-semibold tracking-tight">
+          {formatTime(lesson.startsAt)}
+        </span>
+        <span className="text-xl font-semibold text-plate-muted">–{formatTime(lesson.endsAt)}</span>
+      </p>
+      <div className="relative flex flex-col gap-0.5">
+        <p className="text-xl font-semibold break-words">{lesson.discipline.name}</p>
+        <p className="text-sm text-plate-muted">
           {LESSON_KIND[lesson.kind]}
           {lesson.languageGroup ? `, ${lesson.languageGroup.name}` : null}
         </p>
       </div>
-      <ul className="flex flex-col gap-1.5 text-base text-ink">
+      <ul className="relative flex flex-col gap-1.5 text-base">
         <li className="flex items-start gap-2">
-          <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-ink-muted" />
-          <span>
+          <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-plate-muted" />
+          <span className="min-w-0">
             <span className="sr-only">Где: </span>
             ауд. {lesson.room}, {lesson.building}
           </span>
         </li>
         <li className="flex items-start gap-2">
-          <UserRound aria-hidden className="mt-0.5 size-5 shrink-0 text-ink-muted" />
-          <span>
+          <UserRound aria-hidden className="mt-0.5 size-5 shrink-0 text-plate-muted" />
+          <span className="min-w-0">
             <span className="sr-only">Кто ведёт: </span>
             {lesson.teacher.fullName}
           </span>
         </li>
       </ul>
       {moved || changedPlace ? (
-        <p className="flex items-start gap-2 text-sm font-bold text-warn">
+        <p className="relative flex items-start gap-2 rounded-xl border border-on-plate/40 px-3 py-2 text-sm font-semibold">
           <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
-          <span>
+          <span className="min-w-0">
             {moved
               ? `Перенос: ${formatWas(lesson.originalStartsAt!, lesson.startsAt, now)}`
               : lesson.change === "ROOM_CHANGED"
@@ -85,9 +90,10 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
       {/* Главный блок тоже ведёт в раздел — за 1 касание (ux-reviewer, T05) */}
       <Link
         href="/schedule"
-        className="inline-flex min-h-11 items-center self-start text-sm font-bold text-brand underline-offset-4 hover:underline"
+        className="relative mt-1 inline-flex min-h-11 items-center gap-1 self-start rounded-xl bg-on-plate/15 px-4 text-sm font-semibold text-on-plate transition-colors duration-150 ease-out hover:bg-on-plate/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-plate"
       >
         Всё расписание
+        <ChevronRight aria-hidden className="size-4" />
       </Link>
     </article>
   );

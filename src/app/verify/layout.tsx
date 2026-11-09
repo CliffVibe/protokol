@@ -13,7 +13,7 @@ export default function VerifyLayout({ children }: { children: React.ReactNode }
         <div className="mx-auto flex min-h-14 w-full max-w-[1120px] items-center gap-2.5">
           <LogoMark className="size-9" />
           <span className="flex flex-col leading-tight">
-            <span className="font-heading text-lg font-bold text-ink">Протокол</span>
+            <span className="font-heading text-base font-semibold text-ink">Протокол</span>
             <span className="text-xs text-ink-muted">
               Проверка справки <span lang="en">/ Certificate check</span>
             </span>

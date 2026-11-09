@@ -81,7 +81,7 @@ export default async function VerifyPage({ params }: PageProps<"/verify/[token]"
       >
         <Icon aria-hidden className="mt-1 size-[32px] shrink-0" />
         <div className="flex min-w-0 flex-col gap-1">
-          <h1 id="verify-title" className="text-2xl break-words text-ink lg:text-3xl">
+          <h1 id="verify-title" className="text-xl break-words text-ink lg:text-2xl">
             {s.ru}
           </h1>
           <p lang="en" className="text-lg text-ink">

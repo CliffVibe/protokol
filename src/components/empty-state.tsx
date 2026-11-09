@@ -23,7 +23,7 @@ export function StampPlace({ className }: { className?: string }) {
       aria-hidden
       className={cn(
         // Размер в px, а не rem: знак декоративный, при тексте 200% он не должен съедать ширину строки
-        "flex size-[64px] shrink-0 -rotate-6 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-muted/70 font-heading text-[14px] font-bold tracking-wide text-ink-muted",
+        "flex size-[64px] shrink-0 -rotate-6 items-center justify-center rounded-full border-[1.5px] border-dashed border-ink-muted/70 font-heading text-[14px] font-semibold tracking-wide text-ink-muted",
         className,
       )}
     >

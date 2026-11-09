@@ -65,7 +65,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
       />
 
       <section aria-labelledby="status-title" className="flex flex-col gap-3">
-        <h2 id="status-title" className="text-xl">
+        <h2 id="status-title" className="text-lg">
           Статус
         </h2>
         <div className="flex flex-wrap items-center gap-3 border-t border-line pt-4">
@@ -85,7 +85,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
 
       {r.document ? (
         <section aria-labelledby="document-title" className="flex flex-col gap-3">
-          <h2 id="document-title" className="text-xl">
+          <h2 id="document-title" className="text-lg">
             Справка
           </h2>
           <div className="flex flex-col gap-3 border-t border-line pt-4">
@@ -130,7 +130,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
       ) : null}
 
       <section aria-labelledby="student-title" className="flex flex-col gap-3">
-        <h2 id="student-title" className="text-xl">
+        <h2 id="student-title" className="text-lg">
           Студент
         </h2>
         <dl className="flex flex-col gap-3 border-t border-line pt-4 text-base">
@@ -145,7 +145,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
       </section>
 
       <section aria-labelledby="given-title" className="flex flex-col gap-3">
-        <h2 id="given-title" className="text-xl">
+        <h2 id="given-title" className="text-lg">
           Что указал студент
         </h2>
         <dl className="flex flex-col gap-3 border-t border-line pt-4 text-base">
@@ -159,7 +159,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
       </section>
 
       <section aria-labelledby="history-title" className="flex flex-col gap-3">
-        <h2 id="history-title" className="text-xl">
+        <h2 id="history-title" className="text-lg">
           История
         </h2>
         <div className="border-t border-line pt-4">

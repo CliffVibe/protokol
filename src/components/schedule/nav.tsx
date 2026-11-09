@@ -135,7 +135,7 @@ function ArrowsNav({
           </Link>
         </Button>
         <div className="flex min-w-0 flex-1 flex-col items-center text-center break-words">
-          <p className="font-heading text-xl font-bold text-ink tabular">{title}</p>
+          <p className="font-heading text-lg font-semibold text-ink tabular">{title}</p>
           {/* Высота строки постоянная: ссылка «назад» появляется на месте, ничего ниже не сдвигается */}
           <p className="flex min-h-11 flex-wrap items-center justify-center gap-x-3 text-sm">
             {relative ? <span className="text-ink-muted">{relative}</span> : null}
@@ -193,8 +193,8 @@ export function WeekNav({
 /**
  * Пн…сб недели: касание открывает день отдельно (?day=) — и из «Дня», и из «Недели»
  * (человек на проверке T06: «удобно смотреть отдельно по дням»).
- * Выбранный день — чернильная черта, полужирный и aria-current="date"; сегодня — точка под числом
- * и скрытое «сегодня»: не только цветом.
+ * Выбранный день — ультрамариновый квадрат под числом, полужирный и aria-current="date" (Б′, 10.11);
+ * сегодня — точка под числом и скрытое «сегодня», изменения — значок: не только цветом.
  */
 export function DayStrip({
   days,
@@ -221,22 +221,27 @@ export function DayStrip({
                 // «page» уже у «День» в переключателе; выбранный день — «date», сегодня — скрытым текстом
                 aria-current={selected ? "date" : undefined}
                 className={cn(
-                  "flex min-h-14 flex-col items-center justify-center border-b-2 px-1 py-1 text-center hover:bg-surface",
-                  selected
-                    ? "border-brand font-bold text-ink"
-                    : "border-transparent text-ink-muted",
+                  "group flex min-h-14 flex-col items-center justify-center gap-0.5 rounded-xl px-1 py-1 text-center",
+                  selected ? "font-semibold text-ink" : "text-ink-muted",
                 )}
               >
                 <span className="text-sm">{weekday}</span>
-                <span className="flex items-center gap-0.5 text-base text-ink tabular">
-                  {day}
-                  {changed ? <CircleAlert aria-hidden className="size-3.5 text-warn" /> : null}
-                </span>
-                {/* Место под точку есть у каждого дня — полоса не прыгает */}
+                {/* Выбранный день — ультрамариновый квадрат (Б′): минимум 40px, при тексте 200% растёт вместе с числом */}
                 <span
-                  aria-hidden
-                  className={cn("mt-0.5 size-[5px] rounded-full", isToday && "bg-brand")}
-                />
+                  className={cn(
+                    "flex min-h-[40px] min-w-[40px] items-center justify-center rounded-xl px-1 font-heading text-base font-semibold tabular",
+                    selected
+                      ? "bg-plate text-on-plate forced-colors:border-2 forced-colors:border-[Highlight]"
+                      : "text-ink group-hover:bg-surface",
+                  )}
+                >
+                  {day}
+                </span>
+                {/* Место под отметки есть у каждого дня — полоса не прыгает */}
+                <span aria-hidden className="flex h-[14px] items-center gap-[3px]">
+                  {changed ? <CircleAlert className="size-[13px] text-warn" /> : null}
+                  {isToday ? <span className="size-[5px] rounded-full bg-brand" /> : null}
+                </span>
                 <span className="sr-only">
                   {isToday ? ", сегодня" : ""}
                   {changed ? ", есть изменения" : ""}
@@ -254,7 +259,7 @@ export function DayStrip({
 export function ChangesSummary({ changes, now }: { changes: LessonRow[]; now: Date }) {
   return (
     <section aria-labelledby="week-changes-title" className="flex min-w-0 flex-col gap-2">
-      <h2 id="week-changes-title" className="text-xl">
+      <h2 id="week-changes-title" className="text-lg">
         Изменения недели
       </h2>
       {changes.length ? (

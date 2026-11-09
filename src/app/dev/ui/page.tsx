@@ -42,13 +42,16 @@ const TOKENS = [
   ["warn", "перенос, риск"],
   ["danger", "отмена, долг"],
   ["seal", "печать, «Выдана»"],
+  ["plate", "заливки ультрамарином: плашка пары, заливная кнопка"],
+  ["mint", "только «хорошо и готово»"],
 ] as const;
 
 const TYPE_SCALE = [
-  ["text-3xl", "36 — заголовок экрана, десктоп", "font-heading font-bold"],
-  ["text-2xl", "28 — заголовок экрана, мобильный", "font-heading font-bold"],
-  ["text-xl", "22 — заголовок блока", "font-heading font-bold"],
-  ["text-lg", "18 — подзаголовок", "font-heading font-semibold"],
+  ["text-4xl", "52 — крупные цифры: время пары, рейтинг", "font-heading font-semibold"],
+  ["text-3xl", "36 — рейтинг в деталях дисциплины", "font-heading font-semibold"],
+  ["text-2xl", "28 — заголовок экрана, десктоп", "font-heading font-semibold"],
+  ["text-xl", "22 — заголовок экрана, мобильный", "font-heading font-semibold"],
+  ["text-lg", "18 — заголовок блока", "font-heading font-semibold"],
   ["text-base", "16 — основной текст", ""],
   ["text-sm", "14 — подписи", ""],
   ["text-xs", "12 — мелкие пометки", ""],
@@ -66,7 +69,7 @@ const STATUSES: { tone: StatusTone; label: string }[] = [
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="flex flex-col gap-4">
-      <h2 className="text-xl">{title}</h2>
+      <h2 className="text-lg">{title}</h2>
       {children}
     </section>
   );

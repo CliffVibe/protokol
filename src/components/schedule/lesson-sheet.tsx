@@ -64,7 +64,7 @@ function SheetBody({ lesson, onClose }: { lesson: LessonView; onClose: () => voi
           <p className="text-sm text-ink-muted">{lesson.day}</p>
           <h2
             id="lesson-sheet-title"
-            className={cn("text-xl break-words", lesson.cancelled && "text-ink-muted line-through")}
+            className={cn("text-lg break-words", lesson.cancelled && "text-ink-muted line-through")}
           >
             {lesson.title}
           </h2>
@@ -84,8 +84,8 @@ function SheetBody({ lesson, onClose }: { lesson: LessonView; onClose: () => voi
       <p
         className={
           lesson.cancelled
-            ? "font-heading text-2xl font-bold text-ink-muted tabular line-through"
-            : "font-heading text-2xl font-bold tabular"
+            ? "font-heading text-2xl font-semibold text-ink-muted tabular line-through"
+            : "font-heading text-2xl font-semibold tabular"
         }
       >
         {lesson.start}

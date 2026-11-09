@@ -17,7 +17,8 @@ export default async function RequestsPage() {
   const { active, archive } = await getMyRequests(ctx);
   const now = new Date();
   const order = (
-    <Button asChild size="lg">
+    // h-auto + whitespace-normal: при тексте 200% подпись переносится, а не выталкивает экран вбок (Б′, Onest шире)
+    <Button asChild size="lg" className="h-auto min-h-12 max-w-full py-2 whitespace-normal">
       <Link href="/requests/new">Заказать справку</Link>
     </Button>
   );
@@ -39,7 +40,7 @@ export default async function RequestsPage() {
     <div className="flex flex-col gap-8 lg:max-w-3xl">
       <PageHeader title="Заявки" action={order} />
       <section aria-labelledby="active-title" className="flex flex-col gap-2">
-        <h2 id="active-title" className="text-xl">
+        <h2 id="active-title" className="text-lg">
           Активные
         </h2>
         {active.length ? (
@@ -59,7 +60,7 @@ export default async function RequestsPage() {
       </section>
       {archive.length ? (
         <section aria-labelledby="archive-title" className="flex flex-col gap-2">
-          <h2 id="archive-title" className="text-xl">
+          <h2 id="archive-title" className="text-lg">
             Архив
           </h2>
           <ul

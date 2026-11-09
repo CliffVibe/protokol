@@ -1,9 +1,10 @@
 import Link from "next/link";
-import { Pin } from "lucide-react";
+import { Pin, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusChip } from "@/components/status-chip";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
+import { formatDayAndMonth, formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
 import type { StudySummary } from "@/server/services/academics";
 import { ScholarshipBadge } from "@/components/grades/scholarship-badge";
 import type { FeedRequest, NowFeed, SoonItem } from "@/server/services/now";
@@ -27,17 +28,26 @@ export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date
         {changes.map((l) => {
           const c = CHANGE[l.change as keyof typeof CHANGE];
           return (
-            <li key={l.id} className="flex flex-col gap-1 py-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                <StatusChip tone={c.tone} icon={c.icon}>
-                  {c.label}
-                </StatusChip>
-                <span
-                  className={l.change === "CANCELLED" ? "text-ink-muted line-through" : "text-ink"}
-                >
+            <li
+              key={l.id}
+              // Б′: статус — иконка + цветной текст + черта в поле страницы слева (как в расписании), без чипа
+              className={cn(
+                "relative flex flex-col gap-1 py-3 before:absolute before:inset-y-3 before:left-[-10px] before:w-[4px] before:rounded-full",
+                l.change === "CANCELLED" ? "before:bg-danger" : "before:bg-warn",
+              )}
+            >
+              <p
+                className={cn(
+                  "flex flex-wrap items-center gap-x-1.5 text-sm font-bold",
+                  c.tone === "danger" ? "text-danger" : "text-warn",
+                )}
+              >
+                <c.icon aria-hidden className="size-4 shrink-0" />
+                {c.label},{" "}
+                <span className={l.change === "CANCELLED" ? "line-through" : undefined}>
                   {when(l.startsAt, now)}
                 </span>
-              </div>
+              </p>
               <p className="font-bold text-ink">{l.discipline.name}</p>
               <p className="text-sm text-ink-muted">
                 {l.change === "MOVED" && l.originalStartsAt
@@ -72,11 +82,20 @@ export function SoonBlock({
       {soon.length ? (
         <FeedList label="Ближайшие дедлайны и экзамены">
           {soon.map((s) => (
-            <li key={s.id} className="flex flex-col gap-0.5 py-3">
-              <p className="text-sm text-ink-muted">
-                {s.kind === "exam" ? "Экзамен" : "Дедлайн"}, {when(s.at, now)}
+            <li key={s.id} className="flex gap-3 py-3">
+              {/* Дата крупно столбцом — для глаза; полностью она прочитается строкой ниже */}
+              <p aria-hidden className="flex w-10 shrink-0 flex-col pt-0.5 text-brand">
+                <span className="font-heading text-xl leading-none font-semibold tabular">
+                  {formatDayAndMonth(s.at).day}
+                </span>
+                <span className="mt-1 text-xs font-semibold">{formatDayAndMonth(s.at).month}</span>
               </p>
-              <p className="font-bold text-ink">{s.title}</p>
+              <div className="flex min-w-0 flex-col gap-0.5">
+                <p className="font-bold break-words text-ink">{s.title}</p>
+                <p className="text-sm text-ink-muted">
+                  {s.kind === "exam" ? "Экзамен" : "Дедлайн"}, {when(s.at, now)}
+                </p>
+              </div>
             </li>
           ))}
         </FeedList>
@@ -186,16 +205,46 @@ export function AnnouncementsBlock({
   );
 }
 
-export function StudyBlock({ study }: { study: StudySummary | null }) {
+export function StudyBlock({
+  study,
+  id = "study-title",
+  className,
+}: {
+  study: StudySummary | null;
+  /** На «Сейчас» блок стоит дважды (телефон — в ленте, десктоп — в правой колонке): id должны различаться */
+  id?: string;
+  className?: string;
+}) {
   return (
-    <FeedSection id="study-title" title="Учёба" link={{ href: "/grades", label: "Успеваемость" }}>
-      {study ? (
+    <FeedSection
+      id={id}
+      title="Учёба"
+      link={{ href: "/grades", label: "Успеваемость" }}
+      className={className}
+    >
+      {study && study.averageRating !== null && study.scholarship.kept ? (
+        // Всё хорошо — мятный блок (Б′): мята только для «хорошо и готово», поэтому при угрозе его нет
+        <div className="flex flex-col gap-1 rounded-[1.75rem] bg-mint p-5 text-on-mint">
+          <p className="text-base font-semibold">Средний рейтинг, {study.semester}-й семестр</p>
+          <p className="flex flex-wrap items-baseline gap-x-2">
+            <span className="font-heading text-4xl font-semibold tracking-tight tabular">
+              {study.averageRating}
+            </span>
+            <span className="text-base">из 100</span>
+          </p>
+          <p className="mt-2 inline-flex max-w-full items-center gap-2 self-start rounded-full bg-on-mint/10 px-3.5 py-2 text-base font-semibold">
+            <ShieldCheck aria-hidden className="size-5 shrink-0" />
+            {/* min-w-0 + переносы: при тексте 200% на 360 «сохраняется» со значком шире блока */}
+            <span className="min-w-0 hyphens-auto">Стипендия сохраняется</span>
+          </p>
+        </div>
+      ) : study ? (
         <div className="flex flex-col gap-3 border-t border-line pt-3">
           <p className="text-base text-ink">
             {study.averageRating !== null ? (
               <>
                 Средний рейтинг за {study.semester}-й семестр:{" "}
-                <span className="font-heading text-2xl font-bold tabular">
+                <span className="font-heading text-2xl font-semibold tabular">
                   {study.averageRating}
                 </span>{" "}
                 из 100

@@ -29,7 +29,10 @@ export default async function LoginPage() {
         <div className="flex flex-wrap items-center gap-4">
           <LogoMark variant="sheet" className="size-24 lg:size-32" />
           <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
-            <h1 id="login-title" className="font-heading text-2xl font-bold text-ink lg:text-3xl">
+            <h1
+              id="login-title"
+              className="font-heading text-2xl font-semibold text-ink lg:text-3xl"
+            >
               Вход в&nbsp;Протокол
             </h1>
             <p className="text-base text-ink-muted">Цифровой деканат: учёба, справки и связь.</p>
@@ -68,7 +71,7 @@ function DemoPanel() {
       className="flex w-full min-w-0 flex-col gap-6 border-t border-line pt-8 lg:max-w-xl lg:border-t-0 lg:border-l lg:pt-0 lg:pl-16"
     >
       <div className="flex flex-col gap-2">
-        <h2 id="demo-title" className="scroll-mt-6 font-heading text-xl font-bold text-ink">
+        <h2 id="demo-title" className="scroll-mt-6 font-heading text-lg font-semibold text-ink">
           Демо-режим
         </h2>
         <p className="text-base text-ink-muted">
@@ -95,7 +98,7 @@ function DemoPanel() {
       </ul>
 
       <div className="flex flex-col gap-3">
-        <h2 className="font-heading text-xl font-bold text-ink">6 сценариев для проверки</h2>
+        <h2 className="font-heading text-lg font-semibold text-ink">6 сценариев для проверки</h2>
         <ol className="flex flex-col divide-y divide-line border-y border-line">
           {DEMO_SCENARIOS.map((s, i) => (
             <li key={s.title} className="flex gap-3 py-3">

@@ -1,19 +1,19 @@
-/* Страница «Нет сети» (T11). Токены «Бланк» из globals.css — копией: страница живёт без приложения. */
+/* Страница «Нет сети» (T11). Токены Б′ (10.11) из globals.css — копией: страница живёт без приложения. */
 :root {
-  --bg: #eef1ec;
-  --ink: #161a17;
-  --ink-muted: #5b635c;
-  --brand: #22356b;
-  --line: #d6dbd2;
+  --bg: #ffffff;
+  --ink: #0d0f2b;
+  --ink-muted: #555a78;
+  --brand: #1e22d2;
+  --line: #e2e4ee;
   color-scheme: light dark;
 }
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #0a0d17;
-    --ink: #e9ecf4;
-    --ink-muted: #a4acc0;
-    --brand: #8dbdf0;
-    --line: #2a3350;
+    --bg: #06071c;
+    --ink: #eef0ff;
+    --ink-muted: #a9add0;
+    --brand: #9da1ff;
+    --line: #23265a;
   }
 }
 * {

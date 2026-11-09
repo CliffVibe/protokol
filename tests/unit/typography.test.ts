@@ -1,4 +1,4 @@
-// Шкала типографики 04-design (12 / 14 / 16 / 18 / 22 / 28 / 36) и слияние классов cn.
+// Шкала типографики 04-design (12 / 14 / 16 / 18 / 22 / 28 / 36 / 52) и слияние классов cn.
 // Ловит ошибку, найденную ux-reviewer 06.11: свои имена размеров (text-body…) tailwind-merge внутри cn
 // принимал за цвет и выкидывал вместе с text-ink — кнопка lg теряла цвет текста (1.5:1 на --brand).
 import { readFileSync } from "node:fs";
@@ -13,6 +13,8 @@ const SCALE = {
   xl: "1.375rem",
   "2xl": "1.75rem",
   "3xl": "2.25rem",
+  // Б′ (10.11): только крупные цифры Unbounded — время ближайшей пары, рейтинг
+  "4xl": "3.25rem",
 } as const;
 
 const css = readFileSync("src/app/globals.css", "utf8");

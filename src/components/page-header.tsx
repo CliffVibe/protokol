@@ -14,7 +14,7 @@ type PageHeaderProps = {
   className?: string;
 };
 
-// Заголовок экрана: единственный h1 на странице. На 360px — 28px (text-2xl), на десктопе — 36px.
+// Заголовок экрана: единственный h1 на странице. Unbounded широкий: на 360px — 22px (text-xl), на десктопе — 28px.
 export function PageHeader({
   title,
   description,
@@ -41,14 +41,14 @@ export function PageHeader({
               hyphens-auto: переносится по слогам с дефисом («Уведом-ления»), а не рвётся посреди слога (ревью T09);
               словарь переносов берётся из <html lang="ru">. hyphenate-limit-chars: только слова от 10 букв и не короче
               4 букв по краям — «посоль-ства» при обычном размере не рвём (ux-reviewer T13) */}
-          <Title className="text-2xl tracking-tight break-words hyphens-auto [hyphenate-limit-chars:10_4_4] lg:text-3xl">
+          <Title className="text-xl tracking-tight break-words hyphens-auto [hyphenate-limit-chars:10_4_4] lg:text-2xl">
             {title}
           </Title>
           {description ? (
             <p className="text-base break-words text-ink-muted">{description}</p>
           ) : null}
         </div>
-        {action ? <div className="shrink-0">{action}</div> : null}
+        {action ? <div className="max-w-full shrink-0">{action}</div> : null}
       </div>
     </header>
   );

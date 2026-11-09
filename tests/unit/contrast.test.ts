@@ -42,17 +42,32 @@ const TEXT_PAIRS: [string, string, string][] = [
       [fg, "brand-soft", "текст на акцентной плашке, выбранная тема"],
     ],
   ),
-  ["bg", "brand", "кнопка default, UnreadBadge"],
+  ["bg", "brand", "UnreadBadge"],
+  // Б′ (10.11): заливки ультрамарином и мятой
+  ["on-plate", "plate", "заливная кнопка, плашка ближайшей пары"],
+  ["plate-muted", "plate", "подписи и конец пары на плашке"],
+  ["on-mint", "mint", "текст на мяте: «Готова», «Стипендия сохраняется», «через N мин»"],
 ];
 
 describe.each(Object.entries(THEMES))("контраст, тема %s", (theme, tokens) => {
-  it("все 11 токенов дизайна на месте", () => {
+  it("все 16 токенов дизайна на месте", () => {
     for (const t of ["bg", "surface", "ink", "ink-muted", "line", "brand", "brand-soft"]) {
       expect(tokens[t], `--${t}`).toMatch(/^#[0-9a-f]{6}$/i);
     }
     for (const t of ["ok", "warn", "danger", "seal"]) {
       expect(tokens[t], `--${t}`).toMatch(/^#[0-9a-f]{6}$/i);
     }
+    for (const t of ["plate", "on-plate", "plate-muted", "mint", "on-mint"]) {
+      expect(tokens[t], `--${t}`).toMatch(/^#[0-9a-f]{6}$/i);
+    }
+  });
+
+  it("мятная пометка различима на плашке ≥ 3:1 (не текст — граница пометки)", () => {
+    expect(contrast(tokens.mint!, tokens.plate!)).toBeGreaterThanOrEqual(3);
+  });
+
+  it("фокус на плашке: белая обводка (--on-plate) на --plate ≥ 3:1", () => {
+    expect(contrast(tokens["on-plate"]!, tokens.plate!)).toBeGreaterThanOrEqual(3);
   });
 
   it.each(TEXT_PAIRS)("--%s на --%s ≥ 4.5 (%s)", (fg, bg) => {

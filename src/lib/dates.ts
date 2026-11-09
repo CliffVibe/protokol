@@ -112,6 +112,16 @@ export function formatDayShort(date: Date): { weekday: string; day: string } {
   return { weekday: WEEKDAY_SHORT.format(date), day: DAY_NUMBER.format(date) };
 }
 
+const MONTH_SHORT = new Intl.DateTimeFormat("ru-RU", {
+  month: "short",
+  timeZone: UNIVERSITY_TIME_ZONE,
+});
+
+/** Число и месяц коротко — «11» и «нояб.»: дата крупно столбцом слева (блок «Скоро», Б′). */
+export function formatDayAndMonth(date: Date): { day: string; month: string } {
+  return { day: DAY_NUMBER.format(date), month: MONTH_SHORT.format(date) };
+}
+
 /** Русское множественное: plural(3, ["пара", "пары", "пар"]) → «пары». */
 export function plural(n: number, [one, few, many]: [string, string, string]): string {
   const mod10 = n % 10;

@@ -12,12 +12,14 @@ import { cn } from "@/lib/utils";
 export type StatusTone = "neutral" | "brand" | "ok" | "warn" | "danger" | "seal";
 
 // Цвет никогда не единственный носитель смысла: у каждого тона своя иконка, и всегда есть текст.
-// Текст цветом тона на --surface — контраст ≥ 4.5:1 в обеих темах (tests/unit/contrast.test.ts).
+// Текст цветом тона на фоне и на --surface — контраст ≥ 4.5:1 в обеих темах (tests/unit/contrast.test.ts).
+// Тон ok — мятная заливка (Б′, 10.11): мята = «хорошо и готово», текст на ней — чернила --on-mint.
+// Остальные тоны — без заливки, только рамка: цветных подложек у статусов нет (правило «меньше нейрослопа»).
 // Тон seal — только для статуса «Выдана» (04-design).
 const TONES: Record<StatusTone, { className: string; icon: LucideIcon }> = {
   neutral: { className: "border-line text-ink-muted", icon: CircleDot },
   brand: { className: "border-brand/40 text-brand", icon: Clock },
-  ok: { className: "border-ok/40 text-ok", icon: CircleCheck },
+  ok: { className: "border-mint bg-mint font-semibold text-on-mint", icon: CircleCheck },
   warn: { className: "border-warn/40 text-warn", icon: CircleAlert },
   danger: { className: "border-danger/40 text-danger", icon: CircleX },
   seal: { className: "border-seal/40 text-seal", icon: Stamp },
@@ -38,7 +40,7 @@ export function StatusChip({ tone = "neutral", children, icon, className }: Stat
     <span
       data-tone={tone}
       className={cn(
-        "inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border bg-surface px-2.5 py-0.5 text-sm leading-tight",
+        "inline-flex min-h-7 max-w-full items-center gap-1.5 rounded-full border bg-transparent px-2.5 py-0.5 text-sm leading-tight",
         toneClass,
         className,
       )}

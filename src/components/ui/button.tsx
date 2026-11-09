@@ -5,9 +5,10 @@ import { Loader2 } from "lucide-react";
 import { Slot } from "radix-ui";
 
 // Сгенерировано shadcn (radix-nova) и подогнано под docs/04-design.md:
-// цели касания ≥ 44px, фокус — outline полным --ring (≥ 3:1; outline виден и в режиме высокой контрастности Windows), «ничего не прыгает» — только переход цвета 150 мс.
+// цели касания ≥ 44px, фокус — outline полным --ring (≥ 3:1; outline виден и в режиме высокой контрастности Windows), «ничего не прыгает» — только переход цвета 150 мс
+// и сдвиг на 1px при нажатии (тактильный отклик, Б′ 10.11; при «уменьшить движение» переход гасит globals.css).
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-bold whitespace-nowrap transition-colors duration-150 ease-out select-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-busy:disabled:opacity-100 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-bold whitespace-nowrap transition-[color,background-color,border-color,translate] duration-150 ease-out select-none active:translate-y-px focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:pointer-events-none disabled:opacity-50 aria-busy:disabled:opacity-100 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {

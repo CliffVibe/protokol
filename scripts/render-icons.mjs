@@ -1,8 +1,8 @@
-// Значки PWA (T11) из src/app/icon.svg («Лист бланка», печать — фиолетовый --seal) — без новых зависимостей:
+// Значки PWA (T11) из src/app/icon.svg («Лист бланка», ультрамарин --brand с 10.11, Б′) — без новых зависимостей:
 // рисует Chromium, который уже стоит для Playwright. Результат коммитим; скрипт — чтобы пересобрать
 // после правки значка: `node scripts/render-icons.mjs`.
 //   public/icons/icon-192.png, icon-512.png — обычные (прозрачный фон, как значок вкладки);
-//   public/icons/maskable-512.png — для Android: лист в безопасной зоне 80 %, фон «бумаги» --bg;
+//   public/icons/maskable-512.png — для Android: лист в безопасной зоне 80 %, фон --bg;
 //   src/app/apple-icon.png (180) — iPhone: Next сам ставит <link rel="apple-touch-icon">.
 // Берём светлый вариант значка: тёмная тема рисуется из того же SVG через prefers-color-scheme.
 import { readFileSync } from "node:fs";
@@ -13,7 +13,7 @@ const require = createRequire(import.meta.url);
 const { chromium } = require("@playwright/test");
 
 const ROOT = join(import.meta.dirname, "..");
-const PAPER = "#eef1ec"; // --bg светлой темы (globals.css)
+const PAPER = "#ffffff"; // --bg светлой темы (globals.css)
 const svg = readFileSync(join(ROOT, "src/app/icon.svg"), "utf8").replace(
   /@media \(prefers-color-scheme:dark\)\{.*?\}\}/,
   "",

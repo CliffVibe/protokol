@@ -5,7 +5,8 @@ import { SCHOLARSHIP_MIN_RATING } from "@/server/services/academics";
 const FILL: Record<StatusTone, string> = {
   neutral: "fill-ink-muted",
   brand: "fill-brand",
-  ok: "fill-ok",
+  // «В норме» — ультрамарин, не зелёный: вывод несёт мятный чип рядом, а два разных зелёных спорили (Б′, 10.11)
+  ok: "fill-plate",
   warn: "fill-warn",
   danger: "fill-danger",
   seal: "fill-seal",

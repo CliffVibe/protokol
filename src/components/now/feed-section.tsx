@@ -19,7 +19,7 @@ export function FeedSection({
   return (
     <section aria-labelledby={id} className={cn("flex min-w-0 flex-col gap-2", className)}>
       <div className="flex flex-wrap items-baseline justify-between gap-x-4">
-        <h2 id={id} className="font-heading text-xl font-bold text-ink">
+        <h2 id={id} className="font-heading text-lg font-semibold text-ink">
           {title}
         </h2>
         {link ? (

@@ -1,20 +1,22 @@
 import type { Metadata, Viewport } from "next";
-import { PT_Sans, PT_Serif } from "next/font/google";
+import { Onest, Unbounded } from "next/font/google";
 import { themeClass, themeColorFor } from "@/lib/theme";
 import { getThemePreference } from "@/lib/theme-server";
 import { cn } from "@/lib/utils";
 import "./globals.css";
 
-// Шрифты — из docs/04-design.md, палитра «Бланк»: PT Serif для заголовков, PT Sans для текста.
-// Семейство ParaType с полноценной кириллицей, лицензия OFL; self-host через next/font (без запросов к Google в рантайме).
-const ptSans = PT_Sans({
+// Шрифты Б′ (решение человека 10.11, docs/04-design.md): Unbounded — заголовки и крупные цифры,
+// Onest — весь текст. Обе — OFL, полная кириллица; self-host через next/font (без запросов к Google в рантайме).
+// Onest — переменный (один файл на подмножество вместо четырёх начертаний 400–700).
+// Unbounded — только 600: заголовки всегда semibold (globals.css), жирнее нам не нужно.
+// PDF справки остаётся на PT Sans / PT Serif (assets/fonts): документ — бланк.
+const onest = Onest({
   subsets: ["latin", "cyrillic"],
-  weight: ["400", "700"],
   variable: "--font-text",
 });
-const ptSerif = PT_Serif({
+const unbounded = Unbounded({
   subsets: ["latin", "cyrillic"],
-  weight: ["700"],
+  weight: ["600"],
   variable: "--font-display",
 });
 
@@ -40,7 +42,7 @@ export async function generateViewport(): Promise<Viewport> {
 export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const theme = await getThemePreference();
   return (
-    <html lang="ru" className={cn(ptSans.variable, ptSerif.variable, themeClass(theme))}>
+    <html lang="ru" className={cn(onest.variable, unbounded.variable, themeClass(theme))}>
       <body className="min-h-dvh font-sans antialiased">{children}</body>
     </html>
   );

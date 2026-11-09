@@ -86,7 +86,7 @@ function SemesterBlock({
       aria-labelledby={`${titleId}-title`}
       className="flex scroll-mt-6 flex-col gap-3"
     >
-      <h2 id={`${titleId}-title`} className="text-xl">
+      <h2 id={`${titleId}-title`} className="text-lg">
         {grade.semester}-й семестр
         <span className="font-sans text-base font-normal text-ink-muted">
           {isCurrent ? ", текущий" : ", закрыт"}
@@ -95,7 +95,7 @@ function SemesterBlock({
       <div className="flex flex-col gap-4 border-t border-line pt-4">
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <p className="text-base text-ink-muted tabular">
-            <span className="font-heading text-3xl font-bold text-ink">
+            <span className="font-heading text-3xl font-semibold text-ink">
               {grade.ratingPoints ?? "—"}
             </span>
             {grade.ratingPoints !== null ? " из 100" : " баллов пока нет"}

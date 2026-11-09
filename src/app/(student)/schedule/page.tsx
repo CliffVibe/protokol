@@ -124,7 +124,7 @@ async function DayView({ ctx, now, dayStart }: { ctx: StudentCtx; now: Date; day
       {/* «Завтра» — только у сегодняшнего дня: «что у меня завтра» спрашивают именно отсюда */}
       {day.items.length && isToday ? (
         <section aria-labelledby="tomorrow-title" className="flex flex-col gap-2 pt-2">
-          <h2 id="tomorrow-title" className="text-xl">
+          <h2 id="tomorrow-title" className="text-lg">
             Завтра
           </h2>
           <div className="flex flex-col items-start gap-3 border-t border-line pt-3">

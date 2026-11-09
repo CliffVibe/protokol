@@ -1,7 +1,8 @@
 // RequestTimeline (04-design): Подана → Принята → В работе → Готова → Выдана.
-// Пройденный шаг — галочка и дата, текущий — выделен, будущий — тихий. Смысл — иконкой и текстом
+// Пройденный шаг — ультрамариновый круг с галочкой и дата, текущий — выделен (шаг «Готова» — мятой,
+// как блок «Готова» над таймлайном, Б′ 10.11), будущий — тихий. Смысл — иконкой и текстом
 // (скрытое «пройден / сейчас / впереди»), не только цветом. Отклонение и отмена — финалом с причиной.
-import { Circle, CircleCheck, CircleDot, CircleSlash, CircleX } from "lucide-react";
+import { Check, Circle, CircleDot, CircleSlash, CircleX } from "lucide-react";
 import { formatRelativeDay, formatTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { Timeline } from "@/server/services/request-rules";
@@ -24,7 +25,7 @@ export function RequestTimeline({
     <ol aria-label="Ход заявки" className="flex flex-col">
       {timeline.steps.map((s, i) => {
         const last = i === timeline.steps.length - 1 && !timeline.end;
-        const Icon = s.state === "done" ? CircleCheck : s.state === "current" ? CircleDot : Circle;
+        const filled = s.state === "done" || (s.state === "current" && s.status === "READY");
         return (
           <li
             key={s.status}
@@ -33,18 +34,24 @@ export function RequestTimeline({
               // Линия между шагами — в столбце иконок
               !last &&
                 "before:absolute before:top-7 before:bottom-1 before:left-[11px] before:w-[2px]",
-              !last && (s.state === "done" ? "before:bg-ok" : "before:bg-line"),
+              !last && (s.state === "done" ? "before:bg-plate" : "before:bg-line"),
             )}
           >
-            <Icon
-              aria-hidden
-              className={cn(
-                "mt-0.5 size-6 shrink-0",
-                s.state === "done" && "text-ok",
-                s.state === "current" && "text-brand",
-                s.state === "upcoming" && "text-ink-muted",
-              )}
-            />
+            {filled ? (
+              <span
+                aria-hidden
+                className={cn(
+                  "mt-0.5 flex size-6 shrink-0 items-center justify-center rounded-full",
+                  s.state === "done" ? "bg-plate text-on-plate" : "bg-mint text-on-mint",
+                )}
+              >
+                <Check className="size-4" strokeWidth={3} />
+              </span>
+            ) : s.state === "current" ? (
+              <CircleDot aria-hidden className="mt-0.5 size-6 shrink-0 text-brand" />
+            ) : (
+              <Circle aria-hidden className="mt-0.5 size-6 shrink-0 text-ink-muted" />
+            )}
             <div className="flex min-w-0 flex-col gap-0.5">
               <p
                 className={cn(

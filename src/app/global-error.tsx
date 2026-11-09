@@ -24,7 +24,7 @@ export default function GlobalError({
         <header className="border-b border-line px-4 md:px-6">
           <div className="mx-auto flex min-h-14 w-full max-w-[1120px] items-center gap-2.5">
             <LogoMark className="size-9" />
-            <span className="font-heading text-lg font-bold">Протокол</span>
+            <span className="font-heading text-base font-semibold">Протокол</span>
           </div>
         </header>
         <main className="mx-auto w-full max-w-[1120px] flex-1 px-4 pt-8 pb-10 md:px-6 lg:pt-14">
@@ -33,7 +33,7 @@ export default function GlobalError({
               <CloudOff aria-hidden className="mt-1 size-[32px] shrink-0" />
               <div className="flex min-w-0 flex-col gap-1">
                 <p className="text-sm text-ink-muted">Ошибка 500</p>
-                <h1 className="text-2xl break-words text-ink lg:text-3xl">Что-то пошло не так</h1>
+                <h1 className="text-xl break-words text-ink lg:text-2xl">Что-то пошло не так</h1>
               </div>
             </section>
             <p className="max-w-prose text-base text-ink-muted">
@@ -50,7 +50,7 @@ export default function GlobalError({
               <button
                 type="button"
                 onClick={() => retry()}
-                className="min-h-[44px] rounded-xl bg-brand px-4 text-base font-bold text-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+                className="min-h-[44px] rounded-xl bg-plate px-4 text-base font-bold text-on-plate focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
               >
                 Повторить
               </button>

@@ -1,6 +1,6 @@
 // Логотип «Протокола» — лист бланка с загнутым углом и «П» (вариант B, выбор человека 06.11, T05;
 // сравнение вариантов — docs/process/screenshots/05-T05-logo-variants.png). Рисунок свой,
-// элементы герба и логотипа МГИМО не используются. Цвет — currentColor (по умолчанию text-seal).
+// элементы герба и логотипа МГИМО не используются. Цвет — currentColor (по умолчанию text-brand: ультрамарин Б′, 10.11).
 //   variant="mark"  — малый знак: шапка, сайдбар, значок сайта (тот же рисунок — src/app/icon.svg).
 //   variant="sheet" — крупный лист со строками для экрана входа.
 import { cn } from "@/lib/utils";
@@ -28,7 +28,7 @@ export function LogoMark({ className, label, variant = "mark" }: LogoMarkProps) 
 
   if (variant === "mark") {
     return (
-      <svg viewBox="0 0 64 64" className={cn("size-8 shrink-0 text-seal", className)} {...a11y}>
+      <svg viewBox="0 0 64 64" className={cn("size-8 shrink-0 text-brand", className)} {...a11y}>
         <path
           d={LOGO_SHEET_PATH}
           fill="none"
@@ -49,7 +49,7 @@ export function LogoMark({ className, label, variant = "mark" }: LogoMarkProps) 
   }
 
   return (
-    <svg viewBox="0 0 120 120" className={cn("size-28 shrink-0 text-seal", className)} {...a11y}>
+    <svg viewBox="0 0 120 120" className={cn("size-28 shrink-0 text-brand", className)} {...a11y}>
       <path
         d="M22 8h54l24 24v80H22Z"
         fill="none"

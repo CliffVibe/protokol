@@ -47,11 +47,13 @@ export function DisciplineRow({ grade, isCurrent }: { grade: GradeRow; isCurrent
       </div>
       {/* Бар и строка над ним не шире 36rem: на 1280 засечка 60, число и чип — рядом, а не по краям колонки */}
       <div className="flex max-w-[36rem] items-center gap-3">
-        <RatingBar value={grade.ratingPoints} tone={chip.tone} className="flex-1" />
+        <RatingBar value={grade.ratingPoints} tone={chip.tone} className="min-w-0 flex-1" />
         <p className="shrink-0 text-sm text-ink-muted tabular">
           {grade.ratingPoints !== null ? (
             <>
-              <span className="font-heading text-lg font-bold text-ink">{grade.ratingPoints}</span>
+              <span className="font-heading text-lg font-semibold text-ink">
+                {grade.ratingPoints}
+              </span>
               /100
             </>
           ) : (

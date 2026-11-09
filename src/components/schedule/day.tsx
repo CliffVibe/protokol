@@ -1,6 +1,6 @@
 // День расписания: заголовок и пары под тонкими линиями — графы бланка, без карточек (как лента «Сейчас»).
 import { Fragment } from "react";
-import { CircleCheck, Footprints, GraduationCap, Languages } from "lucide-react";
+import { CircleCheck, Clock, Footprints, GraduationCap, Languages } from "lucide-react";
 import { formatLongDay, formatTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { ScheduleDay, Transition } from "@/server/services/schedule";
@@ -33,7 +33,7 @@ export function DaySection({
       className="flex scroll-mt-4 flex-col gap-2"
     >
       <div className={cn("flex flex-wrap items-center gap-x-3 gap-y-1", !showTitle && "sr-only")}>
-        <Heading id={titleId} className="text-xl">
+        <Heading id={titleId} className="text-lg">
           {title}
         </Heading>
         {isToday && showTitle ? (
@@ -68,15 +68,19 @@ export function LessonRow({ lesson }: { lesson: LessonView }) {
         "relative flex flex-wrap gap-x-4 gap-y-2 py-3",
         // Полоса изменения — в поле страницы, слева от строки: столбец времени остаётся ровным.
         // Это третий носитель смысла после иконки и текста, не единственный. Размеры в px — не растут при 200%.
-        change &&
+        (change || lesson.ongoing) &&
           "before:absolute before:inset-y-3 before:left-[-10px] before:w-[4px] before:rounded-full",
-        change && (cancelled ? "before:bg-danger" : "before:bg-warn"),
+        change
+          ? cancelled
+            ? "before:bg-danger"
+            : "before:bg-warn"
+          : lesson.ongoing && "before:bg-plate",
       )}
     >
       <p className="flex w-[4.5rem] shrink-0 flex-col tabular">
         <span
           className={cn(
-            "font-heading text-lg leading-tight font-bold",
+            "font-heading text-base leading-tight font-semibold",
             quiet ? "text-ink-muted" : "text-ink",
             cancelled && "line-through",
           )}
@@ -110,8 +114,19 @@ export function LessonRow({ lesson }: { lesson: LessonView }) {
 
         {lesson.language || lesson.ongoing || lesson.exam || (past && !cancelled) || change ? (
           <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1.5">
-            {lesson.ongoing ? <StatusChip tone="brand">Идёт сейчас</StatusChip> : null}
-            {past && !cancelled ? <StatusChip icon={CircleCheck}>Прошла</StatusChip> : null}
+            {/* Идёт сейчас — мята («хорошо, вовремя») + ультрамариновая черта слева (Б′) */}
+            {lesson.ongoing ? (
+              <StatusChip tone="ok" icon={Clock}>
+                Идёт сейчас
+              </StatusChip>
+            ) : null}
+            {/* Прошла — тихий текст, не чип: прошедшее не должно спорить с тем, что впереди */}
+            {past && !cancelled ? (
+              <span className="inline-flex items-center gap-1.5 text-sm text-ink-muted">
+                <CircleCheck aria-hidden className="size-4 shrink-0" />
+                Прошла
+              </span>
+            ) : null}
             {lesson.exam ? (
               <StatusChip tone="brand" icon={GraduationCap}>
                 Экзамен

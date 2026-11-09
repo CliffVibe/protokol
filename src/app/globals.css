@@ -21,54 +21,73 @@
  * Токен `--muted` из дизайна (вторичный текст) реализован как `--ink-muted`:
  * имя `--muted` в shadcn занято фоном. Переменные shadcn ниже — только ссылки на наши токены.
  *
- * Палитра «Бланк» (решение человека 06.11): холодная бумага бланка, чернила, фиолетовая штемпельная печать.
- * Тёмная тема «Чернила ночью»: глубокий чернильно-синий, бумажно-белый текст; темнее, но контраст выше светлой.
- * Контраст текста ≥ 4.5:1 для всех пар, включая текст на --brand-soft, проверяет tests/unit/contrast.test.ts.
+ * Палитра «Цифровой деканат», вариант Б′ «строже» (решение человека 10.11, docs/process/design-review-T13.md):
+ * два фирменных цвета, у каждого своя роль. Ультрамарин (--brand, заливки — --plate) — бренд и действия;
+ * мята (--mint) — только «хорошо и готово». Жёлтый и красный — только статусы (иконка + текст + черта).
+ * Текст на мяте — «чернила» (--on-mint), не тёмно-зелёный: зелёный на зелёном сливался (человек, 10.11).
+ * Фиолетовая печать --seal осталась для документа: «Выдана», PDF, значок «М.П.».
+ * Тёмная тема — ультрамариново-чёрная.
+ * Контраст текста ≥ 4.5:1 для всех пар, включая текст на --brand-soft, --plate и --mint, — tests/unit/contrast.test.ts.
  */
 :root {
-  --bg: #eef1ec;
-  --surface: #fbfcfa;
-  --ink: #161a17;
-  --ink-muted: #5b635c;
-  --line: #d6dbd2;
-  --brand: #22356b;
-  --brand-soft: #e1e7f2;
+  --bg: #ffffff;
+  --surface: #f4f5fa;
+  --ink: #0d0f2b;
+  --ink-muted: #555a78;
+  --line: #e2e4ee;
+  --brand: #1e22d2;
+  --brand-soft: #e6e7ff;
   --ok: #2a7348;
   --warn: #8a5300;
   --danger: #ae2620;
   --seal: #55389a;
+  --plate: #1e22d2;
+  --on-plate: #ffffff;
+  --plate-muted: #c8caf7;
+  --mint: #a2ffb2;
+  --on-mint: #0d0f2b;
   color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not(.light) {
-    --bg: #0a0d17;
-    --surface: #121726;
-    --ink: #e9ecf4;
-    --ink-muted: #a4acc0;
-    --line: #2a3350;
-    --brand: #8dbdf0;
-    --brand-soft: #18213d;
+    --bg: #06071c;
+    --surface: #0d0f2e;
+    --ink: #eef0ff;
+    --ink-muted: #a9add0;
+    --line: #23265a;
+    --brand: #9da1ff;
+    --brand-soft: #1c1f5c;
     --ok: #62c893;
     --warn: #f2b655;
     --danger: #f48c84;
-    --seal: #b98bff;
+    --seal: #da8aee;
+    --plate: #2d32f0;
+    --on-plate: #ffffff;
+    --plate-muted: #d2d4fb;
+    --mint: #7df0a0;
+    --on-mint: #06071c;
     color-scheme: dark;
   }
 }
 
 .dark {
-  --bg: #0a0d17;
-  --surface: #121726;
-  --ink: #e9ecf4;
-  --ink-muted: #a4acc0;
-  --line: #2a3350;
-  --brand: #8dbdf0;
-  --brand-soft: #18213d;
+  --bg: #06071c;
+  --surface: #0d0f2e;
+  --ink: #eef0ff;
+  --ink-muted: #a9add0;
+  --line: #23265a;
+  --brand: #9da1ff;
+  --brand-soft: #1c1f5c;
   --ok: #62c893;
   --warn: #f2b655;
   --danger: #f48c84;
-  --seal: #b98bff;
+  --seal: #da8aee;
+  --plate: #2d32f0;
+  --on-plate: #ffffff;
+  --plate-muted: #d2d4fb;
+  --mint: #7df0a0;
+  --on-mint: #06071c;
   color-scheme: dark;
 }
 
@@ -80,8 +99,10 @@
   --card-foreground: var(--ink);
   --popover: var(--surface);
   --popover-foreground: var(--ink);
-  --primary: var(--brand);
-  --primary-foreground: var(--bg);
+  /* Заливная кнопка — цвет плашки: в тёмной теме насыщенный ультрамарин с белым текстом,
+     а не светлый --brand с тёмным (он для текста и фокуса) */
+  --primary: var(--plate);
+  --primary-foreground: var(--on-plate);
   --secondary: var(--brand-soft);
   --secondary-foreground: var(--ink);
   --muted: var(--bg);
@@ -93,8 +114,8 @@
   /* Рамка полей ввода ≥ 3:1 на --surface (у --line ≈ 1.2:1) — ux-reviewer T04 */
   --input: var(--ink-muted);
   --ring: var(--brand);
-  /* Радиусы из 04-design: кнопки 12, карточки 16 */
-  --radius: 0.75rem;
+  /* Радиусы из 04-design: кнопки 14, карточки 16, цветные блоки (плашка, мята) — 28 */
+  --radius: 0.875rem;
 }
 
 @theme inline {
@@ -109,6 +130,11 @@
   --color-warn: var(--warn);
   --color-danger: var(--danger);
   --color-seal: var(--seal);
+  --color-plate: var(--plate);
+  --color-on-plate: var(--on-plate);
+  --color-plate-muted: var(--plate-muted);
+  --color-mint: var(--mint);
+  --color-on-mint: var(--on-mint);
 
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -137,7 +163,7 @@
   --radius-2xl: calc(var(--radius) * 1.8);
 
   --font-sans: var(--font-text), system-ui, sans-serif;
-  --font-heading: var(--font-display), Georgia, serif;
+  --font-heading: var(--font-display), system-ui, sans-serif;
 }
 
 /*
@@ -164,6 +190,28 @@
   --text-2xl--line-height: 1.2;
   --text-3xl: 2.25rem;
   --text-3xl--line-height: 1.15;
+  /* 52 — только крупные цифры Unbounded: время ближайшей пары, рейтинг (Б′, 10.11) */
+  --text-4xl: 3.25rem;
+  --text-4xl--line-height: 1;
+
+  /* Движение (решение человека 10.11: «плавно, аккуратно, не нейрослоп»). Только прозрачность и сдвиг,
+     150–520 мс, ease-out, без пружин и без бесконечных повторов. prefers-reduced-motion гасит всё (ниже).
+     page-in — смена раздела (template.tsx): с 0.35, а не с 0 — элемент с opacity 0 не считается LCP.
+     stamp-in — кольца-оттиск на плашке и мятном блоке проявляются один раз, как печать. */
+  --animate-page-in: page-in 180ms ease-out;
+  --animate-stamp-in: stamp-in 520ms ease-out 120ms both;
+  @keyframes page-in {
+    from {
+      opacity: 0.35;
+      translate: 0 6px;
+    }
+  }
+  @keyframes stamp-in {
+    from {
+      opacity: 0;
+      scale: 0.92;
+    }
+  }
 
   /* Высота нижней навигации: 64px + безопасная зона iPhone. Это значение до гидратации:
      BottomNav меряет панель и ставит точную высоту на <html> (при крупном тексте она другая, T13) */
@@ -175,8 +223,11 @@
     /* Фокус — полным --brand: /50 давал 2.69:1 при норме ≥ 3:1 (ux-reviewer, T01) */
     @apply border-border outline-ring outline-offset-2;
   }
+  /* overflow-wrap: длинное слово («неудовлетворительно») рвётся, только если иначе вылезет за край —
+     Onest шире PT Sans, и при тексте 200% на 360 такие слова давали скролл вбок (e2e, Б′ 10.11) */
   body {
     @apply bg-background text-foreground;
+    overflow-wrap: break-word;
   }
   /* Фокус не уходит под нижнюю навигацию (WCAG 2.4.11): браузер докручивает с запасом */
   html:has([data-bottom-nav]) {
@@ -195,10 +246,11 @@
     touch-action: manipulation;
     -webkit-tap-highlight-color: transparent;
   }
+  /* Unbounded загружен только в 600: font-bold дал бы синтетический жирный — заголовки всегда semibold */
   h1,
   h2,
   h3 {
-    @apply font-heading font-bold text-balance;
+    @apply font-heading font-semibold tracking-tight text-balance;
   }
   .tabular {
     font-variant-numeric: tabular-nums;
