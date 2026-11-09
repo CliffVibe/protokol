@@ -3,7 +3,7 @@
 import { describe, expect, it } from "vitest";
 import { createGigaChat, GigaChatError, parseSse } from "@/server/services/ai/gigachat";
 
-const KEY = "dGVzdC1rZXktbm90LXJlYWw="; // не настоящий ключ — только для проверки, что он не утекает
+const KEY = "dGVzdC1rZXktbm90LXJlYWw="; // gitleaks:allow — base64("test-key-not-real"): проверяем, что ключ не утекает
 
 const sse = (chunks: string[]) =>
   new ReadableStream<Uint8Array>({

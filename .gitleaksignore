@@ -1,0 +1,3 @@
+# Ложные срабатывания gitleaks (проверены человеком и ИИ). Формат: commit:файл:правило:строка.
+# tests/unit/gigachat.test.ts — тестовая строка base64("test-key-not-real"), не настоящий ключ (T12; найдено CI 09.11, T13)
+13eab8096366ae35e59f8d97c90c8f4664600227:tests/unit/gigachat.test.ts:generic-api-key:6
