@@ -226,6 +226,13 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 - **proxy.ts:** `sw.js`, `manifest.webmanifest`, `icons/`, `apple-icon.png`, `offline.html|css` исключены из matcher — без cookie их уводило бы на `/login`. `/sw.js` — `Cache-Control: no-cache` (`next.config.ts`).
 - **e2e:** воркер заблокирован во всех spec (`serviceWorkers: "block"`), включён только в `pwa.spec.ts`.
 
+## Тестовые базы (T13)
+
+- **e2e — своя база `protokol_e2e`** на том же локальном Postgres: имя подменяется в `DATABASE_URL` (`tests/e2e/e2e-db.ts`; явная строка — `E2E_DATABASE_URL`), `.env` менять не нужно. Перед сборкой сервера `tests/e2e/prepare-db.ts` создаёт базу, если её нет, применяет миграции и сеет заново — так e2e не видны в демо человека (раньше Тимур во время прогона видел тестовое объявление) и не зависят от даты последнего пересева демо. Уборка тестов (`helpers/db.ts`) и сид работают только с локальной базой с этим именем.
+- **Порт e2e — 3100**: `reuseExistingServer` не подхватит dev-сервер на 3000, который смотрит в демо-базу.
+- **Интеграция Vitest** (`TEST_DATABASE_URL`) пересеивает свою базу — локально направляем её туда же, в `protokol_e2e` (не одновременно с e2e). В CI обе — одноразовая база сервиса.
+- Миграции на локальные базы: демо — `pnpm db:deploy`; `protokol_e2e` — сама, при каждом прогоне e2e.
+
 ## ИИ-помощник (T12)
 
 - **Поток:** `/assistant` (чат, `components/assistant/chat.tsx`) → `POST /api/assistant` (`requireStudent()` первой строкой; zod: 1–6 реплик `user|assistant` по ≤ 1000 символов, последняя — `user`; тело ≤ 16 КБ — читается по кусочкам с подсчётом байтов, без `Content-Length` тоже не буферизуется целиком; чужой `Origin` → 403; мягкий лимит частоты 60 запросов в минуту на пользователя в памяти процесса — `services/ai/throttle.ts`, 429; оба — по замечаниям security-reviewer T12) → `services/ai/assistant.answer(ctx, history)` → NDJSON `{"t":"delta"}`… `{"t":"done","mode":"ai"|"faq","actions":[…],"notice"?}`. Истории в БД нет — только на странице.
@@ -251,7 +258,7 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 - **Миграции и демо-данные** — отдельный образ `:tools` (цель `tools` в `Dockerfile`: Prisma CLI + tsx; в приложение не входит, ~1,7 ГБ):
   - после каждого деплоя: `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy`;
   - ночной пересев демо (06-seed-data → «Демо-режим»), crontab на VPS: `CRON_TZ=Europe/Moscow` + `0 4 * * * cd /opt/protokol && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:reset-demo >> /var/log/protokol-reset.log 2>&1`.
-- `/api/health` → `{ ok, db }` (503, если БД недоступна) — его же проверяет Docker healthcheck.
+- `/api/health` → `{ ok, db }` (503, если БД недоступна) — его же проверяет Docker healthcheck (изнутри контейнера, `127.0.0.1:3000`). Снаружи Caddy отвечает на этот адрес 404 (`respond /api/health 404`, T13): состояние БД посторонним знать незачем.
 - Бэкап: `pg_dump` по cron раз в сутки.
 - Проверка «из РФ без VPN» — открыть с мобильного интернета без VPN.
 
