@@ -1,0 +1,327 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Макеты «Сейчас» — А и Б</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&family=PT+Sans:wght@400;700&family=PT+Serif:wght@400;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; background: #c9ccd6; font-family: system-ui, sans-serif; }
+  .board { display: flex; gap: 28px; align-items: flex-start; }
+  .col > h2 { margin: 0 0 4px; font: 700 17px/1.3 system-ui; color: #1a1a1a; }
+  .col > p { margin: 0 0 12px; font: 14px/1.3 system-ui; color: #444; }
+  .sp { width: 1px; background: #9aa0b0; align-self: stretch; }
+
+  /* ---------- токены ---------- */
+  .A { --f-head: 'PT Serif', serif; --f-body: 'PT Sans', sans-serif; --f-num: 'PT Serif', serif; }
+  .B { --f-head: 'Unbounded', sans-serif; --f-body: 'Onest', sans-serif; --f-num: 'Unbounded', sans-serif; }
+
+  .A.light { --bg:#EEF1EC; --surface:#FBFCFA; --ink:#161A17; --muted:#5B635C; --line:#D6DBD2;
+    --brand:#1B24C2; --brand-soft:#E3E5FB; --plate:#1B24C2; --plate-muted:#C9CCF5;
+    --ok:#2A7348; --warn:#8A5300; --danger:#AE2620; --badge:#1B24C2; --on-badge:#fff; --seal:#55389A; }
+  .A.dark { --bg:#0A0D17; --surface:#121726; --ink:#E9ECF4; --muted:#A4ACC0; --line:#2A3350;
+    --brand:#9AA6FF; --brand-soft:#181F45; --plate:#2B30E6; --plate-muted:#D0D2FA;
+    --ok:#62C893; --warn:#F2B655; --danger:#F48C84; --badge:#9AA6FF; --on-badge:#0A0D17; --seal:#B98BFF; }
+
+  .B.light { --bg:#F3F4FA; --surface:#FFFFFF; --ink:#0D0F2B; --muted:#555A78; --line:#E3E5F0;
+    --brand:#1E22D2; --brand-soft:#E6E7FF; --plate:#1E22D2; --plate-muted:#C8CAF7;
+    --mint:#A2FFB2; --on-mint:#0D0F2B; --warn-soft:#FFEBB8; --on-warn:#6B4100;
+    --danger-soft:#FFDCD9; --on-danger:#A1201A; --ok:#1F7A45; --badge:#D63A30; --on-badge:#fff; --seal:#55389A; }
+  .B.dark { --bg:#06071C; --surface:#10123A; --ink:#EEF0FF; --muted:#A9ADD0; --line:#23265A;
+    --brand:#9DA1FF; --brand-soft:#1C1F5C; --plate:#2D32F0; --plate-muted:#D2D4FB;
+    --mint:#7DF0A0; --on-mint:#06071C; --warn-soft:#3A2C08; --on-warn:#FFD27A;
+    --danger-soft:#3D1416; --on-danger:#FF9C95; --ok:#7DF0A0; --badge:#FF6B61; --on-badge:#1A0606; --seal:#B98BFF; }
+
+  /* ---------- телефон ---------- */
+  .phone { width: 390px; height: 1820px; position: relative; overflow: hidden; border-radius: 30px;
+    box-shadow: 0 12px 34px rgba(0,0,0,.22); background: var(--bg); color: var(--ink);
+    font: 16px/1.45 var(--f-body); }
+  .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  a { color: var(--brand); text-decoration: none; font-weight: 700; }
+  h1, h2, h3, p { margin: 0; }
+  ul { list-style: none; margin: 0; padding: 0; }
+
+  .hd { display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 16px; }
+  .A .hd { border-bottom: 1px solid var(--line); height: 56px; }
+  .logo { display: flex; align-items: center; gap: 10px; font: 700 20px/1 var(--f-head); }
+  .B .logo { font-size: 17px; font-weight: 600; letter-spacing: -.01em; }
+  .logo svg { width: 24px; height: 28px; color: var(--seal); }
+  .B .logo svg { color: var(--brand); }
+  .bell { position: relative; width: 44px; height: 44px; display: grid; place-items: center; color: var(--ink); }
+  .bell .ico { width: 24px; height: 24px; }
+  .badge { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+    background: var(--badge); color: var(--on-badge); font: 700 11px/18px var(--f-body); text-align: center; }
+
+  main { padding: 0 16px 120px; }
+
+  /* приветствие */
+  .greet { padding: 20px 0 18px; }
+  .A .greet h1 { font: 700 28px/1.15 var(--f-head); }
+  .A .greet p { color: var(--muted); margin-top: 6px; }
+  .B .greet { display: flex; flex-direction: column-reverse; padding: 8px 0 16px; }
+  .B .greet h1 { font: 600 24px/1.2 var(--f-head); letter-spacing: -.015em; }
+  .B .greet p { color: var(--muted); font-size: 15px; margin-bottom: 4px; }
+
+  /* плашка ближайшей пары */
+  .now { background: var(--plate); color: #fff; padding: 20px; border-radius: 16px; }
+  .B .now { border-radius: 28px; padding: 22px 22px 20px;
+    background:
+      radial-gradient(circle at 100% 0%, transparent 0 86px, rgba(255,255,255,.13) 87px 89px, transparent 90px 102px, rgba(255,255,255,.13) 103px 105px, transparent 106px),
+      var(--plate); }
+  .now-top { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .now-label { color: var(--plate-muted); font-weight: 700; font-size: 15px; }
+  .B .now-label { color: #fff; background: rgba(255,255,255,.16); padding: 4px 12px; border-radius: 999px; font-weight: 500; font-size: 14px; }
+  .now-in { color: #A2FFB2; font-weight: 700; }
+  .B .now-in { background: #A2FFB2; color: #0D0F2B; padding: 4px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+  .now-time { margin-top: 10px; display: flex; align-items: baseline; gap: 4px; font-family: var(--f-num); }
+  .now-time b { font-size: 48px; line-height: 1; font-weight: 700; }
+  .now-time span { font-size: 24px; color: var(--plate-muted); font-weight: 700; }
+  .B .now-time { margin-top: 18px; }
+  .B .now-time b { font-size: 64px; font-weight: 600; letter-spacing: -.03em; }
+  .B .now-time span { font-size: 22px; font-weight: 500; }
+  .now h2 { margin-top: 12px; font: 700 22px/1.2 var(--f-head); }
+  .B .now h2 { font: 600 21px/1.25 var(--f-body); margin-top: 14px; }
+  .now-kind { color: var(--plate-muted); margin-top: 2px; }
+  .now-meta { margin-top: 12px; display: grid; gap: 6px; }
+  .now-meta li { display: flex; gap: 10px; align-items: flex-start; }
+  .now-meta .ico { margin-top: 2px; color: var(--plate-muted); }
+  .now-link { display: inline-flex; align-items: center; gap: 4px; margin-top: 16px; color: #fff; min-height: 44px; }
+  .A .now-link { text-decoration: underline; text-underline-offset: 3px; }
+  .B .now-link { background: rgba(255,255,255,.14); padding: 0 16px; border-radius: 14px; font-weight: 600; }
+
+  /* секции */
+  .sec { margin-top: 28px; }
+  .sec-h { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .A .sec-h { border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+  .A .sec-h h3 { font: 700 22px/1.2 var(--f-head); }
+  .B .sec-h { margin-bottom: 10px; }
+  .B .sec-h h3 { font: 600 17px/1.2 var(--f-head); letter-spacing: -.01em; }
+  .sec-h a { font-size: 15px; }
+  .B .sec-h a { font-weight: 600; }
+
+  .list > li { display: flex; gap: 12px; padding: 14px 0; }
+  .A .list > li { border-bottom: 1px solid var(--line); }
+  .B .list { background: var(--surface); border-radius: 22px; padding: 4px 16px; }
+  .B .list > li + li { border-top: 1px solid var(--line); }
+  .t { font-weight: 700; }
+  .B .t { font-weight: 600; }
+  .m { color: var(--muted); font-size: 15px; }
+  .lbl { display: flex; align-items: center; gap: 6px; font-size: 15px; font-weight: 700; }
+
+  /* значок-плитка (только Б) */
+  .tile { display: none; }
+  .B .tile { display: grid; place-items: center; width: 44px; height: 44px; border-radius: 14px; flex: none; }
+  .tile.warn { background: var(--warn-soft); color: var(--on-warn); }
+  .tile.danger { background: var(--danger-soft); color: var(--on-danger); }
+  .B .lbl .ico { display: none; }
+  .A .lbl.warn { color: var(--warn); } .A .lbl.danger { color: var(--danger); }
+  .B .lbl { color: var(--muted); font-weight: 500; }
+  .strike { text-decoration: line-through; }
+
+  /* дата-плитка (только Б) */
+  .date { display: none; }
+  .B .date { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 52px; height: 56px; flex: none;
+    border-radius: 14px; background: var(--brand-soft); color: var(--brand); }
+  .B .date b { font: 600 20px/1 var(--f-num); }
+  .B .date span { font-size: 12px; font-weight: 600; margin-top: 3px; }
+  .A .dl { display: block; }
+  .B .dl { display: none; }
+
+  /* чипы */
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; font-size: 14px; font-weight: 500; }
+  .chip .ico { width: 16px; height: 16px; }
+  .A .chip.ok { border: 1px solid var(--ok); color: var(--ok); }
+  .A .chip.acc { border: 1px solid var(--brand); color: var(--brand); }
+  .B .chip.ok { background: var(--mint); color: var(--on-mint); font-weight: 600; }
+  .B .chip.acc { background: var(--brand-soft); color: var(--brand); font-weight: 600; }
+  .stack { display: grid; gap: 6px; }
+
+  /* учёба */
+  .study-a { padding: 14px 0; border-bottom: 1px solid var(--line); }
+  .study-a .big { font: 700 28px/1 var(--f-num); }
+  .study-a .ok { display: flex; gap: 8px; align-items: center; color: var(--ok); font-weight: 700; margin-top: 10px; }
+  .study-b { display: none; }
+  .B .study-a { display: none; }
+  .B .study-b { display: block; background: var(--mint); color: var(--on-mint); border-radius: 26px; padding: 20px; }
+  .study-b .row { display: flex; align-items: baseline; gap: 8px; }
+  .study-b .big { font: 600 52px/1 var(--f-num); letter-spacing: -.03em; }
+  .study-b .pill { display: inline-flex; gap: 8px; align-items: center; margin-top: 14px; background: rgba(255,255,255,.55);
+    padding: 8px 14px; border-radius: 999px; font-weight: 600; }
+  .B.dark .study-b .pill { background: rgba(0,0,0,.14); }
+
+  /* нижняя панель */
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 76px; display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--bg); border-top: 1px solid var(--line); }
+  .B .nav { background: var(--surface); border-top: 0; box-shadow: 0 -1px 0 var(--line); }
+  .nav div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; color: var(--muted); position: relative; }
+  .nav .ico { width: 24px; height: 24px; }
+  .nav .on { color: var(--brand); font-weight: 700; }
+  .A .nav .on::before { content: ""; position: absolute; top: -1px; left: 18%; right: 18%; height: 3px; background: var(--brand); border-radius: 0 0 3px 3px; }
+  .B .nav .on .pi { background: var(--brand-soft); border-radius: 999px; padding: 4px 18px; display: grid; }
+  .B .nav .on { font-weight: 600; }
+  .pi { display: grid; }
+
+  /* ---------- Б′: строже — два фирменных цвета, линии вместо карточек ---------- */
+  .B.C.light { --bg:#FFFFFF; --line:#E2E4EE; --warn:#8A5300; --danger:#AE2620; --badge:#1E22D2; --on-badge:#fff; }
+  .B.C.dark  { --bg:#06071C; --line:#23265A; --warn:#F2B655; --danger:#F48C84; --badge:#9DA1FF; --on-badge:#06071C; }
+  .C .sec-h { border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-bottom: 0; }
+  .C .list { background: none; border-radius: 0; padding: 0; }
+  .C .list > li { border-bottom: 1px solid var(--line); }
+  .C .list > li + li { border-top: 0; }
+  .C .tile { display: none; }
+  .C .lbl { font-weight: 600; }
+  .C .lbl .ico { display: inline; width: 18px; height: 18px; }
+  .C .lbl.warn { color: var(--warn); } .C .lbl.danger { color: var(--danger); }
+  .C .chg { position: relative; }
+  .C .chg::before { content: ""; position: absolute; left: -16px; top: 14px; bottom: 14px; width: 4px; border-radius: 0 3px 3px 0; }
+  .C .chg.cw::before { background: var(--warn); } .C .chg.cd::before { background: var(--danger); }
+  .C .date { background: none; width: 40px; height: auto; justify-content: flex-start; align-items: flex-start; padding-top: 2px; }
+  .C .chip.acc { background: none; border: 1px solid var(--line); color: var(--ink); font-weight: 500; }
+  .C .chip.acc .ico { color: var(--brand); }
+  .C .nav { background: var(--bg); box-shadow: none; border-top: 1px solid var(--line); }
+  .C .nav .on .pi { background: none; padding: 0; }
+  .C .nav .on::before { content: ""; position: absolute; top: -1px; left: 18%; right: 18%; height: 3px; background: var(--brand); border-radius: 0 0 3px 3px; }
+  .C .study-b { margin-top: 14px; }
+</style>
+</head>
+<body>
+
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-calclock" viewBox="0 0 24 24"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4M8 2v4M3 10h5"/><path d="M17.5 17.5 16 16.3V14"/><circle cx="16" cy="16" r="6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-alarm" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M5 3 2 6M22 6l-3-3"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 28"><path d="M2 2h14l6 6v18H2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 11h10v2h-1.5v7h-2.2v-7h-2.6v7H8.5v-7H7z" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<template id="screen">
+  <header class="hd">
+    <div class="logo"><svg class="ico" viewBox="0 0 24 28"><use href="#i-sheet"/></svg><span>Протокол</span></div>
+    <div class="bell"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">4</span></div>
+  </header>
+  <main>
+    <div class="greet"><h1>Доброе утро, Алиса</h1><p>Вторник, 10 ноября</p></div>
+
+    <section class="now">
+      <div class="now-top"><span class="now-label">Следующая пара</span><span class="now-in">через 25 мин</span></div>
+      <div class="now-time"><b>10:40</b><span>–12:00</span></div>
+      <h2>Дипломатический протокол и этикет</h2>
+      <p class="now-kind">Семинар</p>
+      <ul class="now-meta">
+        <li><svg class="ico"><use href="#i-pin"/></svg>ауд. 2046, Главный корпус</li>
+        <li><svg class="ico"><use href="#i-user"/></svg>Новиков Павел Олегович</li>
+      </ul>
+      <a class="now-link">Всё расписание<svg class="ico"><use href="#i-chev"/></svg></a>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h3>Изменения</h3><a>Расписание</a></div>
+      <ul class="list">
+        <li class="chg cw">
+          <span class="tile warn"><svg class="ico"><use href="#i-calclock"/></svg></span>
+          <div class="stack">
+            <span class="lbl warn"><svg class="ico"><use href="#i-calclock"/></svg>Перенос, сегодня 17:40</span>
+            <span class="t">История дипломатии</span>
+            <span class="m">Было 09:00. Ауд. 5011, по просьбе кафедры</span>
+          </div>
+        </li>
+        <li class="chg cd">
+          <span class="tile danger"><svg class="ico"><use href="#i-x"/></svg></span>
+          <div class="stack">
+            <span class="lbl danger"><svg class="ico"><use href="#i-x"/></svg>Отмена, завтра <span class="strike">12:40</span></span>
+            <span class="t">История дипломатии</span>
+            <span class="m">Отработаем на консультации</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h3>Скоро</h3><a>Все напоминания</a></div>
+      <ul class="list">
+        <li>
+          <span class="date"><b>11</b><span>нояб.</span></span>
+          <div class="stack">
+            <span class="m dl">Дедлайн, завтра, 23:59</span>
+            <span class="t">Эссе по теории международных отношений</span>
+            <span class="m" style="display:var(--x)">до 23:59</span>
+          </div>
+        </li>
+        <li>
+          <span class="date"><b>14</b><span>нояб.</span></span>
+          <div class="stack">
+            <span class="m dl">Дедлайн, сб, 14 нояб., 18:00</span>
+            <span class="t">Заявление на повышенную стипендию</span>
+            <span class="m" style="display:var(--x)">до 18:00</span>
+          </div>
+        </li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h3>Мои заявки</h3><a>Все заявки</a></div>
+      <ul class="list">
+        <li><div class="stack">
+          <span><span class="chip ok"><svg class="ico"><use href="#i-check"/></svg>Готова — заберите</span></span>
+          <span class="t">Справка об обучении на английском</span>
+          <span class="m">В деканате факультета, пн–пт с 10:00 до 17:00</span>
+        </div></li>
+        <li><div class="stack">
+          <span><span class="chip acc"><svg class="ico"><use href="#i-clock"/></svg>Принята</span></span>
+          <span class="t">Справка в органы социальной защиты</span>
+          <span class="m">Ожидаемый срок: завтра</span>
+        </div></li>
+      </ul>
+    </section>
+
+    <section class="sec">
+      <div class="sec-h"><h3>Учёба</h3><a>Успеваемость</a></div>
+      <div class="study-a">
+        <p>Средний рейтинг за 3-й семестр: <span class="big">82</span> из 100</p>
+        <p class="ok"><svg class="ico"><use href="#i-shield"/></svg>Стипендия сохраняется</p>
+      </div>
+      <div class="study-b">
+        <p style="font-weight:600">Средний рейтинг, 3-й семестр</p>
+        <div class="row"><span class="big">82</span><span>из 100</span></div>
+        <span class="pill"><svg class="ico"><use href="#i-shield"/></svg>Стипендия сохраняется</span>
+      </div>
+    </section>
+  </main>
+  <nav class="nav">
+    <div class="on"><span class="pi"><svg class="ico"><use href="#i-home"/></svg></span>Сейчас</div>
+    <div><span class="pi"><svg class="ico"><use href="#i-cal"/></svg></span>Расписание</div>
+    <div><span class="pi"><svg class="ico"><use href="#i-book"/></svg></span>Учёба</div>
+    <div><span class="pi"><svg class="ico"><use href="#i-file"/></svg></span>Заявки</div>
+    <div><span class="pi"><svg class="ico"><use href="#i-menu"/></svg></span>Ещё</div>
+  </nav>
+</template>
+
+<div class="board">
+  <div class="col"><h2>А. «Бланк поярче» — светлая</h2><p>PT Serif + PT Sans, ультрамарин вместо чернил</p><div class="phone A light"></div></div>
+  <div class="col"><h2>Б. «Цифровой деканат» — первый заход</h2><p>Много акцентов и плиток: нейрослоп</p><div class="phone B light"></div></div>
+  <div class="sp"></div>
+  <div class="col"><h2>Б′. Строже — светлая</h2><p>Unbounded + Onest; ультрамарин + мята; линии</p><div class="phone B C light"></div></div>
+  <div class="col"><h2>Б′ — тёмная</h2><p>ультрамариново-чёрная</p><div class="phone B C dark"></div></div>
+</div>
+
+<script>
+  const t = document.getElementById('screen');
+  document.querySelectorAll('.phone').forEach(p => p.appendChild(t.content.cloneNode(true)));
+  // в А строки «до 23:59» лишние — время уже в подписи
+  document.querySelectorAll('.A [style*="--x"]').forEach(e => e.remove());
+</script>
+</body>
+</html>

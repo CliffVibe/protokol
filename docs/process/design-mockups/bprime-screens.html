@@ -1,0 +1,362 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Б′ — расписание, заявка, десктоп</title>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@500;600;700&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; background: #c9ccd6; font-family: system-ui, sans-serif; }
+  .board { display: flex; gap: 28px; align-items: flex-start; flex-wrap: wrap; }
+  .col > h2 { margin: 0 0 12px; font: 700 17px/1.3 system-ui; color: #1a1a1a; }
+  body.desk .board { flex-direction: column; }
+
+  .light { --bg:#FFFFFF; --surface:#F4F5FA; --ink:#0D0F2B; --muted:#555A78; --line:#E2E4EE;
+    --brand:#1E22D2; --brand-soft:#E6E7FF; --plate:#1E22D2; --plate-muted:#C8CAF7;
+    --mint:#A2FFB2; --on-mint:#0D0F2B; --ok:#1F7A45; --warn:#8A5300; --danger:#AE2620; --seal:#55389A;
+    --badge:#1E22D2; --on-badge:#fff; }
+  .dark { --bg:#06071C; --surface:#0D0F2E; --ink:#EEF0FF; --muted:#A9ADD0; --line:#23265A;
+    --brand:#9DA1FF; --brand-soft:#1C1F5C; --plate:#2D32F0; --plate-muted:#D2D4FB;
+    --mint:#7DF0A0; --on-mint:#06071C; --ok:#7DF0A0; --warn:#F2B655; --danger:#F48C84; --seal:#B98BFF;
+    --badge:#9DA1FF; --on-badge:#06071C; }
+
+  .scr { position: relative; overflow: hidden; background: var(--bg); color: var(--ink);
+    font: 16px/1.45 'Onest', sans-serif; box-shadow: 0 12px 34px rgba(0,0,0,.22); }
+  .phone { width: 390px; height: 1600px; border-radius: 30px; }
+  .desktop { width: 1280px; height: 900px; border-radius: 14px; display: grid; grid-template-columns: 248px 1fr; }
+
+  .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  a { color: var(--brand); text-decoration: none; font-weight: 600; }
+  h1, h2, h3, p { margin: 0; } ul, ol { list-style: none; margin: 0; padding: 0; }
+  .H { font-family: 'Unbounded', sans-serif; font-weight: 600; letter-spacing: -.015em; }
+  .m { color: var(--muted); font-size: 15px; }
+
+  .hd { display: flex; align-items: center; justify-content: space-between; height: 60px; padding: 0 16px; }
+  .logo { display: flex; align-items: center; gap: 10px; font: 600 17px/1 'Unbounded', sans-serif; letter-spacing: -.01em; }
+  .logo svg { width: 24px; height: 28px; color: var(--brand); }
+  .bell { position: relative; width: 44px; height: 44px; display: grid; place-items: center; }
+  .bell .ico { width: 24px; height: 24px; }
+  .badge { position: absolute; top: 4px; right: 2px; min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+    background: var(--badge); color: var(--on-badge); font: 700 11px/18px 'Onest'; text-align: center; }
+  .pmain { padding: 4px 16px 120px; }
+  .h1 { font-size: 24px; line-height: 1.2; }
+
+  /* вкладки «День / Неделя» */
+  .tabs { display: flex; gap: 24px; border-bottom: 1px solid var(--line); margin-top: 16px; }
+  .tabs span { padding: 10px 0; color: var(--muted); font-size: 16px; }
+  .tabs .on { color: var(--ink); font-weight: 600; box-shadow: inset 0 -3px 0 var(--brand); }
+
+  /* шапка дня */
+  .dayh { display: grid; grid-template-columns: 44px 1fr 44px; align-items: center; gap: 8px; margin-top: 18px; text-align: center; }
+  .btn-ic { width: 44px; height: 44px; border: 1px solid var(--line); border-radius: 14px; display: grid; place-items: center; color: var(--ink); }
+  .dayh b { font: 600 18px/1.2 'Unbounded'; letter-spacing: -.01em; display: block; }
+  .week { display: grid; grid-template-columns: repeat(6, 1fr); margin-top: 14px; text-align: center; }
+  .week div { display: grid; justify-items: center; gap: 2px; padding: 6px 0; font-size: 13px; color: var(--muted); }
+  .week b { width: 40px; height: 40px; border-radius: 14px; display: grid; place-items: center; font: 600 16px 'Unbounded'; color: var(--ink); }
+  .week .sel b { background: var(--plate); color: #fff; }
+  .week .sel { color: var(--ink); font-weight: 600; }
+  .week i { height: 14px; display: flex; gap: 3px; align-items: center; color: var(--warn); }
+  .week i .ico { width: 13px; height: 13px; }
+  .week .dot { width: 5px; height: 5px; border-radius: 50%; background: var(--brand); }
+
+  /* пары */
+  .lessons { margin-top: 10px; border-top: 1px solid var(--line); }
+  .ls { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); position: relative; }
+  .ls .tm b { display: block; font: 600 17px/1.2 'Unbounded'; letter-spacing: -.01em; }
+  .ls .tm span { color: var(--muted); font-size: 14px; }
+  .ls .tt { font-weight: 600; font-size: 17px; line-height: 1.3; }
+  .ls .st { display: flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 600; margin-top: 6px; }
+  .ls .st .ico { width: 16px; height: 16px; }
+  .ls.past .tt, .ls.past .tm b { color: var(--muted); }
+  .ls.past .st { color: var(--muted); font-weight: 500; }
+  .ls.chg::before, .ls.live::before { content: ""; position: absolute; left: -16px; top: 14px; bottom: 14px; width: 4px; border-radius: 0 3px 3px 0; }
+  .ls.chg::before { background: var(--warn); } .ls.chg .st { color: var(--warn); }
+  .ls.live::before { background: var(--plate); }
+  .pill-mint { display: inline-flex; align-items: center; gap: 6px; background: var(--mint); color: var(--on-mint); border-radius: 999px; padding: 3px 12px; font-size: 14px; font-weight: 600; margin-top: 8px; }
+  .gap { display: grid; grid-template-columns: 64px 1fr; gap: 14px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .gap .tm { color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .gap .g { display: flex; gap: 10px; color: var(--brand); font-weight: 600; font-size: 15px; }
+  .gap .g .ico { margin-top: 1px; }
+
+  /* заявка */
+  .back { display: inline-flex; align-items: center; gap: 4px; min-height: 44px; margin-top: 4px; }
+  .req-h { font-size: 22px; line-height: 1.25; margin-top: 4px; }
+  .ready { background: var(--mint); color: var(--on-mint); border-radius: 26px; padding: 20px; margin-top: 18px;
+    background-image: radial-gradient(circle at 100% 0%, transparent 0 70px, rgba(11,61,30,.10) 71px 73px, transparent 74px 84px, rgba(11,61,30,.10) 85px 87px, transparent 88px); }
+  .dark .ready { background-image: radial-gradient(circle at 100% 0%, transparent 0 70px, rgba(5,35,15,.16) 71px 73px, transparent 74px 84px, rgba(5,35,15,.16) 85px 87px, transparent 88px); }
+  .ready .rt { display: flex; align-items: center; gap: 10px; font: 600 19px/1.2 'Unbounded'; letter-spacing: -.01em; }
+  .ready p { margin-top: 10px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 48px; padding: 0 20px; border-radius: 14px; font-weight: 600; }
+  .btn.fill { background: var(--plate); color: #fff; }
+  .btn.out { border: 1px solid var(--line); color: var(--ink); }
+  .ready .btn { margin-top: 16px; width: 100%; }
+  .sec-h { display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid var(--line); padding-bottom: 10px; margin-top: 30px; }
+  .sec-h h3 { font: 600 17px/1.2 'Unbounded'; letter-spacing: -.01em; }
+  .sec-h a { font-size: 15px; }
+  .tl { margin-top: 6px; }
+  .tl li { display: grid; grid-template-columns: 28px 1fr; gap: 12px; position: relative; padding: 10px 0 12px; }
+  .tl li::after { content: ""; position: absolute; left: 13px; top: 40px; bottom: -8px; width: 2px; background: var(--line); }
+  .tl li.done::after { background: var(--plate); }
+  .tl li:last-child::after { display: none; }
+  .dotc { width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center; border: 2px solid var(--line); background: var(--bg); position: relative; z-index: 1; }
+  .dotc .ico { width: 16px; height: 16px; stroke-width: 3; }
+  .done .dotc { background: var(--plate); border-color: var(--plate); color: #fff; }
+  .cur .dotc { background: var(--mint); border-color: var(--mint); color: var(--on-mint); }
+  .tl .n { font-weight: 500; } .cur .n { font-weight: 700; } .fut .n { color: var(--muted); }
+  .tl .m { font-size: 14px; }
+  .dl div { padding: 12px 0; border-bottom: 1px solid var(--line); }
+  .dl dt { color: var(--muted); font-size: 14px; } .dl dd { margin: 2px 0 0; }
+  .concept { margin-top: 28px; border-left: 3px solid var(--brand); padding: 2px 0 2px 12px; font-size: 14px; color: var(--muted); }
+
+  /* нижняя панель */
+  .nav { position: absolute; left: 0; right: 0; bottom: 0; height: 76px; display: grid; grid-template-columns: repeat(5, 1fr); background: var(--bg); border-top: 1px solid var(--line); }
+  .nav div { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 13px; color: var(--muted); position: relative; }
+  .nav .ico { width: 24px; height: 24px; }
+  .nav .on { color: var(--brand); font-weight: 600; }
+  .nav .on::before { content: ""; position: absolute; top: -1px; left: 18%; right: 18%; height: 3px; background: var(--brand); border-radius: 0 0 3px 3px; }
+
+  /* десктоп */
+  .side { background: var(--surface); border-right: 1px solid var(--line); padding: 24px 16px; display: flex; flex-direction: column; }
+  .side .logo { padding: 0 8px; }
+  .side .sub { font-size: 13px; color: var(--muted); padding: 6px 8px 0 42px; }
+  .side ul { margin-top: 28px; display: grid; gap: 2px; }
+  .side li { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-radius: 12px; color: var(--muted); font-size: 16px; position: relative; }
+  .side li.on { color: var(--ink); font-weight: 600; }
+  .side li.on::before { content: ""; position: absolute; left: -16px; top: 8px; bottom: 8px; width: 4px; background: var(--brand); border-radius: 0 3px 3px 0; }
+  .side .cnt { background: var(--badge); color: var(--on-badge); font: 700 12px/20px 'Onest'; min-width: 22px; height: 20px; border-radius: 999px; text-align: center; }
+  .theme { margin-top: auto; border: 1px solid var(--line); border-radius: 14px; padding: 4px; display: grid; grid-template-columns: repeat(3,1fr); }
+  .theme span { display: grid; place-items: center; height: 36px; border-radius: 10px; color: var(--muted); }
+  .theme .on { background: var(--brand-soft); color: var(--brand); }
+  .out { display: flex; gap: 10px; align-items: center; padding: 14px 8px 0; font-weight: 600; }
+  .dmain { padding: 32px 40px; overflow: hidden; }
+  .dmain .date { color: var(--muted); }
+  .dmain h1 { font-size: 30px; margin-top: 4px; }
+  .dgrid { display: grid; grid-template-columns: 1fr 380px; gap: 40px; margin-top: 24px; align-items: start; }
+  .row { display: flex; gap: 14px; padding: 14px 0; border-bottom: 1px solid var(--line); position: relative; }
+  .row .t { font-weight: 600; }
+  .lbl { display: flex; gap: 6px; align-items: center; font-weight: 600; font-size: 15px; }
+  .lbl .ico { width: 18px; height: 18px; }
+  .row.cw::before, .row.cd::before { content: ""; position: absolute; left: -16px; top: 14px; bottom: 14px; width: 4px; border-radius: 0 3px 3px 0; }
+  .row.cw::before { background: var(--warn); } .row.cd::before { background: var(--danger); }
+  .cw .lbl { color: var(--warn); } .cd .lbl { color: var(--danger); }
+  .dn { width: 40px; flex: none; color: var(--brand); display: grid; }
+  .dn b { font: 600 20px/1 'Unbounded'; } .dn span { font-size: 12px; font-weight: 600; margin-top: 3px; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; width: fit-content; }
+  .chip .ico { width: 16px; height: 16px; }
+  .chip.ok { background: var(--mint); color: var(--on-mint); }
+  .chip.acc { border: 1px solid var(--line); font-weight: 500; } .chip.acc .ico { color: var(--brand); }
+  .stack { display: grid; gap: 4px; }
+  .now { background: var(--plate); color: #fff; border-radius: 28px; padding: 22px;
+    background-image: radial-gradient(circle at 100% 0%, transparent 0 86px, rgba(255,255,255,.13) 87px 89px, transparent 90px 102px, rgba(255,255,255,.13) 103px 105px, transparent 106px); }
+  .now .top { display: flex; gap: 8px; }
+  .now .lab { background: rgba(255,255,255,.16); padding: 4px 12px; border-radius: 999px; font-size: 14px; }
+  .now .in { background: #A2FFB2; color: #0D0F2B; padding: 4px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; }
+  .now .time { margin-top: 16px; font-family: 'Unbounded'; display: flex; align-items: baseline; gap: 4px; }
+  .now .time b { font-size: 56px; font-weight: 600; letter-spacing: -.03em; line-height: 1; }
+  .now .time span { font-size: 20px; color: var(--plate-muted); }
+  .now h2 { font-size: 20px; font-weight: 600; margin-top: 12px; line-height: 1.25; }
+  .now .meta { color: var(--plate-muted); margin-top: 8px; display: grid; gap: 4px; }
+  .now .meta span { display: flex; gap: 8px; align-items: center; }
+  .now .go { display: inline-flex; gap: 4px; align-items: center; margin-top: 16px; background: rgba(255,255,255,.14); color: #fff; min-height: 44px; padding: 0 16px; border-radius: 14px; }
+  .study { margin-top: 16px; background: var(--mint); color: var(--on-mint); border-radius: 26px; padding: 20px; }
+  .study .big { font: 600 44px/1 'Unbounded'; letter-spacing: -.03em; }
+  .study .pill { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; background: rgba(255,255,255,.55); padding: 8px 14px; border-radius: 999px; font-weight: 600; }
+  .dark .study .pill { background: rgba(0,0,0,.14); }
+  .dfoot { margin-top: 24px; }
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="i-home" viewBox="0 0 24 24"><path d="M15 21v-8a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v8"/><path d="M3 10a2 2 0 0 1 .709-1.528l7-5.999a2 2 0 0 1 2.582 0l7 5.999A2 2 0 0 1 21 10v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="4" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></symbol>
+  <symbol id="i-book" viewBox="0 0 24 24"><path d="M12 7v14"/><path d="M3 18a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h5a4 4 0 0 1 4 4 4 4 0 0 1 4-4h5a1 1 0 0 1 1 1v13a1 1 0 0 1-1 1h-6a3 3 0 0 0-3 3 3 3 0 0 0-3-3z"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M16 13H8M16 17H8M10 9H8"/></symbol>
+  <symbol id="i-filedown" viewBox="0 0 24 24"><path d="M15 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7Z"/><path d="M14 2v4a2 2 0 0 0 2 2h4"/><path d="M12 18v-6M9 15l3 3 3-3"/></symbol>
+  <symbol id="i-menu" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 24 24"><path d="M10.268 21a2 2 0 0 0 3.464 0"/><path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/></symbol>
+  <symbol id="i-user" viewBox="0 0 24 24"><circle cx="12" cy="8" r="5"/><path d="M20 21a8 8 0 0 0-16 0"/></symbol>
+  <symbol id="i-calclock" viewBox="0 0 24 24"><path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4M8 2v4M3 10h5"/><path d="M17.5 17.5 16 16.3V14"/><circle cx="16" cy="16" r="6"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m15 9-6 6M9 9l6 6"/></symbol>
+  <symbol id="i-ccheck" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></symbol>
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="i-chev" viewBox="0 0 24 24"><path d="m9 18 6-6-6-6"/></symbol>
+  <symbol id="i-chevl" viewBox="0 0 24 24"><path d="m15 18-6-6 6-6"/></symbol>
+  <symbol id="i-feet" viewBox="0 0 24 24"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.68V16a2 2 0 1 1-4 0Z"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.68V20a2 2 0 1 0 4 0Z"/><path d="M16 17h4M4 13h4"/></symbol>
+  <symbol id="i-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"/></symbol>
+  <symbol id="i-moon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></symbol>
+  <symbol id="i-mon" viewBox="0 0 24 24"><rect width="20" height="14" x="2" y="3" rx="2"/><path d="M8 21h8M12 17v4"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="m16 17 5-5-5-5M21 12H9M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/></symbol>
+  <symbol id="i-sheet" viewBox="0 0 24 28"><path d="M2 2h14l6 6v18H2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M16 2v6h6" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M7 11h10v2h-1.5v7h-2.2v-7h-2.6v7H8.5v-7H7z" fill="currentColor" stroke="none"/></symbol>
+</svg>
+
+<template id="hd">
+  <header class="hd">
+    <div class="logo"><svg viewBox="0 0 24 28"><use href="#i-sheet"/></svg><span>Протокол</span></div>
+    <div class="bell"><svg class="ico"><use href="#i-bell"/></svg><span class="badge">4</span></div>
+  </header>
+</template>
+
+<template id="nav">
+  <nav class="nav">
+    <div data-k="now"><svg class="ico"><use href="#i-home"/></svg>Сейчас</div>
+    <div data-k="sch"><svg class="ico"><use href="#i-cal"/></svg>Расписание</div>
+    <div data-k="gr"><svg class="ico"><use href="#i-book"/></svg>Учёба</div>
+    <div data-k="req"><svg class="ico"><use href="#i-file"/></svg>Заявки</div>
+    <div data-k="more"><svg class="ico"><use href="#i-menu"/></svg>Ещё</div>
+  </nav>
+</template>
+
+<template id="schedule">
+  <main class="pmain">
+    <h1 class="H h1">Расписание</h1>
+    <div class="tabs"><span class="on">День</span><span>Неделя</span></div>
+    <div class="dayh">
+      <span class="btn-ic"><svg class="ico"><use href="#i-chevl"/></svg></span>
+      <div><b>Вторник, 10 ноября</b><span class="m">Сегодня</span></div>
+      <span class="btn-ic"><svg class="ico"><use href="#i-chev"/></svg></span>
+    </div>
+    <div class="week">
+      <div>пн<b>9</b><i></i></div>
+      <div class="sel">вт<b>10</b><i><svg class="ico"><use href="#i-alert"/></svg><span class="dot"></span></i></div>
+      <div>ср<b>11</b><i><svg class="ico"><use href="#i-alert"/></svg></i></div>
+      <div>чт<b>12</b><i></i></div>
+      <div>пт<b>13</b><i></i></div>
+      <div>сб<b>14</b><i></i></div>
+    </div>
+    <div class="lessons">
+      <div class="ls past">
+        <div class="tm"><b>10:40</b><span>12:00</span></div>
+        <div><div class="tt">Дипломатический протокол и этикет</div>
+          <div class="m">Семинар, ауд. 2046, Главный корпус</div><div class="m">Новиков Павел Олегович</div>
+          <div class="st"><svg class="ico"><use href="#i-ccheck"/></svg>Прошла</div></div>
+      </div>
+      <div class="ls live">
+        <div class="tm"><b>12:40</b><span>14:00</span></div>
+        <div><div class="tt">Английский язык</div>
+          <div class="m">Практика, группа англ-3, ауд. 3012, Главный корпус</div><div class="m">Карпова Ольга Игоревна</div>
+          <span class="pill-mint"><svg class="ico" style="width:16px;height:16px"><use href="#i-clock"/></svg>Идёт, ещё 35 мин</span></div>
+      </div>
+      <div class="gap">
+        <div class="tm">14:00<br>14:20</div>
+        <div><div class="g"><svg class="ico"><use href="#i-feet"/></svg>Перерыв 20 мин — переход в другой корпус</div><div class="m" style="margin-left:30px">Главный корпус → Одинцово</div></div>
+      </div>
+      <div class="ls">
+        <div class="tm"><b>14:20</b><span>15:40</span></div>
+        <div><div class="tt">Мировая экономика</div>
+          <div class="m">Лекция, ауд. 112, Одинцово</div><div class="m">Соколов Игорь Дмитриевич</div></div>
+      </div>
+      <div class="ls chg">
+        <div class="tm"><b>17:40</b><span>19:00</span></div>
+        <div><div class="tt">История дипломатии</div>
+          <div class="m">Лекция, ауд. 5011, Главный корпус</div><div class="m">Белов Андрей Викторович</div>
+          <div class="st"><svg class="ico"><use href="#i-calclock"/></svg>Перенос, было 09:00. По просьбе кафедры</div></div>
+      </div>
+    </div>
+    <p class="concept">Концепт для конкурса. Не является официальным сервисом МГИМО. Все данные вымышлены.</p>
+  </main>
+</template>
+
+<template id="request">
+  <main class="pmain">
+    <a class="back"><svg class="ico"><use href="#i-chevl"/></svg>Заявки</a>
+    <h1 class="H req-h">Справка об обучении на английском</h1>
+    <p class="m" style="margin-top:6px">№ С-2026-00001, подана вт, 3 нояб.</p>
+    <section class="ready">
+      <div class="rt"><svg class="ico" style="width:24px;height:24px"><use href="#i-ccheck"/></svg>Справка готова</div>
+      <p>Заберите в деканате факультета, кабинет 2104, с паспортом или студенческим. Электронная копия с QR-кодом — уже сейчас.</p>
+      <a class="btn fill"><svg class="ico"><use href="#i-filedown"/></svg>Скачать справку (PDF)</a>
+    </section>
+    <div class="sec-h"><h3>Как движется заявка</h3></div>
+    <ol class="tl">
+      <li class="done"><span class="dotc"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="n">Подана</div><div class="m">вт, 3 нояб., 09:12</div></div></li>
+      <li class="done"><span class="dotc"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="n">Принята</div><div class="m">вт, 3 нояб., 11:40. Срок — 3 рабочих дня</div></div></li>
+      <li class="done"><span class="dotc"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="n">В работе</div><div class="m">ср, 4 нояб., 10:05</div></div></li>
+      <li class="cur"><span class="dotc"><svg class="ico"><use href="#i-check"/></svg></span><div><div class="n">Готова — заберите</div><div class="m">вчера, 16:20</div></div></li>
+      <li class="fut"><span class="dotc"></span><div><div class="n">Выдана</div><div class="m">отметит деканат, когда заберёте</div></div></li>
+    </ol>
+    <div class="sec-h"><h3>Что вы указали</h3></div>
+    <dl class="dl" style="margin:0">
+      <div><dt>Язык справки</dt><dd>Английский</dd></div>
+      <div><dt>Кому</dt><dd>To whom it may concern</dd></div>
+      <div><dt>Цель</dt><dd>Виза</dd></div>
+    </dl>
+    <p class="concept">Концепт для конкурса. Не является официальным сервисом МГИМО. Все данные вымышлены.</p>
+  </main>
+</template>
+
+<template id="desk">
+  <aside class="side">
+    <div class="logo"><svg viewBox="0 0 24 28"><use href="#i-sheet"/></svg><span>Протокол</span></div>
+    <div class="sub">Цифровой деканат</div>
+    <ul>
+      <li class="on">Сейчас</li><li>Расписание</li><li>Учёба</li><li>Заявки</li>
+      <li>Уведомления <span class="cnt">4</span></li><li>Профиль</li><li>Помощник</li>
+    </ul>
+    <div class="theme"><span><svg class="ico"><use href="#i-sun"/></svg></span><span><svg class="ico"><use href="#i-moon"/></svg></span><span class="on"><svg class="ico"><use href="#i-mon"/></svg></span></div>
+    <div class="out"><svg class="ico"><use href="#i-logout"/></svg>Выйти</div>
+  </aside>
+  <main class="dmain">
+    <p class="date">Вторник, 10 ноября</p>
+    <h1 class="H">Доброе утро, Алиса</h1>
+    <div class="dgrid">
+      <div>
+        <div class="sec-h" style="margin-top:0"><h3>Изменения</h3><a>Расписание</a></div>
+        <div class="row cw"><div class="stack"><span class="lbl"><svg class="ico"><use href="#i-calclock"/></svg>Перенос, сегодня 17:40</span><span class="t">История дипломатии</span><span class="m">Было 09:00. Ауд. 5011, по просьбе кафедры</span></div></div>
+        <div class="row cd"><div class="stack"><span class="lbl"><svg class="ico"><use href="#i-x"/></svg>Отмена, завтра <s>12:40</s></span><span class="t">История дипломатии</span><span class="m">Отработаем на консультации</span></div></div>
+        <div class="sec-h"><h3>Скоро</h3><a>Все напоминания</a></div>
+        <div class="row"><span class="dn"><b>11</b><span>нояб.</span></span><div class="stack"><span class="t">Эссе по теории международных отношений</span><span class="m">до 23:59</span></div></div>
+        <div class="row"><span class="dn"><b>14</b><span>нояб.</span></span><div class="stack"><span class="t">Заявление на повышенную стипендию</span><span class="m">до 18:00</span></div></div>
+        <div class="sec-h"><h3>Мои заявки</h3><a>Все заявки</a></div>
+        <div class="row"><div class="stack"><span class="chip ok"><svg class="ico"><use href="#i-ccheck"/></svg>Готова — заберите</span><span class="t">Справка об обучении на английском</span><span class="m">В деканате факультета, пн–пт с 10:00 до 17:00</span></div></div>
+      </div>
+      <div>
+        <section class="now">
+          <div class="top"><span class="lab">Следующая пара</span><span class="in">через 25 мин</span></div>
+          <div class="time"><b>10:40</b><span>–12:00</span></div>
+          <h2>Дипломатический протокол и этикет</h2>
+          <div class="meta"><span><svg class="ico"><use href="#i-pin"/></svg>ауд. 2046, Главный корпус</span><span><svg class="ico"><use href="#i-user"/></svg>Новиков Павел Олегович</span></div>
+          <a class="go">Всё расписание<svg class="ico"><use href="#i-chev"/></svg></a>
+        </section>
+        <section class="study">
+          <p style="font-weight:600">Средний рейтинг, 3-й семестр</p>
+          <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><span class="big">82</span><span>из 100</span></div>
+          <span class="pill"><svg class="ico"><use href="#i-shield"/></svg>Стипендия сохраняется</span>
+        </section>
+      </div>
+    </div>
+  </main>
+</template>
+
+<div class="board" id="board"></div>
+
+<script>
+  const mode = new URLSearchParams(location.search).get('v') || 'mobile';
+  const board = document.getElementById('board');
+  const tpl = id => document.getElementById(id).content.cloneNode(true);
+  const add = (title, cls, build) => {
+    const col = document.createElement('div'); col.className = 'col';
+    col.innerHTML = '<h2>' + title + '</h2>';
+    const s = document.createElement('div'); s.className = 'scr ' + cls;
+    build(s); col.appendChild(s); board.appendChild(col);
+  };
+  const phone = (key, body) => s => {
+    s.appendChild(tpl('hd')); s.appendChild(tpl(body)); s.appendChild(tpl('nav'));
+    s.querySelector('[data-k="' + key + '"]').classList.add('on');
+  };
+  if (mode === 'mobile') {
+    add('Расписание, день — светлая', 'phone light', phone('sch', 'schedule'));
+    add('Расписание, день — тёмная', 'phone dark', phone('sch', 'schedule'));
+    add('Заявка «Готова» — светлая', 'phone light', phone('req', 'request'));
+    add('Заявка «Готова» — тёмная', 'phone dark', phone('req', 'request'));
+  } else {
+    document.body.classList.add('desk');
+    add('«Сейчас», 1280 — светлая', 'desktop light', s => s.appendChild(tpl('desk')));
+    add('«Сейчас», 1280 — тёмная', 'desktop dark', s => s.appendChild(tpl('desk')));
+  }
+</script>
+</body>
+</html>

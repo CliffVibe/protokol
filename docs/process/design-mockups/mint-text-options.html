@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600;700&family=Unbounded:wght@600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  body { margin: 0; padding: 28px; background: #fff; font: 16px/1.45 'Onest', sans-serif; color: #0D0F2B; }
+  .row { display: flex; gap: 32px; }
+  .col { width: 360px; }
+  .col h2 { font: 700 17px/1.3 system-ui; margin: 0 0 2px; }
+  .col p.n { margin: 0 0 14px; font: 14px system-ui; color: #555A78; }
+  .ico { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+  .study { background: #A2FFB2; color: var(--t); border-radius: 26px; padding: 20px; }
+  .study .big { font: 600 52px/1 'Unbounded'; letter-spacing: -.03em; }
+  .pill { display: inline-flex; gap: 8px; align-items: center; margin-top: 12px; background: rgba(255,255,255,.55); padding: 8px 14px; border-radius: 999px; font-weight: 600; }
+  .chip { display: inline-flex; align-items: center; gap: 6px; padding: 3px 12px; border-radius: 999px; font-size: 14px; font-weight: 600; background: #A2FFB2; color: var(--t); margin-top: 16px; }
+  .chip .ico { width: 16px; height: 16px; }
+  .ready { margin-top: 16px; background: #A2FFB2; color: var(--t); border-radius: 26px; padding: 20px; }
+  .ready b { display: flex; gap: 10px; align-items: center; font: 600 19px/1.2 'Unbounded'; }
+  .ready p { margin: 10px 0 0; }
+</style></head><body>
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="sh" viewBox="0 0 24 24"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1.17 1.17 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/><path d="m9 12 2 2 4-4"/></symbol>
+  <symbol id="cc" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></symbol>
+</svg>
+<div class="row" id="row"></div>
+<template id="t">
+  <div class="study"><div style="font-weight:600">Средний рейтинг, 3-й семестр</div>
+    <div style="display:flex;align-items:baseline;gap:8px;margin-top:4px"><span class="big">82</span><span>из 100</span></div>
+    <span class="pill"><svg class="ico"><use href="#sh"/></svg>Стипендия сохраняется</span></div>
+  <span class="chip"><svg class="ico"><use href="#cc"/></svg>Готова — заберите</span>
+  <div class="ready"><b><svg class="ico" style="width:24px;height:24px"><use href="#cc"/></svg>Справка готова</b>
+    <p>Заберите в деканате факультета, кабинет 2104, с паспортом или студенческим.</p></div>
+</template>
+<script>
+  const V = [
+    ['1. Сейчас: тёмно-зелёный', '#0B3D1E — 10.3:1, но зелёный на зелёном', '#0B3D1E'],
+    ['2. Чернила (рекомендую)', '#0D0F2B — 15.6:1, тот же цвет, что весь текст', '#0D0F2B'],
+    ['3. Глубокий ультрамарин', '#14178F — 11.3:1, связка с брендом', '#14178F'],
+  ];
+  const row = document.getElementById('row');
+  for (const [h, n, c] of V) {
+    const col = document.createElement('div'); col.className = 'col'; col.style.setProperty('--t', c);
+    col.innerHTML = '<h2>' + h + '</h2><p class="n">' + n + '</p>';
+    col.appendChild(document.getElementById('t').content.cloneNode(true)); row.appendChild(col);
+  }
+</script>
+</body></html>
