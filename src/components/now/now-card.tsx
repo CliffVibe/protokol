@@ -1,16 +1,21 @@
 import Link from "next/link";
-import { ChevronRight, CircleAlert, MapPin, UserRound } from "lucide-react";
+import { CircleAlert, MapPin, UserRound } from "lucide-react";
 import { formatCountdown, formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
 import type { NextLesson } from "@/server/services/now";
 import { Countdown } from "./countdown";
 import { LESSON_KIND } from "./labels";
 import { StampRings } from "@/components/stamp-rings";
+import { dayHref } from "@/components/schedule/nav";
 
 // Ближайшая пара — единственная заливная плашка экрана (Б′, 10.11): ультрамарин, время крупно Unbounded,
 // «через N мин» — мятой («хорошо и вовремя»). Кольца-оттиск в углу — тихий намёк на печать бланка.
 // Перенос и замена — строкой с иконкой и словом «Перенос» в светлой рамке: жёлтый текст на ультрамарине
 // в тёмной теме не набирает 4.5:1, поэтому смысл несут иконка и текст, а не цвет.
 // Фокус на плашке — белой обводкой: ультрамариновая (--ring) на ультрамарине не видна.
+// T13 (ревью Б′, решение человека 10.11): «Следующая пара» — подписью, не пилюлей (единственный акцент
+// плашки — мятный отсчёт); вся плашка — ссылка на день этой пары (касание по всей площади, ::after поверх
+// содержимого), без отдельной кнопки «Всё расписание»: на 360 освобождает ~60px, и перенос из «Изменений»
+// поднимается на первый экран. Других интерактивных элементов в плашке нет — перекрывать нечего.
 export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
   const { lesson, state } = next;
   const day = formatRelativeDay(lesson.startsAt, now);
@@ -29,10 +34,17 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
       className="relative flex flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-plate p-5 text-on-plate md:p-6"
     >
       <StampRings className="text-on-plate" />
+      {/* Ссылка — отдельный слой поверх всей плашки (z-10): у блоков внутри свой relative (над кольцами),
+          и растянутый ::after привязался бы к ним, а не к плашке. Имя — пара + куда ведёт */}
+      <Link
+        href={dayHref(lesson.startsAt, now)}
+        aria-label={`${lesson.discipline.name}, ${formatTime(lesson.startsAt)}. Открыть в расписании`}
+        className="absolute inset-0 z-10 rounded-[1.75rem] outline-none focus-visible:outline-2 focus-visible:-outline-offset-4 focus-visible:outline-on-plate focus-visible:outline-solid"
+      />
       <div className="relative flex flex-wrap items-center gap-2">
         <h2
           id="now-card-title"
-          className="rounded-full bg-on-plate/15 px-3 py-1 font-sans text-sm font-medium tracking-normal text-on-plate"
+          className="font-sans text-sm font-semibold tracking-normal text-plate-muted"
         >
           {heading}
         </h2>
@@ -87,14 +99,6 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
           </span>
         </p>
       ) : null}
-      {/* Главный блок тоже ведёт в раздел — за 1 касание (ux-reviewer, T05) */}
-      <Link
-        href="/schedule"
-        className="relative mt-1 inline-flex min-h-11 items-center gap-1 self-start rounded-xl bg-on-plate/15 px-4 text-sm font-semibold text-on-plate transition-colors duration-150 ease-out hover:bg-on-plate/25 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-on-plate"
-      >
-        Всё расписание
-        <ChevronRight aria-hidden className="size-4" />
-      </Link>
     </article>
   );
 }

@@ -53,6 +53,20 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
     });
   }
 
+  test("T13: вся плашка пары — ссылка на день этой пары, без отдельной кнопки", async ({
+    page,
+  }) => {
+    await page.goto("/");
+    const card = page.getByRole("article", { name: /пара|Идёт сейчас/ });
+    await expect(card.getByRole("link")).toHaveCount(1);
+    await expect(card.getByRole("link")).toHaveAccessibleName(/Открыть в расписании$/);
+    // Касание в середину плашки (по крупному времени): слой ссылки накрывает её целиком
+    const box = (await card.locator("p.font-heading").boundingBox())!;
+    const cardBox = (await card.boundingBox())!;
+    await card.click({ position: { x: box.x - cardBox.x + 10, y: box.y - cardBox.y + 10 } });
+    await expect(page).toHaveURL(/\/schedule(\?day=\d{4}-\d{2}-\d{2})?$/);
+  });
+
   test("на десктопе колонка «Ближайшее» справа от заявок", async ({ page, isMobile }) => {
     test.skip(isMobile, "только ≥ 1024");
     await page.goto("/");
@@ -69,11 +83,31 @@ test("Вера: аккуратные пустые состояния, без ч�
   await expect(page.getByRole("heading", { name: "Заявок пока нет" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Заказать справку" })).toBeVisible();
   await expect(page.getByText("Оценок пока нет").filter({ visible: true })).toBeVisible();
-  // Из колонки «Ближайшее» в расписание можно попасть и без блока «Изменения»
+  // Из колонки «Ближайшее» в расписание можно попасть и без блока «Изменения»: с T13 ссылка — вся плашка
+  // пары (название пары + скрытое «Открыть в расписании»)
   await expect(
-    page.getByRole("region", { name: "Ближайшее" }).getByRole("link", { name: "Всё расписание" }),
+    page
+      .getByRole("region", { name: "Ближайшее" })
+      .getByRole("link", { name: /Открыть в расписании|Всё расписание/ }),
   ).toBeVisible();
   expect(await page.getByRole("main").innerText()).not.toMatch(REQUEST_NUMBER);
+});
+
+test("T13: при угрозе стипендии «Учёба» в ленте телефона — выше «Моих заявок»", async ({
+  page,
+  browser,
+  isMobile,
+}) => {
+  test.skip(!isMobile, "на ≥ 1024 «Учёба» и так в колонке «Ближайшее»");
+  const top = async (p: Page, name: string) =>
+    (await p.getByRole("region", { name }).filter({ visible: true }).boundingBox())!.y;
+  const timur = await asDemo(browser, "Тимур");
+  await feedLoaded(timur, "Тимур");
+  expect(await top(timur, "Учёба")).toBeLessThan(await top(timur, "Мои заявки"));
+  // У Алисы всё хорошо — «Учёба» на своём месте, в конце ленты
+  await page.goto("/");
+  await feedLoaded(page, "Алиса");
+  expect(await top(page, "Учёба")).toBeGreaterThan(await top(page, "Объявления"));
 });
 
 test("изоляция: Тимур не видит номера заявок Алисы", async ({ page, browser }) => {

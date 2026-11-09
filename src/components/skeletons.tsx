@@ -105,8 +105,8 @@ export function NowCardSkeleton({ className }: { className?: string }) {
   const bar = "bg-on-plate/20";
   return (
     <div className={cn("flex flex-col gap-3 rounded-[1.75rem] bg-plate p-5 md:p-6", className)}>
-      <div className="flex flex-wrap gap-2">
-        <Skeleton className={cn("h-7 w-28 max-w-full rounded-full", bar)} />
+      <div className="flex flex-wrap items-center gap-2">
+        <Skeleton className={cn("h-4 w-28 max-w-full", bar)} />
         <Skeleton className={cn("h-7 w-24 max-w-full rounded-full", bar)} />
       </div>
       <Skeleton className={cn("mt-2 h-[3.25rem] w-48 max-w-full", bar)} />
@@ -114,7 +114,6 @@ export function NowCardSkeleton({ className }: { className?: string }) {
       <Skeleton className={cn("h-4 w-24 max-w-full", bar)} />
       <Skeleton className={cn("h-5 w-3/4", bar)} />
       <Skeleton className={cn("h-5 w-1/2", bar)} />
-      <Skeleton className={cn("mt-1 h-11 w-36 max-w-full rounded-xl", bar)} />
     </div>
   );
 }
