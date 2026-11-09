@@ -13,7 +13,8 @@ const LONG_DAY = new Intl.DateTimeFormat("ru-RU", {
 
 /** «Пятница, 6 ноября» — для заголовка «Сейчас». */
 export function formatLongDay(date: Date): string {
-  const text = LONG_DAY.format(date);
+  // «6 ноября» — неразрывным пробелом: число не отрывается от месяца (ux-reviewer, T13)
+  const text = LONG_DAY.format(date).replace(/(\d) /, "$1 ");
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
 
@@ -59,8 +60,9 @@ export function formatCountdown(startsAt: Date, endsAt: Date, now: Date): string
   const span = (m: number) => {
     const h = Math.floor(m / 60);
     const rest = m % 60;
-    if (h === 0) return `${rest} мин`;
-    return rest === 0 ? `${h} ч` : `${h} ч ${rest} мин`;
+    // Неразрывные пробелы: число и единица не разъезжаются по строкам при крупном тексте
+    if (h === 0) return `${rest} мин`;
+    return rest === 0 ? `${h} ч` : `${h} ч ${rest} мин`;
   };
   if (now >= startsAt && now < endsAt) return `идёт, до конца ${span(minutes(+endsAt - +now))}`;
   if (now < startsAt) return `через ${span(minutes(+startsAt - +now))}`;

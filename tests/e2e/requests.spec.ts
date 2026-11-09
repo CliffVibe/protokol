@@ -164,8 +164,12 @@ test("отклонение — только с причиной; студент 
   await expect(irina.getByText("Отклонена", { exact: true }).first()).toBeVisible();
 
   await page.goto(requestUrl(number));
+  // T13: причина — наверху, в сноске «Деканат отклонил заявку» с «Подать заново», и в истории
+  const rejected = page.getByRole("region", { name: "Статус" });
+  await expect(rejected.getByText("Деканат отклонил заявку")).toBeVisible();
+  await expect(rejected.getByText("Укажите организацию полностью")).toBeVisible();
+  await expect(rejected.getByRole("link", { name: "Подать заново" })).toBeVisible();
   await expect(page.getByText("Причина:")).toBeVisible();
-  await expect(page.getByText("Укажите организацию полностью")).toBeVisible();
 });
 
 test.describe("изоляция", () => {

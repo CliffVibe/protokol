@@ -149,7 +149,8 @@ export default async function StaffSchedulePage({ searchParams }: PageProps<"/st
               >
                 <p className="w-20 shrink-0 font-heading text-lg tabular">
                   {formatTime(l.startsAt)}
-                  <span className="block text-sm font-normal text-ink-muted">
+                  {/* Конец пары — Onest: Unbounded загружен только 600, font-normal им не нарисовать (ux-reviewer, T13) */}
+                  <span className="block font-sans text-sm text-ink-muted">
                     {formatTime(l.endsAt)}
                   </span>
                 </p>
@@ -159,7 +160,7 @@ export default async function StaffSchedulePage({ searchParams }: PageProps<"/st
                     {l.discipline.name}
                   </p>
                   <p className="text-sm text-ink-muted">
-                    {LESSON_KIND[l.kind]}, {l.building}, ауд. {l.room}
+                    {LESSON_KIND[l.kind]}, {l.building}, ауд.&nbsp;{l.room}
                   </p>
                   <p className="text-sm text-ink-muted">{l.teacher.fullName}</p>
                   {l.change === "MOVED" && l.originalStartsAt ? (

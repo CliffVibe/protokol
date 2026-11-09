@@ -28,21 +28,26 @@ export function DisciplineRow({ grade, isCurrent }: { grade: GradeRow; isCurrent
     <li className="relative flex flex-col gap-2 py-4">
       <Link
         href={disciplineHref(grade.discipline.id)}
-        className="self-start text-base font-bold text-ink outline-none after:absolute after:inset-0 after:rounded-sm focus-visible:after:ring-2 focus-visible:after:ring-brand hover:underline"
+        className="self-start text-base font-bold text-ink outline-none after:absolute after:inset-0 after:rounded-sm focus-visible:after:outline-2 focus-visible:after:outline-solid focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring hover:underline"
       >
         {grade.discipline.name}
       </Link>
       <div className="flex max-w-[36rem] flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
-        <p className="text-sm text-ink-muted">
+        <p className="min-w-0 text-sm break-words hyphens-auto text-ink-muted">
           {ASSESSMENT_KIND[grade.kind]}
           {when ? `, ${when}` : ""}
         </p>
-        {/* Спокойная строка — чип рядом с формой контроля (строка в 1,5 раза короче, ux-reviewer T07);
-            у проблемной — отдельной строкой с подсказкой, сколько не хватает */}
+        {/* Спокойная строка — тихий значок и текст рядом с формой контроля, без мятного чипа: норма не должна
+            быть громче проблемы, а мята — только у вывода «Как у меня дела» (ux-reviewer, T13; Б′ — не больше
+            двух цветных блоков). У проблемной — чип отдельной строкой с подсказкой, сколько не хватает */}
         {quiet ? (
-          <StatusChip tone={chip.tone} icon={chip.icon}>
+          <span
+            data-quiet-status
+            className="inline-flex items-center gap-1.5 text-sm text-ink-muted"
+          >
+            <chip.icon aria-hidden className="size-4 shrink-0" />
             {chip.label}
-          </StatusChip>
+          </span>
         ) : null}
       </div>
       {/* Бар и строка над ним не шире 36rem: на 1280 засечка 60, число и чип — рядом, а не по краям колонки */}

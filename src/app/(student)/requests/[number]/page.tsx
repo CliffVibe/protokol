@@ -4,7 +4,7 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PageHeader } from "@/components/page-header";
-import { CircleCheck, FileDown, ShieldX } from "lucide-react";
+import { CircleCheck, CircleX, FileDown, ShieldX } from "lucide-react";
 import { requestStatus } from "@/components/now/labels";
 import { CancelRequest } from "@/components/requests/cancel-request";
 import { RequestTimeline } from "@/components/requests/timeline";
@@ -58,7 +58,7 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
       <PageHeader
         title={r.type.title}
         back={{ href: "/requests", label: "Заявки" }}
-        description={<span className="tabular">№ {r.number}</span>}
+        description={<span className="tabular">№&nbsp;{r.number}</span>}
       />
 
       <section aria-labelledby="state-title" className="flex flex-col gap-3">
@@ -70,9 +70,12 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
           // заливная кнопка экрана. Фокус — обводкой цвета текста: ультрамарин на мяте в тёмной теме не виден
           <div className="relative flex flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-mint p-5 text-on-mint">
             <StampRings className="text-on-mint" />
-            <p className="relative flex items-center gap-2.5 font-heading text-lg font-semibold">
-              <CircleCheck aria-hidden className="size-6 shrink-0" />
-              {status.label}
+            {/* min-w-0 + переносы: при тексте 200% «заберите» обрезалось краем блока (ux-reviewer, T13) */}
+            <p className="relative flex items-start gap-2.5 font-heading text-lg font-semibold">
+              <CircleCheck aria-hidden className="mt-0.5 size-6 shrink-0" />
+              <span className="min-w-0 break-words hyphens-auto [hyphenate-limit-chars:10_4_4]">
+                {status.label}
+              </span>
             </p>
             <p className="relative text-base">
               Заберите справку в деканате своего факультета — с паспортом или студенческим билетом.
@@ -85,7 +88,7 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
               <Button
                 asChild
                 size="lg"
-                className="relative mt-1 w-full whitespace-normal focus-visible:outline-on-mint sm:w-auto sm:self-start"
+                className="relative mt-1 h-auto min-h-12 w-full py-2 whitespace-normal focus-visible:outline-on-mint sm:w-auto sm:self-start"
               >
                 <a href={`${requestHref(r.number)}/pdf`} download>
                   <FileDown aria-hidden />
@@ -113,6 +116,29 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
             ) : null}
           </>
         )}
+        {r.status === "REJECTED" ? (
+          // Отклонена — наверху ответ «что делать», как у отзыва справки: черта --danger, причина,
+          // «Подать заново». Раньше причина была только в истории, а кнопка — в самом низу (ux-reviewer, T13)
+          <div className="flex gap-2.5 border-l-2 border-danger py-1 pl-3">
+            <CircleX aria-hidden className="mt-0.5 size-5 shrink-0 text-danger" />
+            <div className="flex min-w-0 flex-col gap-0.5">
+              <p className="text-base font-bold text-ink">Деканат отклонил заявку</p>
+              {r.timeline.end?.comment ? (
+                <p className="text-sm break-words text-ink">{r.timeline.end.comment}</p>
+              ) : null}
+              <p className="text-sm text-ink-muted">
+                Исправьте то, что указано в причине, и отправьте заявку ещё раз.
+              </p>
+              <Button
+                asChild
+                variant="outline"
+                className="mt-2 h-auto min-h-11 max-w-full self-start py-2 whitespace-normal"
+              >
+                <Link href={`/requests/new?type=${r.type.code}` as Route}>Подать заново</Link>
+              </Button>
+            </div>
+          </div>
+        ) : null}
         {r.document?.revoked ? (
           // Отзыв — сноска с чертой --danger, как ошибка формы, но без role="alert": это состояние, а не
           // ответ на действие. Причину видит только сам студент; на /verify — лишь «Отозвана» (S7)
@@ -129,7 +155,11 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
                 QR-код в скачанной копии теперь показывает «Отозвана». Новая справка получит новый
                 QR-код.
               </p>
-              <Button asChild variant="outline" className="mt-2 self-start">
+              <Button
+                asChild
+                variant="outline"
+                className="mt-2 h-auto min-h-11 max-w-full self-start py-2 whitespace-normal"
+              >
                 <Link href={`/requests/new?type=${r.type.code}` as Route}>Подать заново</Link>
               </Button>
             </div>
@@ -170,13 +200,11 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
         </dl>
       </section>
 
-      {/* Отклонена — не тупик: сразу подать заново ту же справку (ux-reviewer, T08) */}
-      {r.status === "REJECTED" || r.status === "CANCELLED" ? (
+      {/* Отменена — не тупик: сразу подать заново ту же справку (ux-reviewer, T08). Отклонённая — наверху */}
+      {r.status === "CANCELLED" ? (
         <div className="flex flex-col items-start gap-2 border-t border-line pt-4">
           <p className="text-sm text-ink-muted">
-            {r.status === "REJECTED"
-              ? "Исправьте то, что указано в причине, и отправьте заявку ещё раз."
-              : "Если справка всё-таки нужна — закажите её заново."}
+            Если справка всё-таки нужна — закажите её заново.
           </p>
           <Button asChild variant="outline">
             <Link href={`/requests/new?type=${r.type.code}` as Route}>Подать заново</Link>

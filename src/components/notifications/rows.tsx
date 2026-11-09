@@ -18,9 +18,10 @@ import type { NotificationRow } from "@/server/repos/notifications";
 
 // Строки уведомлений и объявлений (T09). Вид — иконка + скрытая подпись (цвет не единственный носитель смысла).
 // Иерархия (человек 06.11: «в тёмной теме всё сливается в кашу»): новое — громко, прочитанное — тихо.
-//  - новое: черта цвета вида в поле страницы слева (как изменения в расписании), значок в плашке --brand-soft,
+//  - новое: черта цвета вида в поле страницы слева (как изменения в расписании), значок цветом вида,
 //    полужирный заголовок, текст --ink;
-//  - прочитанное: заголовок обычным, текст мельче и --ink-muted, значок без плашки.
+//  - прочитанное: заголовок обычным, текст мельче и --ink-muted, значок --ink-muted.
+// Б′ (T13): значок без пастельного круга — правило «без значков в плашках»; и тексту при 200% больше ширины.
 // Тон — по смыслу, токенами из 04-design: перенос и срок — --warn (как «перенос, риск»), остальное — --brand.
 
 const KIND: Record<
@@ -66,18 +67,16 @@ export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: 
           : "py-3",
       )}
     >
-      {unread ? (
-        <span
-          aria-hidden
-          className="flex size-[36px] shrink-0 items-center justify-center rounded-full bg-brand-soft"
-        >
+      <span
+        aria-hidden
+        className={cn("flex w-6 shrink-0 justify-center", unread ? "pt-1" : "pt-0.5")}
+      >
+        {unread ? (
           <Icon className={cn("size-5", text)} strokeWidth={2} />
-        </span>
-      ) : (
-        <span aria-hidden className="flex size-[36px] shrink-0 items-start justify-center pt-0.5">
+        ) : (
           <Icon className="size-5 text-ink-muted" strokeWidth={1.75} />
-        </span>
-      )}
+        )}
+      </span>
       <div className="flex min-w-0 flex-1 flex-col gap-1">
         <form action={openNotificationAction}>
           <input type="hidden" name="id" value={n.id} />
@@ -85,7 +84,7 @@ export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: 
           <button
             type="submit"
             className={cn(
-              "w-full text-left break-words hyphens-auto text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand",
+              "w-full text-left break-words hyphens-auto text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:outline-2 focus-visible:after:outline-solid focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring",
               unread ? "text-lg leading-snug font-bold" : "text-base font-normal",
             )}
           >
@@ -94,7 +93,12 @@ export function NotificationRowItem({ n, tab, now }: { n: NotificationRow; tab: 
             {n.title}
           </button>
         </form>
-        <p className={cn("break-words", unread ? "text-base text-ink" : "text-sm text-ink-muted")}>
+        <p
+          className={cn(
+            "break-words hyphens-auto [hyphenate-limit-chars:10_4_4]",
+            unread ? "text-base text-ink" : "text-sm text-ink-muted",
+          )}
+        >
           {n.body}
         </p>
         <p className="text-sm text-ink-muted tabular">
@@ -138,7 +142,7 @@ export function AnnouncementItem({
       <p className="flex flex-wrap items-center gap-x-3 text-sm text-ink-muted">
         {/* Новое — точка и слово, как у строки уведомления: не только цветом */}
         {fresh ? (
-          <span className="inline-flex items-center gap-1.5 font-bold text-brand">
+          <span className="inline-flex items-center gap-1.5 font-bold text-ink">
             <span
               aria-hidden
               className="size-2 rounded-full bg-brand forced-colors:bg-[CanvasText]"
@@ -147,7 +151,7 @@ export function AnnouncementItem({
           </span>
         ) : null}
         {a.pinned ? (
-          <span className="inline-flex items-center gap-1 font-bold text-brand">
+          <span className="inline-flex items-center gap-1 font-bold text-ink">
             <Pin aria-hidden className="size-4" />
             Закреплено
           </span>
@@ -156,7 +160,11 @@ export function AnnouncementItem({
           {formatRelativeDay(a.publishedAt, now)}, {formatTime(a.publishedAt)}
         </span>
       </p>
-      <h2 className="font-heading text-lg font-semibold break-words text-ink">{a.title}</h2>
+      {/* Заголовок объявления — Onest: Unbounded — для экранов и разделов, шесть широких заголовков подряд
+          спорили с заголовком раздела (ux-reviewer, T13) */}
+      <h2 className="font-sans text-lg font-semibold tracking-normal break-words text-ink">
+        {a.title}
+      </h2>
       <Markdown text={a.body} />
     </li>
   );

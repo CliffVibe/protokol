@@ -114,6 +114,8 @@ const eslintConfig = defineConfig([
       "tests/e2e/pwa.spec.ts",
       // T13: отдельная база e2e — создать, если нет (миграции и сид — через prisma CLI)
       "tests/e2e/prepare-db.ts",
+      // T13 (mobile-qa): сквозные сценарии жюри — уборка созданной заявки Тимура и уведомлений по ней
+      "tests/e2e/scenarios/jury-scenarios.spec.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

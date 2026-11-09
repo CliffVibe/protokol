@@ -25,13 +25,15 @@ import {
 
 // Справка в PDF (T10). Генерируется на сервере по запросу владельца (route handler заявки), файлов не
 // храним. Кириллица — только через зарегистрированные TTF (встроенные шрифты PDF её не рисуют):
-// PT Sans и PT Serif, те же, что в интерфейсе (OFL, assets/fonts). Цвета — палитра «Бланк» (04-design).
+// PT Sans и PT Serif (OFL, assets/fonts): документ остаётся «бланком», в интерфейсе с Б′ (T13) — Unbounded и
+// Onest. Цвет знака и заголовка — ультрамарин Б′, как в приложении; фиолетовая --seal — только «М.П.» и
+// водяной знак (ux-reviewer, T13).
 // В справке нет номера зачётки и оценок; QR ведёт на публичную /verify/<token> (S7).
 
 const INK = "#161A17";
 const MUTED = "#5B635C";
 const LINE = "#D6DBD2";
-const BRAND = "#22356B";
+const BRAND = "#1E22D2";
 const SEAL = "#55389A";
 
 /**
@@ -231,13 +233,19 @@ function Logo() {
       <Path
         d={LOGO_SHEET_PATH}
         fill="none"
-        stroke={SEAL}
+        stroke={BRAND}
         strokeWidth={3.2}
         strokeLinejoin="round"
       />
-      <Path d={LOGO_FOLD_PATH} fill="none" stroke={SEAL} strokeWidth={2.4} strokeLinejoin="round" />
+      <Path
+        d={LOGO_FOLD_PATH}
+        fill="none"
+        stroke={BRAND}
+        strokeWidth={2.4}
+        strokeLinejoin="round"
+      />
       <G transform={LOGO_P_TRANSFORM}>
-        <Path d={LOGO_P_PATH} fill={SEAL} />
+        <Path d={LOGO_P_PATH} fill={BRAND} />
       </G>
     </Svg>
   );

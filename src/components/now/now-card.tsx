@@ -36,7 +36,7 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
         >
           {heading}
         </h2>
-        <p className="rounded-full bg-mint px-3 py-1 text-sm font-semibold text-on-mint">
+        <p className="rounded-full bg-mint px-3 py-1 text-sm font-semibold text-on-mint tabular">
           <Countdown
             startsAt={lesson.startsAt.toISOString()}
             endsAt={lesson.endsAt.toISOString()}
@@ -63,7 +63,7 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
           <MapPin aria-hidden className="mt-0.5 size-5 shrink-0 text-plate-muted" />
           <span className="min-w-0">
             <span className="sr-only">Где: </span>
-            ауд. {lesson.room}, {lesson.building}
+            ауд.&nbsp;{lesson.room}, {lesson.building}
           </span>
         </li>
         <li className="flex items-start gap-2">

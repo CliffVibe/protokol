@@ -46,7 +46,7 @@ export default async function StaffLayout({ children }: { children: React.ReactN
         aria-labelledby="staff-settings-title"
         className="mx-auto mt-10 flex w-full max-w-[1120px] flex-col items-start gap-4 border-t border-line px-4 pt-6 md:hidden"
       >
-        <h2 id="staff-settings-title" className="text-lg font-bold text-ink">
+        <h2 id="staff-settings-title" className="text-lg text-ink">
           Настройки
         </h2>
         <ThemeSwitcher value={theme} className="w-full max-w-80" />

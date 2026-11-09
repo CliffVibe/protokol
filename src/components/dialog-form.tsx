@@ -78,23 +78,29 @@ export function DialogForm<S extends State>({
       <dialog
         ref={dialogRef}
         aria-labelledby={titleId}
+        aria-describedby={description ? `${titleId}-desc` : undefined}
         onClose={() => triggerRef.current?.focus()}
         onClick={(e) => {
           if (e.target === e.currentTarget) e.currentTarget.close();
         }}
-        className="m-auto w-[calc(100%-2rem)] max-w-md rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-black/50"
+        className="m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] max-w-md overflow-y-auto overscroll-contain rounded-2xl border border-line bg-surface p-0 text-ink backdrop:bg-black/50"
       >
         <form action={formAction} noValidate className="flex flex-col gap-4 p-5">
           <h2 id={titleId} className="text-lg break-words">
             {title}
           </h2>
-          {description ? <div className="text-base text-ink">{description}</div> : null}
+          {description ? (
+            <div id={`${titleId}-desc`} className="text-base text-ink">
+              {description}
+            </div>
+          ) : null}
           {Object.entries(hidden ?? {}).map(([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ))}
           {children?.(state)}
           {state.error ? <FormAlert title={state.error} tabIndex={-1} /> : null}
-          <div className="flex flex-wrap justify-end gap-3">
+          {/* Кнопки прибиты к низу диалога: длинная форма («Перенести» на 360) не уводит их за край (ux-reviewer, T13) */}
+          <div className="sticky bottom-0 -mx-5 -mb-5 flex flex-wrap justify-end gap-3 border-t border-line bg-surface px-5 py-3">
             <Button type="button" variant="ghost" onClick={() => dialogRef.current?.close()}>
               Не сейчас
             </Button>

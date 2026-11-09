@@ -45,7 +45,7 @@ export default async function StaffAnnouncementsPage() {
               <li key={a.id} className="flex flex-col gap-2 py-4">
                 <p className="flex flex-wrap items-center gap-x-3 text-sm text-ink-muted">
                   {a.pinned ? (
-                    <span className="inline-flex items-center gap-1 font-bold text-brand">
+                    <span className="inline-flex items-center gap-1 font-bold text-ink">
                       <Pin aria-hidden className="size-4" />
                       Закреплено
                     </span>
@@ -54,7 +54,9 @@ export default async function StaffAnnouncementsPage() {
                     {formatRelativeDay(a.publishedAt, now)}, {formatTime(a.publishedAt)}
                   </span>
                 </p>
-                <h3 className="font-heading text-lg font-semibold break-words">{a.title}</h3>
+                <h3 className="font-sans text-lg font-semibold tracking-normal break-words">
+                  {a.title}
+                </h3>
                 <p className="flex items-start gap-1.5 text-sm text-ink-muted">
                   <Users aria-hidden className="mt-0.5 size-4 shrink-0" />
                   <span>

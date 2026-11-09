@@ -71,7 +71,7 @@ export default async function NowPage() {
       {/* Вход в помощника (T12, решение человека 07.11): тихая строка-ссылка, не карточка */}
       <Link
         href="/assistant"
-        className="flex min-h-[44px] items-start gap-3 border-t border-line pt-4 text-ink outline-none hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring lg:col-start-1 lg:row-start-3"
+        className="flex min-h-[44px] items-start gap-3 border-t border-line pt-4 text-ink outline-none hover:text-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid lg:col-start-1 lg:row-start-3"
       >
         <MessageCircleQuestion aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
         <span className="flex min-w-0 flex-col gap-0.5">

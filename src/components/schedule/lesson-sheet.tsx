@@ -58,13 +58,16 @@ export function LessonSheetProvider({ children }: { children: React.ReactNode })
 function SheetBody({ lesson, onClose }: { lesson: LessonView; onClose: () => void }) {
   const change = lesson.change;
   return (
-    <div className="flex flex-col gap-4 p-4 pb-6 md:p-5">
+    <div className="flex flex-col gap-4 p-4 pb-[max(1.5rem,env(safe-area-inset-bottom))] md:p-5">
       <div className="flex items-start justify-between gap-3">
         <div className="flex min-w-0 flex-col gap-1">
           <p className="text-sm text-ink-muted">{lesson.day}</p>
           <h2
             id="lesson-sheet-title"
-            className={cn("text-lg break-words", lesson.cancelled && "text-ink-muted line-through")}
+            className={cn(
+              "text-lg break-words hyphens-auto [hyphenate-limit-chars:10_4_4]",
+              lesson.cancelled && "text-ink-muted line-through",
+            )}
           >
             {lesson.title}
           </h2>
@@ -75,7 +78,6 @@ function SheetBody({ lesson, onClose }: { lesson: LessonView; onClose: () => voi
           className="size-[44px]"
           onClick={onClose}
           aria-label="Закрыть"
-          autoFocus
         >
           <X aria-hidden className="size-5" />
         </Button>
@@ -114,7 +116,7 @@ function SheetBody({ lesson, onClose }: { lesson: LessonView; onClose: () => voi
 
       <dl className="flex flex-col gap-3 text-base">
         <Detail icon={MapPin} term="Где">
-          ауд. {lesson.room}, {lesson.building}
+          ауд.&nbsp;{lesson.room}, {lesson.building}
         </Detail>
         <Detail icon={UserRound} term="Кто ведёт">
           {lesson.teacher}

@@ -76,7 +76,7 @@ export function CalendarSubscription({
         </summary>
         <div className="flex flex-col gap-3 px-3 pb-3 text-base text-ink">
           <div>
-            <h3 className="font-bold">iPhone и iPad</h3>
+            <h3>iPhone и iPad</h3>
             <p>
               Нажмите «Добавить в Apple Календарь» и подтвердите «Подписаться». Или: Настройки →
               Календарь → Учётные записи → Добавить → Другое → Подписной календарь → вставьте
@@ -84,7 +84,7 @@ export function CalendarSubscription({
             </p>
           </div>
           <div>
-            <h3 className="font-bold">Android</h3>
+            <h3>Android</h3>
             <p>
               Нажмите «Добавить в Google Календарь» и войдите в свой аккаунт Google — расписание
               появится в приложении «Google Календарь» на телефоне. Если не видно: в приложении Меню
@@ -92,7 +92,7 @@ export function CalendarSubscription({
             </p>
           </div>
           <div>
-            <h3 className="font-bold">Google Календарь на компьютере</h3>
+            <h3>Google Календарь на компьютере</h3>
             <p>
               «Другие календари» → «+» → «Добавить по URL» → вставьте ссылку. Google обновляет
               подписки сам, обычно раз в несколько часов.

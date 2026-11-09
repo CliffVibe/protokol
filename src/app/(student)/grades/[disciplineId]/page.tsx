@@ -114,7 +114,8 @@ function SemesterBlock({
           </p>
         ) : null}
         {isDebt(grade) ? (
-          <div className="flex flex-col items-start gap-3">
+          // Б′: красный статус — значок + текст + черта слева (ux-reviewer, T13)
+          <div className="flex flex-col items-start gap-3 border-l-4 border-l-danger pl-3">
             <p className="text-base text-ink">
               <span className="font-bold">
                 Из-за долга стипендия под угрозой, пока он не закрыт.

@@ -19,7 +19,8 @@ type Row = {
 /** Что важно знать о заявке сейчас: срок, «заберите» или когда закрыта. */
 function whenText(r: Row, now: Date): string {
   // «Заберите» уже в чипе — здесь только когда стала готова
-  if (r.status === "READY") return `с ${formatRelativeDay(r.updatedAt, now)}`;
+  // «готова вчера», а не «с вчера» (ux-reviewer, T13)
+  if (r.status === "READY") return `готова ${formatRelativeDay(r.updatedAt, now)}`;
   if (r.dueAt) return `Готова к ${formatRelativeDay(r.dueAt, now)}`;
   // Статус уже в чипе — здесь только дата
   return formatRelativeDay(r.updatedAt, now);
@@ -31,12 +32,12 @@ export function RequestRow({ request: r, now }: { request: Row; now: Date }) {
     <li className="relative flex flex-col gap-1.5 py-4">
       <Link
         href={requestHref(r.number) as Route}
-        className="self-start text-base font-bold text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand"
+        className="self-start text-base font-bold text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:outline-2 focus-visible:after:outline-solid focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring"
       >
         {r.type.title}
       </Link>
       <p className="text-sm text-ink-muted tabular">
-        № {r.number}, подана {formatRelativeDay(r.createdAt, now)}
+        №&nbsp;{r.number}, подана {formatRelativeDay(r.createdAt, now)}
       </p>
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <StatusChip tone={status.tone}>{status.label}</StatusChip>

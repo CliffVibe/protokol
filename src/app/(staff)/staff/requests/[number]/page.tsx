@@ -59,7 +59,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
         back={{ href: "/staff", label: "Очередь" }}
         description={
           <span className="tabular">
-            № {r.number}, подана {formatRelativeDay(r.createdAt, now)}
+            №&nbsp;{r.number}, подана {formatRelativeDay(r.createdAt, now)}
           </span>
         }
       />

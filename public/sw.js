@@ -12,7 +12,8 @@
 
 const STATIC_CACHE = "protokol-static";
 const PAGES_CACHE = "protokol-pages";
-const SHELL_CACHE = "protokol-shell-v1";
+// v2 (T13): офлайн-страница в виде Б′ — новое имя кэша, иначе установленный service worker отдавал бы старый CSS
+const SHELL_CACHE = "protokol-shell-v2";
 const KNOWN = [STATIC_CACHE, PAGES_CACHE, SHELL_CACHE];
 const OFFLINE_URL = "/offline.html";
 const SHELL = [OFFLINE_URL, "/offline.css", "/icon.svg"];

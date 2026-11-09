@@ -33,10 +33,13 @@ export function GradesSummary({
           {summary.averageRating !== null ? (
             <>
               Средний рейтинг за {summary.semester}-й семестр:{" "}
-              <span className="font-heading text-2xl font-semibold tabular">
-                {summary.averageRating}
-              </span>{" "}
-              из 100
+              {/* «82 из 100» — одним куском: «100» уезжала на строку ниже (ux-reviewer, T13) */}
+              <span className="whitespace-nowrap">
+                <span className="font-heading text-2xl font-semibold tabular">
+                  {summary.averageRating}
+                </span>
+                &nbsp;из 100
+              </span>
             </>
           ) : (
             `${summary.semester}-й семестр: баллов пока нет`

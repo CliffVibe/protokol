@@ -59,7 +59,7 @@ export function EmptyState({
       >
         <Heading className="max-w-prose text-lg">{title}</Heading>
         {description ? (
-          <p className="max-w-prose text-base break-words hyphens-auto text-ink-muted">
+          <p className="max-w-prose text-base break-words hyphens-auto text-ink-muted [hyphenate-limit-chars:10_4_4]">
             {description}
           </p>
         ) : null}

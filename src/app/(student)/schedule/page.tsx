@@ -97,7 +97,8 @@ async function DayView({ ctx, now, dayStart }: { ctx: StudentCtx; now: Date; day
   const nextName = isToday ? "завтра" : "следующий день";
   // Из пустого дня — к следующему дню, а не «Вся неделя»: из воскресенья она уводила бы на другую неделю
   const nextLink = (
-    <Button asChild variant="outline">
+    // h-auto + whitespace-normal: при тексте 200% подпись не выталкивает экран вбок (ux-reviewer, T13)
+    <Button asChild variant="outline" className="h-auto min-h-11 max-w-full py-2 whitespace-normal">
       <Link href={dayHref(nextStart, now)}>Открыть {nextName}</Link>
     </Button>
   );

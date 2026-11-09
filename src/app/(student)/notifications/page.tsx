@@ -87,7 +87,9 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
         description={
           unreadTotal
             ? `${unreadTotal} ${plural(unreadTotal, ["новое", "новых", "новых"])}`
-            : "Новых нет — вы всё прочитали."
+            : items.length
+              ? "Новых нет — вы всё прочитали."
+              : undefined
         }
       />
 
@@ -163,7 +165,7 @@ export default async function NotificationsPage({ searchParams }: PageProps<"/no
           ) : null}
           {seen.length ? (
             <section aria-labelledby="seen-title" className="flex flex-col gap-1">
-              <h2 id="seen-title" className="text-base font-bold text-ink-muted">
+              <h2 id="seen-title" className="text-base text-ink-muted">
                 Прочитанные
               </h2>
               <ul

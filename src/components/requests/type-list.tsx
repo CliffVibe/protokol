@@ -22,11 +22,11 @@ export function TypeList({ label, items }: { label: string; items: TypeListItem[
           <div className="flex min-w-0 flex-1 flex-col gap-1">
             <Link
               href={t.href}
-              className="self-start text-base font-bold break-words text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:ring-2 focus-visible:after:ring-brand"
+              className="self-start text-base font-bold break-words text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:outline-2 focus-visible:after:outline-solid focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring"
             >
               {t.title}
             </Link>
-            {t.note ? <p className="text-sm font-bold text-brand">{t.note}</p> : null}
+            {t.note ? <p className="text-sm font-bold text-ink">{t.note}</p> : null}
             {t.description ? <p className="text-sm text-ink">{t.description}</p> : null}
             {t.meta ? <p className="text-sm text-ink-muted">{t.meta}</p> : null}
           </div>

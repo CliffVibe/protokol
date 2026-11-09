@@ -1,3 +1,4 @@
+import type { Route } from "next";
 import Link from "next/link";
 import { Pin, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
@@ -12,6 +13,7 @@ import type { LessonRow } from "@/server/repos/schedule";
 import { FeedList, FeedSection } from "./feed-section";
 import { CHANGE, requestStatus } from "./labels";
 import { markdownToPlain } from "@/lib/markdown";
+import { requestHref } from "@/server/services/request-rules";
 
 const when = (d: Date, now: Date) => `${formatRelativeDay(d, now)}, ${formatTime(d)}`;
 const capitalize = (s: string) => s.charAt(0).toUpperCase() + s.slice(1);
@@ -43,7 +45,8 @@ export function ChangesBlock({ changes, now }: { changes: LessonRow[]; now: Date
                 )}
               >
                 <c.icon aria-hidden className="size-4 shrink-0" />
-                {c.label},{" "}
+                {/* Отступ даёт gap-x: лишний пробел давал двойной (ux-reviewer, T13) */}
+                {c.label},
                 <span className={l.change === "CANCELLED" ? "line-through" : undefined}>
                   {when(l.startsAt, now)}
                 </span>
@@ -84,7 +87,8 @@ export function SoonBlock({
           {soon.map((s) => (
             <li key={s.id} className="flex gap-3 py-3">
               {/* Дата крупно столбцом — для глаза; полностью она прочитается строкой ниже */}
-              <p aria-hidden className="flex w-10 shrink-0 flex-col pt-0.5 text-brand">
+              {/* Б′: синий — только у ссылок, поэтому дата чернилами; акцент держит Unbounded */}
+              <p aria-hidden className="flex w-10 shrink-0 flex-col pt-0.5 text-ink">
                 <span className="font-heading text-xl leading-none font-semibold tabular">
                   {formatDayAndMonth(s.at).day}
                 </span>
@@ -127,12 +131,19 @@ export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now:
           {requests.map((r) => {
             const s = requestStatus(r.status);
             return (
-              <li key={r.number} className="flex flex-col gap-1 py-3">
+              // Строка — ссылка целиком (как в списке заявок T08): мятный «Готова — заберите» похож на кнопку,
+              // касание по нему должно вести к заявке и PDF (ux-reviewer, T13)
+              <li key={r.number} className="relative flex flex-col gap-1 py-3">
                 <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                   <StatusChip tone={s.tone}>{s.label}</StatusChip>
                   <span className="text-sm text-ink-muted tabular">{r.number}</span>
                 </div>
-                <p className="font-bold text-ink">{r.type.title}</p>
+                <Link
+                  href={requestHref(r.number) as Route}
+                  className="self-start font-bold break-words text-ink outline-none after:absolute after:inset-0 after:rounded-sm hover:underline focus-visible:after:outline-2 focus-visible:after:outline-solid focus-visible:after:-outline-offset-2 focus-visible:after:outline-ring"
+                >
+                  {r.type.title}
+                </Link>
                 <p className="text-sm text-ink-muted">
                   {r.status === "READY"
                     ? "Заберите в деканате своего факультета: пн–пт, с 10:00 до 17:00."
@@ -185,7 +196,7 @@ export function AnnouncementsBlock({
             <li key={a.id} className="flex flex-col gap-1 py-3">
               <p className="flex flex-wrap items-center gap-x-2 text-sm text-ink-muted">
                 {a.pinned ? (
-                  <span className="inline-flex items-center gap-1 font-bold text-brand">
+                  <span className="inline-flex items-center gap-1 font-bold text-ink">
                     <Pin aria-hidden className="size-4" />
                     Закреплено
                   </span>
@@ -232,10 +243,10 @@ export function StudyBlock({
             </span>
             <span className="text-base">из 100</span>
           </p>
-          <p className="mt-2 inline-flex max-w-full items-center gap-2 self-start rounded-full bg-on-mint/10 px-3.5 py-2 text-base font-semibold">
-            <ShieldCheck aria-hidden className="size-5 shrink-0" />
-            {/* min-w-0 + переносы: при тексте 200% на 360 «сохраняется» со значком шире блока */}
-            <span className="min-w-0 hyphens-auto">Стипендия сохраняется</span>
+          {/* Строка «значок + текст», без пилюли внутри мятного блока: при 200% пилюля рвала слова по слогам */}
+          <p className="mt-2 flex items-start gap-2 text-base font-semibold">
+            <ShieldCheck aria-hidden className="mt-0.5 size-5 shrink-0" />
+            <span className="min-w-0 break-words">Стипендия сохраняется</span>
           </p>
         </div>
       ) : study ? (
@@ -244,10 +255,13 @@ export function StudyBlock({
             {study.averageRating !== null ? (
               <>
                 Средний рейтинг за {study.semester}-й семестр:{" "}
-                <span className="font-heading text-2xl font-semibold tabular">
-                  {study.averageRating}
-                </span>{" "}
-                из 100
+                {/* «66 из 100» — одним куском: на 360 «100» уезжала на строку ниже */}
+                <span className="whitespace-nowrap">
+                  <span className="font-heading text-2xl font-semibold tabular">
+                    {study.averageRating}
+                  </span>
+                  &nbsp;из 100
+                </span>
               </>
             ) : (
               `${study.semester}-й семестр: баллов пока нет`

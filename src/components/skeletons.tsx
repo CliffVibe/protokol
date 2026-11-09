@@ -100,21 +100,21 @@ export function FeedSectionSkeleton({
   );
 }
 
-/** Ближайшая пара: карточка с крупным временем — по высоте как NowCard. */
+/** Ближайшая пара: плашка Б′ (T13) — те же радиус, отступы и строки, что у NowCard, чтобы не прыгало. */
 export function NowCardSkeleton({ className }: { className?: string }) {
+  const bar = "bg-on-plate/20";
   return (
-    <div
-      className={cn(
-        "flex flex-col gap-3 rounded-2xl border border-line bg-surface p-4 md:p-5",
-        className,
-      )}
-    >
-      <Skeleton className="h-4 w-28 max-w-full" />
-      <Skeleton className="h-10 w-48 max-w-full" />
-      <Skeleton className="h-6 w-2/3" />
-      <Skeleton className="h-4 w-24 max-w-full" />
-      <SkeletonText lines={2} />
-      <Skeleton className="h-4 w-28 max-w-full" />
+    <div className={cn("flex flex-col gap-3 rounded-[1.75rem] bg-plate p-5 md:p-6", className)}>
+      <div className="flex flex-wrap gap-2">
+        <Skeleton className={cn("h-7 w-28 max-w-full rounded-full", bar)} />
+        <Skeleton className={cn("h-7 w-24 max-w-full rounded-full", bar)} />
+      </div>
+      <Skeleton className={cn("mt-2 h-[3.25rem] w-48 max-w-full", bar)} />
+      <Skeleton className={cn("h-7 w-2/3", bar)} />
+      <Skeleton className={cn("h-4 w-24 max-w-full", bar)} />
+      <Skeleton className={cn("h-5 w-3/4", bar)} />
+      <Skeleton className={cn("h-5 w-1/2", bar)} />
+      <Skeleton className={cn("mt-1 h-11 w-36 max-w-full rounded-xl", bar)} />
     </div>
   );
 }

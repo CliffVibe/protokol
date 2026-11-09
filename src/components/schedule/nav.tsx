@@ -69,7 +69,7 @@ export function ScheduleToggle({
                 aria-current={active ? "page" : undefined}
                 className={cn(
                   // Активный — чернильная черта и полужирный, как в навигации (04-design), не плашка
-                  "-mb-px inline-flex min-h-11 items-center border-b-2 text-base",
+                  "-mb-px inline-flex min-h-11 min-w-11 items-center justify-center border-b-2 text-base",
                   active
                     ? "border-brand font-bold text-ink"
                     : "border-transparent text-ink-muted hover:text-ink",
@@ -126,15 +126,18 @@ function ArrowsNav({
   back: { href: Route; label: string } | null;
 }) {
   return (
-    <nav aria-label={label}>
-      <div className="flex items-start justify-between gap-2">
+    <nav aria-label={label} className="@container">
+      {/* Крупный текст (200%): заголовок — своей строкой над стрелками, иначе Unbounded рвал
+          «Вторник, 10 ноября» в узкой колонке между ними (ux-reviewer, T13). 18rem — порог в rem корня:
+          при 100% на 360 не срабатывает, при 130% и крупнее — да */}
+      <div className="flex flex-wrap items-start justify-between gap-2">
         {/* Размер цели — в px: при тексте 200% стрелки не растут и не наезжают на даты (урок T04) */}
         <Button asChild variant="outline" size="icon" className="size-[44px]">
           <Link href={prev.href} aria-label={prev.label}>
             <ChevronLeft aria-hidden className="size-5" />
           </Link>
         </Button>
-        <div className="flex min-w-0 flex-1 flex-col items-center text-center break-words">
+        <div className="flex min-w-0 flex-1 flex-col items-center text-center break-words @max-[18rem]:order-first @max-[18rem]:basis-full">
           <p className="font-heading text-lg font-semibold text-ink tabular">{title}</p>
           {/* Высота строки постоянная: ссылка «назад» появляется на месте, ничего ниже не сдвигается */}
           <p className="flex min-h-11 flex-wrap items-center justify-center gap-x-3 text-sm">
@@ -215,7 +218,9 @@ export function DayStrip({
           const selected = d.key === selectedKey;
           const changed = d.items.some((i) => i.lesson.change !== "NONE");
           return (
-            <li key={d.key} className="min-w-[44px] flex-1">
+            // min-w-fit, а не 44px: при тексте 200% числа Unbounded шире ячейки и наезжали друг на друга —
+            // теперь полоса переносится в две строки (ux-reviewer, T13). Меньше 44 не станет: число ≥ 40 + px-1
+            <li key={d.key} className="min-w-fit flex-1">
               <Link
                 href={dayHref(d.start, now)}
                 // «page» уже у «День» в переключателе; выбранный день — «date», сегодня — скрытым текстом
@@ -226,6 +231,8 @@ export function DayStrip({
                 )}
               >
                 <span className="text-sm">{weekday}</span>
+                {/* Скринридер читал «пн9» — разделитель только для него */}
+                <span className="sr-only">, </span>
                 {/* Выбранный день — ультрамариновый квадрат (Б′): минимум 40px, при тексте 200% растёт вместе с числом */}
                 <span
                   className={cn(

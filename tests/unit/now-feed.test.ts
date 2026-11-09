@@ -203,9 +203,10 @@ describe("человеческие даты", () => {
   it("обратный отсчёт", () => {
     const s = msk("2026-11-06T10:00");
     const e = msk("2026-11-06T11:20");
-    expect(formatCountdown(s, e, msk("2026-11-06T09:35"))).toBe("через 25 мин");
-    expect(formatCountdown(s, e, msk("2026-11-06T07:50"))).toBe("через 2 ч 10 мин");
-    expect(formatCountdown(s, e, msk("2026-11-06T08:00"))).toBe("через 2 ч");
-    expect(formatCountdown(s, e, msk("2026-11-06T10:40"))).toBe("идёт, до конца 40 мин");
+    // Неразрывные пробелы между числом и единицей (T13)
+    expect(formatCountdown(s, e, msk("2026-11-06T09:35"))).toBe("через 25 мин");
+    expect(formatCountdown(s, e, msk("2026-11-06T07:50"))).toBe("через 2 ч 10 мин");
+    expect(formatCountdown(s, e, msk("2026-11-06T08:00"))).toBe("через 2 ч");
+    expect(formatCountdown(s, e, msk("2026-11-06T10:40"))).toBe("идёт, до конца 40 мин");
   });
 });

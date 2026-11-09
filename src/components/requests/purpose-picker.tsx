@@ -34,14 +34,11 @@ export function PurposePicker() {
           <li key={p.code} className="relative">
             <Link
               href={wizardHref({ purpose: p.code })}
-              className="flex h-full min-h-[44px] flex-col gap-3 rounded-2xl border border-line bg-surface p-4 outline-none hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="flex h-full min-h-[44px] flex-col gap-3 rounded-2xl border border-line bg-bg p-4 outline-none hover:border-brand focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring focus-visible:outline-solid"
             >
-              <span
-                aria-hidden
-                className="flex size-[40px] items-center justify-center rounded-full bg-brand-soft text-brand"
-              >
-                <Icon className="size-[20px]" />
-              </span>
+              {/* Б′: значок без пастельного круга, плитка на фоне страницы — серые карточки со значками в
+                  кругах были тем самым «нейрослопом» (ux-reviewer, T13). Сетка и цель касания — прежние */}
+              <Icon aria-hidden className="size-6 text-brand" />
               <span className="flex flex-col gap-1">
                 <span className="text-lg font-bold break-words text-ink">{p.label}</span>
                 <span className="text-sm text-ink-muted">{p.hint}</span>

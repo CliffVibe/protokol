@@ -25,7 +25,7 @@ const MAX_HISTORY = 6;
 
 /** Чип-вопрос: «С чего начать» и «Ещё по теме». py-2 — при тексте 200% строки не упираются в рамку */
 const CHIP =
-  "inline-flex min-h-[44px] max-w-full items-center rounded-full border border-border bg-surface px-4 py-2 text-left text-base break-words text-ink transition-colors duration-150 ease-out hover:border-brand hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50";
+  "inline-flex min-h-[44px] max-w-full items-center rounded-full border border-border bg-bg px-4 py-2 text-left text-base break-words text-ink transition-colors duration-150 ease-out hover:border-brand hover:bg-brand-soft focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:opacity-50";
 const MAX_MESSAGE = 1000;
 
 type Action = { id: string; label: string; href: string };
@@ -189,7 +189,7 @@ export function AssistantChat() {
     <div className="flex flex-col gap-6">
       {messages.length === 0 ? (
         <section aria-labelledby={`${inputId}-tips`} className="flex flex-col gap-3">
-          <h2 id={`${inputId}-tips`} className="text-lg font-bold text-ink">
+          <h2 id={`${inputId}-tips`} className="text-lg text-ink">
             С чего начать
           </h2>
           <ul className="flex flex-wrap gap-2">

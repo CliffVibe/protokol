@@ -135,7 +135,7 @@ describe("toLessonView", () => {
     expect(v).toMatchObject({
       start: "10:40",
       end: "12:00",
-      day: "Четверг, 12 ноября",
+      day: "Четверг, 12 ноября", // неразрывный пробел (T13)
       kind: "Семинар",
       language: null,
       change: null,

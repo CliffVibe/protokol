@@ -37,7 +37,8 @@ export function DaySection({
           {title}
         </Heading>
         {isToday && showTitle ? (
-          <span className="border-b-2 border-brand text-sm font-bold text-brand">Сегодня</span>
+          // Б′: синий текст — только ссылки; «Сегодня» — чернилами с ультрамариновой чертой
+          <span className="border-b-2 border-brand text-sm font-bold text-ink">Сегодня</span>
         ) : null}
       </div>
       {day.items.length ? (
@@ -108,7 +109,7 @@ export function LessonRow({ lesson }: { lesson: LessonView }) {
           </span>
         </LessonOpenButton>
         <p className="text-sm text-ink-muted">
-          {lesson.kind}, ауд. {lesson.room}, {lesson.building}
+          {lesson.kind}, ауд.&nbsp;{lesson.room}, {lesson.building}
         </p>
         <p className="text-sm text-ink-muted">{lesson.teacher}</p>
 
@@ -178,9 +179,10 @@ function TransitionRow({ transition }: { transition: Transition }) {
       </p>
       <div aria-hidden className="flex min-w-[min(12rem,100%)] flex-1 flex-col">
         {/* «Перерыв N мин», а не «переход N мин»: это время между парами, не дорога (ux-reviewer) */}
-        <span className="flex items-start gap-1.5 font-bold text-brand">
-          <Footprints className="mt-0.5 size-4 shrink-0" />
-          Перерыв {transition.breakMinutes} мин — переход в другой корпус
+        {/* Б′: текст чернилами (синий — только ссылки), ультрамарин — у значка (ux-reviewer, T13) */}
+        <span className="flex items-start gap-1.5 font-bold text-ink">
+          <Footprints className="mt-0.5 size-4 shrink-0 text-brand" />
+          Перерыв {transition.breakMinutes}&nbsp;мин — переход в другой корпус
         </span>
         <span className="text-ink">
           {transition.from} → {transition.to}

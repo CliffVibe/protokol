@@ -10,7 +10,8 @@ export default function VerifyLayout({ children }: { children: React.ReactNode }
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <header className="border-b border-line bg-bg px-4 md:px-6">
-        <div className="mx-auto flex min-h-14 w-full max-w-[1120px] items-center gap-2.5">
+        {/* Шапка — по ширине колонки документа: на 1280 знак не «висит» слева от справки (ux-reviewer, T13) */}
+        <div className="mx-auto flex min-h-14 w-full max-w-2xl items-center gap-2.5">
           <LogoMark className="size-9" />
           <span className="flex flex-col leading-tight">
             <span className="font-heading text-base font-semibold text-ink">Протокол</span>

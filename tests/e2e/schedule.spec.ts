@@ -79,11 +79,11 @@ test.describe("неделя Алисы", () => {
     page,
   }) => {
     const { row, next } = await transitionToOdintsovo(page);
-    await expect(row).toContainText(/Перерыв \d+ мин — переход в другой корпус/);
+    await expect(row).toContainText(/Перерыв \d+\sмин — переход в другой корпус/);
     await expect(row).toContainText(/с \d{2}:\d{2} до \d{2}:\d{2}/);
     await expect(row).toContainText(/Главный корпус .*→ Одинцово/);
     // Сразу за строкой перехода — пара, на которую идём
-    expect(next).toMatch(/ауд\. \S+, Одинцово/);
+    expect(next).toMatch(/ауд\.\s\S+, Одинцово/);
     // У строки перехода нет листа: это не пара
     await expect(row.getByRole("button")).toHaveCount(0);
   });
@@ -114,7 +114,7 @@ test.describe("неделя Алисы", () => {
     await expect(sheet).toBeVisible();
     await expect(sheet.getByText("Где")).toBeVisible();
     await expect(sheet.getByText("Кто ведёт")).toBeVisible();
-    await expect(sheet).toContainText(/ауд\. \S+, /);
+    await expect(sheet).toContainText(/ауд\.\s\S+, /);
     await expect(sheet).toContainText(/Стало \d{2}:\d{2}, было/);
     await page.keyboard.press("Escape");
     await expect(sheet).toBeHidden();

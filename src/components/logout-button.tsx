@@ -24,7 +24,7 @@ export function SessionActions({ className }: { className?: string }) {
       aria-labelledby="session-actions-title"
       className={cn("flex flex-col gap-3 border-t border-line pt-6", className)}
     >
-      <h2 id="session-actions-title" className="text-lg font-bold text-ink">
+      <h2 id="session-actions-title" className="text-lg text-ink">
         Выход
       </h2>
       <div className="flex flex-wrap gap-3">

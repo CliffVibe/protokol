@@ -377,25 +377,80 @@ test.describe("шкала типографики в браузере", () => {
   });
 });
 
+// T13: все маршруты в обеих темах (было 9 маршрутов в одной): после Б′ шрифты шире, а тёмная тема
+// меняет только цвета — но проверяем честно, раз так требует задача
 test.describe("текст 200% без горизонтального скролла", () => {
-  for (const route of [
-    "/",
-    "/requests",
-    "/notifications",
-    "/notifications?tab=announcements",
-    "/staff",
-    "/staff/announcements",
-    "/staff/schedule",
-    "/more",
-    "/no-such-page",
-  ]) {
+  for (const route of [...ALL_ROUTES, "/no-such-page"]) {
     test.describe(route, () => {
       useSessionFor(route);
-      test(`${route}`, async ({ page }) => {
+      for (const scheme of ["light", "dark"] as const) {
+        test(`${route}, тема ${scheme}`, async ({ page }) => {
+          await page.emulateMedia({ colorScheme: scheme });
+          await page.goto(route);
+          await setTextScale(page, "200%");
+          expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+        });
+      }
+    });
+  }
+});
+
+// T13: обход Tab — у каждого элемента, получившего фокус, есть видимый индикатор
+// (outline или кольцо box-shadow), а сам элемент — не за краем экрана
+test.describe("клавиатура: фокус виден на каждом шаге", () => {
+  for (const route of ["/", "/schedule", "/grades", "/requests", "/requests/new", "/staff"]) {
+    test.describe(route, () => {
+      useSessionFor(route);
+      test(`${route}: первые 25 шагов Tab`, async ({ page }) => {
         await page.goto(route);
-        await setTextScale(page, "200%");
-        expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
+        const problems: string[] = [];
+        for (let i = 0; i < 25; i++) {
+          await page.keyboard.press("Tab");
+          const info = await page.evaluate(() => {
+            const el = document.activeElement as HTMLElement | null;
+            if (!el || el === document.body) return null;
+            // Строки-ссылки (T06–T08) рисуют кольцо на растянутом ::after — смотрим и его
+            const shown = (s: CSSStyleDeclaration) =>
+              (s.outlineStyle !== "none" && parseFloat(s.outlineWidth) > 0) ||
+              s.boxShadow !== "none";
+            const visible = shown(getComputedStyle(el)) || shown(getComputedStyle(el, "::after"));
+            const r = el.getBoundingClientRect();
+            return {
+              name: (el.getAttribute("aria-label") ?? el.textContent ?? el.tagName)
+                .trim()
+                .slice(0, 40),
+              visible,
+              // clientWidth, а не innerWidth: при isMobile Chromium растягивает innerWidth под широкий
+              // контент, и проверка не сработала бы никогда (mobile-qa, T13)
+              offscreen: r.right < 0 || r.left > document.documentElement.clientWidth,
+            };
+          });
+          if (!info) continue;
+          if (!info.visible) problems.push(`шаг ${i + 1}: «${info.name}» — нет индикатора фокуса`);
+          if (info.offscreen) problems.push(`шаг ${i + 1}: «${info.name}» — за краем экрана`);
+        }
+        expect(problems).toEqual([]);
       });
     });
   }
+
+  test.describe("диалог", () => {
+    useSessionFor("/staff");
+    test("DialogForm: открывается с клавиатуры, Esc закрывает, фокус — на кнопке", async ({
+      page,
+    }) => {
+      await page.goto("/staff");
+      // «Сбросить демо» — в шапке на десктопе и в «Настройках» на телефоне; видима одна
+      const trigger = page.getByRole("button", { name: "Сбросить демо" });
+      await trigger.focus();
+      await page.keyboard.press("Enter");
+      const dialog = page.getByRole("dialog");
+      await expect(dialog).toBeVisible();
+      // Фокус внутри диалога, а не на странице под ним
+      expect(await dialog.evaluate((d) => d.contains(document.activeElement))).toBe(true);
+      await page.keyboard.press("Escape");
+      await expect(dialog).toBeHidden();
+      await expect(trigger).toBeFocused();
+    });
+  });
 });

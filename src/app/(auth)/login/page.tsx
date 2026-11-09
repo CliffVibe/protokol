@@ -31,7 +31,7 @@ export default async function LoginPage() {
           <div className="flex min-w-0 flex-1 basis-48 flex-col gap-1">
             <h1
               id="login-title"
-              className="font-heading text-2xl font-semibold text-ink lg:text-3xl"
+              className="font-heading text-2xl font-semibold break-words hyphens-auto text-ink lg:text-3xl"
             >
               Вход в&nbsp;Протокол
             </h1>
@@ -102,7 +102,7 @@ function DemoPanel() {
         <ol className="flex flex-col divide-y divide-line border-y border-line">
           {DEMO_SCENARIOS.map((s, i) => (
             <li key={s.title} className="flex gap-3 py-3">
-              <span aria-hidden className="w-5 shrink-0 text-base font-bold text-brand">
+              <span aria-hidden className="w-5 shrink-0 text-base font-bold text-ink-muted">
                 {i + 1}
               </span>
               <p className="text-base text-ink">

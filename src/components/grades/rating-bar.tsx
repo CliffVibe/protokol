@@ -5,8 +5,9 @@ import { SCHOLARSHIP_MIN_RATING } from "@/server/services/academics";
 const FILL: Record<StatusTone, string> = {
   neutral: "fill-ink-muted",
   brand: "fill-brand",
-  // «В норме» — ультрамарин, не зелёный: вывод несёт мятный чип рядом, а два разных зелёных спорили (Б′, 10.11)
-  ok: "fill-plate",
+  // «В норме» — ультрамарин, не зелёный: два разных зелёных рядом спорили (Б′, 10.11). --brand, а не --plate:
+  // в тёмной теме заливка --plate на фоне — 2.68:1, для графики нужно ≥ 3:1 (ux-reviewer, T13)
+  ok: "fill-brand",
   warn: "fill-warn",
   danger: "fill-danger",
   seal: "fill-seal",
@@ -39,8 +40,17 @@ export function RatingBar({
       {width > 0 ? (
         <rect x="0" y="2" width={width} height="6" rx="3" className={FILL[tone]} />
       ) : null}
-      {/* Засечка порога — чернилами поверх, видна и на заполненной части */}
-      <rect x={SCHOLARSHIP_MIN_RATING - 0.4} y="0" width="0.8" height="10" className="fill-ink" />
+      {/* Засечка порога — чернилами поверх, с обводкой цветом фона: на ультрамариновой заливке чернила
+          давали 1.98:1 (ux-reviewer, T13). non-scaling-stroke — 2px на экране при любой ширине бара */}
+      <rect
+        x={SCHOLARSHIP_MIN_RATING - 0.4}
+        y="0"
+        width="0.8"
+        height="10"
+        strokeWidth={2}
+        vectorEffect="non-scaling-stroke"
+        className="fill-ink stroke-bg"
+      />
     </svg>
   );
 }
