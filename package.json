@@ -57,7 +57,7 @@
     "eslint": "9.39.5",
     "eslint-config-next": "16.4.5",
     "prettier": "3.9.10",
-    "prisma": "7.9.0",
+    "prisma": "7.9.1",
     "shadcn": "4.23.0",
     "tailwindcss": "4.3.3",
     "tsx": "4.23.15",
