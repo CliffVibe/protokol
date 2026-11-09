@@ -20,6 +20,7 @@ export function RequestForm({
   fields,
   language,
   changeLanguageHref,
+  defaults,
   clientKey,
 }: {
   code: string;
@@ -27,6 +28,8 @@ export function RequestForm({
   language: string;
   /** Ссылка на шаг «Язык» — только у справок с выбором языка. */
   changeLanguageHref?: Route;
+  /** Начальные значения полей (дисциплина пересдачи из «Учёбы», T13); после ошибки — введённое. */
+  defaults?: Record<string, string>;
   clientKey: string;
 }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitRequestAction, {});
@@ -48,26 +51,33 @@ export function RequestForm({
       {/* Язык выбран шагом мастера (T10); сервер всё равно проверяет его по типу справки */}
       <input type="hidden" name="language" value={language} />
       {errors.language ? <FormAlert title={errors.language} /> : null}
-      <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-ink">
-        <span>
-          Язык справки:{" "}
-          <span className="font-bold">{(LANGUAGE_LABEL[language] ?? language).toLowerCase()}</span>
-        </span>
-        {changeLanguageHref ? (
-          <Link
-            href={changeLanguageHref}
-            className="-mx-2 inline-flex min-h-[44px] items-center rounded-lg px-2 text-brand hover:underline"
-          >
-            Изменить<span className="sr-only"> язык справки</span>
-          </Link>
-        ) : null}
-      </p>
+      {/* Строка языка — когда он не очевиден: выбирали (можно изменить) или справка не на русском.
+          У заявлений и справок только на русском («Заявление на пересдачу», T13) — лишний шум */}
+      {changeLanguageHref || language !== "ru" ? (
+        <p className="flex flex-wrap items-center gap-x-3 gap-y-1 text-base text-ink">
+          <span>
+            Язык справки:{" "}
+            <span className="font-bold">
+              {(LANGUAGE_LABEL[language] ?? language).toLowerCase()}
+            </span>
+          </span>
+          {changeLanguageHref ? (
+            <Link
+              href={changeLanguageHref}
+              className="-mx-2 inline-flex min-h-[44px] items-center rounded-lg px-2 text-brand hover:underline"
+            >
+              Изменить<span className="sr-only"> язык справки</span>
+            </Link>
+          ) : null}
+        </p>
+      ) : null}
 
       {fields.map((f) => (
         <FormField
           key={f.name}
           id={`f-${f.name}`}
           label={f.required ? f.label : `${f.label} (необязательно)`}
+          hint={f.hint}
           error={errors[f.name]}
         >
           {(control) =>
@@ -75,7 +85,7 @@ export function RequestForm({
               <Input
                 {...control}
                 name={`f.${f.name}`}
-                defaultValue={state.values?.[f.name]}
+                defaultValue={state.values?.[f.name] ?? defaults?.[f.name]}
                 maxLength={f.maxLength}
                 required={f.required}
                 autoComplete="off"
@@ -84,7 +94,7 @@ export function RequestForm({
               <select
                 {...control}
                 name={`f.${f.name}`}
-                defaultValue={state.values?.[f.name] ?? ""}
+                defaultValue={state.values?.[f.name] ?? defaults?.[f.name] ?? ""}
                 required={f.required}
                 className="h-12 w-full rounded-lg border border-input bg-surface px-3 text-base text-ink outline-none focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-solid focus-visible:outline-ring aria-invalid:border-danger"
               >

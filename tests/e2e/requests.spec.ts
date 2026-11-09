@@ -8,6 +8,7 @@ import { expect, test, type Browser, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
 import { ANON } from "./helpers/auth";
 import { deleteTestRequests, withDb } from "./helpers/db";
+import { setTextScale } from "./helpers/text-scale";
 
 async function asTimur(browser: Browser): Promise<Page> {
   const page = await (await browser.newContext({ storageState: ANON })).newPage();
@@ -327,9 +328,7 @@ test.describe("360px и текст 200%", () => {
     ]) {
       await page.goto(route);
       await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-      await page.evaluate(() => {
-        document.documentElement.style.fontSize = "200%";
-      });
+      await setTextScale(page, "200%");
       expect(await horizontalOverflow(page), route).toBeLessThanOrEqual(0);
     }
   });
@@ -341,10 +340,73 @@ test.describe("360px и текст 200%", () => {
     for (const route of ["/staff", staffUrl(number)]) {
       await irina.goto(route);
       await expect(irina.getByRole("heading", { level: 1 })).toBeVisible();
-      await irina.evaluate(() => {
-        document.documentElement.style.fontSize = "200%";
-      });
+      await setTextScale(irina, "200%");
       expect(await horizontalOverflow(irina), route).toBeLessThanOrEqual(0);
     }
+  });
+});
+
+test.describe("T13: пересдача из долга и подсказки полей", () => {
+  test("Тимур: долг → «Подать заявление на пересдачу» → дисциплина уже в форме → заявка", async ({
+    browser,
+  }) => {
+    const timur = await asTimur(browser);
+    await timur.goto("/grades");
+    await timur.getByRole("link", { name: "Долг: Эконометрика" }).first().click();
+    await expect(timur.getByRole("heading", { level: 1, name: "Эконометрика" })).toBeVisible();
+    await timur.getByRole("link", { name: "Подать заявление на пересдачу" }).click();
+
+    await expect(
+      timur.getByRole("heading", { level: 1, name: "Заявление на пересдачу" }),
+    ).toBeVisible();
+    // «Назад» — к той же дисциплине; строки «Язык справки: русский» у заявления нет
+    await expect(
+      timur.getByRole("main").getByRole("link", { name: "Эконометрика" }),
+    ).toHaveAttribute("href", "/grades/dsc-ecmetr");
+    await expect(timur.getByText(/^Язык справки:/)).toHaveCount(0);
+    const discipline = timur.getByLabel("Дисциплина");
+    await expect(discipline).toHaveValue("Эконометрика");
+    await expect(discipline).toHaveAccessibleDescription(/как в разделе «Учёба»/);
+    const marker = `e2e-${randomUUID().slice(0, 8)}`;
+    await timur.getByLabel("Комментарий для деканата (необязательно)").fill(marker);
+    await timur.getByRole("button", { name: "Отправить заявку" }).click();
+    await expect(timur).toHaveURL(/\/requests\/(?!new)[^/?]+$/);
+    created.push(numberFromUrl(timur));
+    await expect(timur.getByRole("main")).toContainText("Эконометрика");
+    await expect(timur.getByRole("main")).toContainText(marker);
+  });
+
+  test("чужая или выдуманная дисциплина в адресе не подставляется (S1)", async ({ browser }) => {
+    // Дисциплина Алисы, которой у Тимура нет: название не должно появиться у него в форме
+    const alien = await withDb(async (c) => {
+      const { rows } = await c.query<{ id: string; name: string }>(
+        `SELECT DISTINCT d.id, d.name FROM "Grade" g JOIN "Discipline" d ON d.id = g."disciplineId"
+          WHERE g."studentId" = 'stu-alisa'
+            AND d.id NOT IN (SELECT "disciplineId" FROM "Grade" WHERE "studentId" = 'stu-timur')
+          LIMIT 1`,
+      );
+      return rows[0];
+    });
+    expect(alien, "у Алисы есть дисциплина, которой нет у Тимура").toBeTruthy();
+    const timur = await asTimur(browser);
+    for (const id of [alien!.id, "dsc-no-such-discipline"]) {
+      const res = await timur.goto(`/requests/new?type=retake&discipline=${id}`);
+      expect(res?.status()).toBe(200);
+      await expect(timur.getByLabel("Дисциплина")).toHaveValue("");
+      expect(await timur.content()).not.toContain(alien!.name);
+    }
+  });
+
+  test("визовая справка: английский рекомендован и без цели, у полей — подсказки", async ({
+    page,
+  }) => {
+    await page.goto("/requests/new?type=embassy");
+    const first = page.getByRole("list", { name: "Язык справки" }).getByRole("listitem").first();
+    await expect(first).toContainText("Английский");
+    await expect(first).toContainText("Рекомендуем");
+    await first.getByRole("link").click();
+    await expect(page.getByText("Язык справки: английский")).toBeVisible();
+    await expect(page.getByLabel("Страна")).toHaveAccessibleDescription(/например: Франция/);
+    await expect(page.getByLabel("Даты поездки")).toHaveAccessibleDescription(/12\.01\.2027/);
   });
 });

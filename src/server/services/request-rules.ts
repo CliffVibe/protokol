@@ -9,11 +9,14 @@ import { addBusinessDays, mskStartOfDay } from "@/lib/msk";
 
 const fieldName = z.string().regex(/^[a-zA-Z][a-zA-Z0-9]{0,39}$/);
 const fieldLabel = z.string().min(1).max(120);
+/** Подсказка под полем («Например: Франция», T13) — через aria-describedby, необязательна. */
+const fieldHint = z.string().min(1).max(120).optional();
 
 export const fieldSpecSchema = z.discriminatedUnion("type", [
   z.object({
     name: fieldName,
     label: fieldLabel,
+    hint: fieldHint,
     type: z.literal("text"),
     required: z.boolean(),
     maxLength: z.number().int().min(1).max(1000),
@@ -21,6 +24,7 @@ export const fieldSpecSchema = z.discriminatedUnion("type", [
   z.object({
     name: fieldName,
     label: fieldLabel,
+    hint: fieldHint,
     type: z.literal("select"),
     required: z.boolean(),
     options: z.array(z.string().min(1).max(80)).min(1).max(20),

@@ -5,6 +5,7 @@ import { expect, test, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
 import { addDays, formatIsoWeek, mskDateKey, mskStartOfWeek, mskYear } from "../../src/lib/msk";
 import { formatRequestNumber } from "../../src/server/services/request-rules";
+import { setTextScale } from "./helpers/text-scale";
 
 // T03: разделы студента открываются под сессией Алисы (по умолчанию в playwright.config.ts),
 // кабинет сотрудника — под Ириной.
@@ -279,7 +280,14 @@ test.describe("служебные страницы", () => {
   test("несуществующий адрес — человеческая 404 с плашкой", async ({ page }) => {
     const res = await page.goto("/no-such-page");
     expect(res?.status()).toBe(404);
-    await expect(page.getByRole("heading", { name: "Такой страницы нет" })).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Такой страницы нет" })).toBeVisible();
+    // T13: в стиле приложения — знак, код ошибки тихой строкой, путь обратно, плашка концепта
+    await expect(page.getByRole("banner").getByRole("link", { name: "Протокол" })).toBeVisible();
+    await expect(page.getByText("Ошибка 404")).toBeVisible();
+    await expect(page.getByRole("main").getByRole("link", { name: "На главную" })).toHaveAttribute(
+      "href",
+      "/",
+    );
     await expect(page.getByRole("note")).toHaveText(NOTICE);
     expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
   });
@@ -306,6 +314,21 @@ test.describe("служебные страницы", () => {
         Math.min(nav!.y + nav!.height, theme!.y + theme!.height) - Math.max(nav!.y, theme!.y);
       expect(overlapX <= 0 || overlapY <= 0, "блоки шапки пересекаются").toBe(true);
     });
+
+    test("на телефоне шапка в две строки, тема — внизу страницы (ревью T07–T08)", async ({
+      page,
+      isMobile,
+    }) => {
+      test.skip(!isMobile, "раскладка телефона");
+      await page.goto("/staff");
+      const header = (await page.getByRole("banner").boundingBox())!;
+      // Две строки по 44px + отступы; было три строки, ~165px
+      expect(header.height).toBeLessThanOrEqual(120);
+      await expect(page.getByRole("banner").getByRole("button", { name: "Выйти" })).toBeVisible();
+      const theme = page.getByRole("group", { name: "Тема" });
+      await expect(theme).toHaveCount(1);
+      expect((await theme.boundingBox())!.y).toBeGreaterThan(header.y + header.height);
+    });
   });
 });
 
@@ -313,9 +336,7 @@ test.describe("крупный текст (200%)", () => {
   test("все пункты нижней панели и «Ещё» остаются на экране", async ({ page, isMobile }) => {
     test.skip(!isMobile, "нижняя панель — только на мобильном");
     await page.goto("/more");
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "200%";
-    });
+    await setTextScale(page, "200%");
     const width = page.viewportSize()!.width;
     const navLinks = mainNav(page).getByRole("link");
     await expect(navLinks).toHaveCount(5);
@@ -372,9 +393,7 @@ test.describe("текст 200% без горизонтального скрол�
       useSessionFor(route);
       test(`${route}`, async ({ page }) => {
         await page.goto(route);
-        await page.evaluate(() => {
-          document.documentElement.style.fontSize = "200%";
-        });
+        await setTextScale(page, "200%");
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       });
     });

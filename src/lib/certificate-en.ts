@@ -22,6 +22,7 @@ const TITLE_EN: Record<string, string> = {
   study_ru: "Certificate of Enrolment",
   embassy: "Certificate of Enrolment for a Visa Application",
   academic: "Academic Certificate",
+  retake: "Re-examination Permit",
 };
 
 export const certificateTitleEn = (typeCode: string) => TITLE_EN[typeCode] ?? "Certificate";
@@ -36,4 +37,6 @@ export const FIELD_LABEL_EN: Record<string, string> = {
   host: "Host organisation",
   commissariat: "Military commissariat",
   office: "Social security office",
+  discipline: "Course",
+  comment: "Comment",
 };

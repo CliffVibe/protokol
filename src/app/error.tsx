@@ -1,28 +1,49 @@
 "use client";
 
-import { RotateCw } from "lucide-react";
-import { ErrorState } from "@/components/error-state";
-import { SiteFooter } from "@/components/site-footer";
+import Link from "next/link";
+import { CloudOff, RotateCw } from "lucide-react";
+import { SystemPage } from "@/components/system-page";
 import { Button } from "@/components/ui/button";
 
 // Ловит ошибки в самих оболочках (layout студента и сотрудника), которые не видят их error.tsx.
-// Оболочки здесь нет — она и упала, — поэтому своя минимальная страница с плашкой концепта.
-export default function RootError({ retry }: { retry: () => void }) {
+// Оболочки здесь нет — она и упала, — поэтому своя страница со знаком и плашкой концепта.
+// Без стектрейса и текста ошибки: в проде Next отдаёт клиенту только digest — короткий хеш,
+// по которому ошибку находят в логах сервера. Его и показываем: пригодится, если писать в деканат.
+export default function RootError({
+  error,
+  retry,
+}: {
+  error: Error & { digest?: string };
+  retry: () => void;
+}) {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <main className="mx-auto flex w-full max-w-[1120px] flex-1 flex-col px-4 pt-10 md:px-6">
-        <ErrorState
-          title="Что-то пошло не так"
-          headingLevel={1}
-          action={
-            <Button onClick={() => retry()}>
-              <RotateCw aria-hidden data-icon="inline-start" />
-              Повторить
-            </Button>
-          }
-        />
-      </main>
-      <SiteFooter />
-    </div>
+    <SystemPage
+      code="Ошибка 500"
+      icon={CloudOff}
+      tone="danger"
+      title="Что-то пошло не так"
+      actions={
+        <>
+          <Button onClick={() => retry()}>
+            <RotateCw aria-hidden data-icon="inline-start" />
+            Повторить
+          </Button>
+          <Button asChild variant="outline">
+            <Link href="/">На главную</Link>
+          </Button>
+        </>
+      }
+    >
+      <p>
+        Сбой на нашей стороне. Нажмите «Повторить»; если не помогает — зайдите через несколько
+        минут.
+      </p>
+      {error.digest ? (
+        <p className="text-sm">
+          Код ошибки: <span className="font-mono break-all text-ink">{error.digest}</span>. Если
+          пишете в деканат — назовите его.
+        </p>
+      ) : null}
+    </SystemPage>
   );
 }

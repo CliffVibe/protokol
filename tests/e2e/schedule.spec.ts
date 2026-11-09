@@ -4,6 +4,7 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { addDays, formatIsoWeek, mskDateKey, mskStartOfWeek } from "../../src/lib/msk";
 import { ANON } from "./helpers/auth";
+import { setTextScale } from "./helpers/text-scale";
 
 const THIS_WEEK = formatIsoWeek(new Date());
 const WEEK_URL = `/schedule?week=${THIS_WEEK}`;
@@ -244,9 +245,7 @@ test.describe("360px и крупный текст", () => {
       test(`${route} при тексте ${scale} — без скролла вбок`, async ({ page }) => {
         await page.goto(route);
         await expect(lessonItems(page).first()).toBeVisible();
-        await page.evaluate((s) => {
-          document.documentElement.style.fontSize = s;
-        }, scale);
+        await setTextScale(page, scale);
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       });
     }
@@ -255,9 +254,7 @@ test.describe("360px и крупный текст", () => {
   test("открытый лист при тексте 200% — без скролла вбок", async ({ page }) => {
     await page.goto(WEEK_URL);
     await weekLoaded(page);
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "200%";
-    });
+    await setTextScale(page, "200%");
     await lessonItems(page).filter({ hasText: "Перенос" }).first().getByRole("button").click();
     const sheet = page.getByRole("dialog");
     await expect(sheet).toBeVisible();
@@ -268,9 +265,7 @@ test.describe("360px и крупный текст", () => {
 
   test("стрелки недель — цели ≥ 44×44 и при тексте 200% не растут", async ({ page }) => {
     await page.goto(WEEK_URL);
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "200%";
-    });
+    await setTextScale(page, "200%");
     for (const name of [/^Предыдущая неделя/, /^Следующая неделя/]) {
       const box = await page.getByRole("link", { name }).boundingBox();
       expect(box!.width).toBeGreaterThanOrEqual(44);

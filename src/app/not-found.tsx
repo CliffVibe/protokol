@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BrandMark } from "@/components/brand-mark";
-import { EmptyState } from "@/components/empty-state";
-import { SiteFooter } from "@/components/site-footer";
+import { SearchX } from "lucide-react";
+import { SystemPage } from "@/components/system-page";
 import { Button } from "@/components/ui/button";
 
 // Общая 404. Чужой ресурс тоже приходит сюда (notFound(), docs/05-security.md → S1),
@@ -11,23 +10,19 @@ export const metadata: Metadata = { title: "Страница не найдена
 
 export default function NotFound() {
   return (
-    <div className="flex min-h-dvh flex-col">
-      <header className="border-b border-line bg-bg px-4 md:px-6">
-        <BrandMark href="/" className="h-14" />
-      </header>
-      <main className="mx-auto flex w-full max-w-[1120px] flex-1 flex-col gap-6 px-4 pt-10 md:px-6">
-        <EmptyState
-          headingLevel={1}
-          title="Такой страницы нет"
-          description="Возможно, ссылка устарела или в адресе опечатка."
-          action={
-            <Button asChild>
-              <Link href="/">На главную</Link>
-            </Button>
-          }
-        />
-      </main>
-      <SiteFooter />
-    </div>
+    <SystemPage
+      code="Ошибка 404"
+      icon={SearchX}
+      tone="muted"
+      title="Такой страницы нет"
+      actions={
+        <Button asChild>
+          <Link href="/">На главную</Link>
+        </Button>
+      }
+    >
+      <p>Возможно, ссылка устарела или в адресе опечатка.</p>
+      <p>Расписание, учёба и заявки — на главной.</p>
+    </SystemPage>
   );
 }

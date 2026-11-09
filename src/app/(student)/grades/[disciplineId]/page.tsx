@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { cache, type ReactNode } from "react";
+import { FilePen } from "lucide-react";
 import { StatusChip } from "@/components/status-chip";
 import { PageHeader } from "@/components/page-header";
 import { missingText } from "@/components/grades/discipline-row";
@@ -10,6 +11,8 @@ import { RatingBar } from "@/components/grades/rating-bar";
 import { formatDayMonth, formatInDays, formatTime, plural } from "@/lib/dates";
 import { mskStartOfDay } from "@/lib/msk";
 import { disciplineIdSchema } from "@/lib/grades-params";
+import { RETAKE_TYPE, wizardHref } from "@/lib/request-wizard";
+import { Button } from "@/components/ui/button";
 import { requireStudent } from "@/server/auth/guards";
 import type { DisciplineGrade } from "@/server/repos/grades";
 import { isDebt, pointsToThreshold } from "@/server/services/academics";
@@ -111,17 +114,22 @@ function SemesterBlock({
           </p>
         ) : null}
         {isDebt(grade) ? (
-          <p className="text-base text-ink">
-            <span className="font-bold">Из-за долга стипендия под угрозой, пока он не закрыт.</span>{" "}
-            Пересдачу назначает деканат — подайте заявление в разделе{" "}
-            <Link
-              href="/requests"
-              className="font-bold text-brand underline-offset-4 hover:underline"
-            >
-              «Заявки»
-            </Link>
-            .
-          </p>
+          <div className="flex flex-col items-start gap-3">
+            <p className="text-base text-ink">
+              <span className="font-bold">
+                Из-за долга стипендия под угрозой, пока он не закрыт.
+              </span>{" "}
+              Пересдачу назначает деканат по заявлению — дисциплина в нём уже будет указана.
+            </p>
+            {/* T13: из долга — сразу к заявлению. В адресе только id; название подставит сервер,
+                найдя дисциплину у этого студента. Outline: заливной кнопки на экране нет */}
+            <Button asChild variant="outline" className="h-auto min-h-11 py-2 whitespace-normal">
+              <Link href={wizardHref({ type: RETAKE_TYPE, discipline: grade.discipline.id })}>
+                <FilePen aria-hidden data-icon="inline-start" />
+                Подать заявление на пересдачу
+              </Link>
+            </Button>
+          </div>
         ) : null}
 
         <dl className="flex flex-col gap-3 text-base">

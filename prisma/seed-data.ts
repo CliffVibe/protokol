@@ -404,8 +404,23 @@ const REQUEST_TYPES = [
     languages: ["ru", "en"],
     slaDays: 5,
     fields: [
-      { name: "country", label: "Страна", type: "text", required: true, maxLength: 80 },
-      { name: "tripDates", label: "Даты поездки", type: "text", required: true, maxLength: 80 },
+      // Подсказки (T13, ревью T07–T08): что и в каком виде ждёт визовая анкета
+      {
+        name: "country",
+        label: "Страна",
+        type: "text",
+        required: true,
+        maxLength: 80,
+        hint: "Страна визы, например: Франция",
+      },
+      {
+        name: "tripDates",
+        label: "Даты поездки",
+        type: "text",
+        required: true,
+        maxLength: 80,
+        hint: "Например: с 12.01.2027 по 26.01.2027",
+      },
     ],
   },
   {
@@ -452,6 +467,34 @@ const REQUEST_TYPES = [
         maxLength: 160,
       },
       { name: "period", label: "Период", type: "text", required: true, maxLength: 80 },
+    ],
+  },
+  {
+    // T13: из долга в «Учёбе» — «Подать заявление на пересдачу» с подставленной дисциплиной
+    code: "retake",
+    title: "Заявление на пересдачу",
+    description:
+      "Пересдача экзамена или зачёта по дисциплине с долгом. Дату и комиссию назначает деканат.",
+    purposeTags: ["other"],
+    languages: ["ru"],
+    slaDays: 3,
+    fields: [
+      {
+        name: "discipline",
+        label: "Дисциплина",
+        type: "text",
+        required: true,
+        maxLength: 160,
+        hint: "Название как в разделе «Учёба»",
+      },
+      {
+        name: "comment",
+        label: "Комментарий для деканата",
+        type: "text",
+        required: false,
+        maxLength: 300,
+        hint: "Например: в какие дни вам удобно пересдавать",
+      },
     ],
   },
 ] as const;

@@ -39,7 +39,7 @@ describe("buildSeed", () => {
     expect(d.groups.length).toBeGreaterThanOrEqual(10);
     expect(d.disciplines.length).toBeGreaterThanOrEqual(15);
     expect(d.teachers.length).toBeGreaterThanOrEqual(12);
-    expect(d.requestTypes).toHaveLength(8);
+    expect(d.requestTypes).toHaveLength(9);
     expect(d.announcements).toHaveLength(6);
     expect(d.announcements.filter((a) => a.pinned)).toHaveLength(2);
     expect(d.deadlines).toHaveLength(4);

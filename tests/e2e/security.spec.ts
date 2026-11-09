@@ -1,14 +1,13 @@
 // Обязательные тесты безопасности из docs/05-security.md (8 штук) + проверки входа и сессий T03.
-// Те, что пока нельзя проверить, — test.fixme с номером задачи, где появится нужный маршрут.
 // Секреты: значения берутся из окружения и НИКОГДА не попадают в сообщения об ошибке — только имя переменной.
 import { readdirSync, readFileSync } from "node:fs";
 import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
-import pg from "pg";
 import { STORAGE } from "../../playwright.config";
 import { ACCOUNTS, ANON, fillLogin, loginAs, randomIpHeaders } from "./helpers/auth";
 import { deleteTestRequests, withDb } from "./helpers/db";
+import { setTextScale } from "./helpers/text-scale";
 
 const SESSION = "__Host-session";
 
@@ -18,7 +17,7 @@ async function freshPage(browser: Browser, headers?: Record<string, string>): Pr
   return ctx.newPage();
 }
 
-/** Заявки тестов 1–2 — удаляются после файла: e2e работают с той же базой, что и демо (T08). */
+/** Заявки тестов 1–2 — удаляются после файла: база e2e общая для параллельных тестов (T08, T13). */
 const created: string[] = [];
 test.afterAll(async () => {
   await deleteTestRequests(created);
@@ -186,19 +185,15 @@ test.describe("05-security: обязательные тесты", () => {
   });
 
   test("6. В БД у всех пользователей passwordHash начинается с $argon2id$", async () => {
-    const client = new pg.Client({ connectionString: process.env.DATABASE_URL });
-    await client.connect();
-    try {
-      const { rows } = await client.query<{ total: string; bad: string }>(
+    const { rows } = await withDb((c) =>
+      c.query<{ total: string; bad: string }>(
         `SELECT count(*) AS total,
                 count(*) FILTER (WHERE "passwordHash" NOT LIKE '$argon2id$%') AS bad
            FROM "User"`,
-      );
-      expect(Number(rows[0]!.total)).toBeGreaterThan(0);
-      expect(Number(rows[0]!.bad)).toBe(0);
-    } finally {
-      await client.end();
-    }
+      ),
+    );
+    expect(Number(rows[0]!.total)).toBeGreaterThan(0);
+    expect(Number(rows[0]!.bad)).toBe(0);
   });
 
   test("7. 6 неверных паролей подряд → блокировка", async ({ browser }) => {
@@ -261,6 +256,81 @@ test.describe("05-security: обязательные тесты", () => {
     if (alisa.middleName) expect(html).not.toContain(alisa.middleName);
     for (const d of alisa.disciplines) expect(html, d).not.toContain(d);
     expect(html).not.toMatch(/зачётк|рейтинг|оценк/i);
+  });
+});
+
+test.describe("T13: в ответах страниц нет секретных полей (из security-ревью T02)", () => {
+  /**
+   * Имена полей и значения из БД: зачётки и токены календаря всех студентов, начало хеша пароля.
+   * Ищем и в HTML (там же встроенный RSC-поток), и в RSC-ответе клиентской навигации.
+   */
+  async function secrets() {
+    return withDb(async (c) => {
+      const st = await c.query<{ recordBookNo: string; calendarToken: string }>(
+        `SELECT "recordBookNo", "calendarToken" FROM "Student"`,
+      );
+      const doc = await c.query<{ token: string; number: string }>(
+        `SELECT d."verifyToken" AS token, r.number FROM "IssuedDocument" d
+           JOIN "Request" r ON r.id = d."requestId"
+          WHERE r."studentId" = 'stu-alisa' AND NOT d.revoked ORDER BY d."issuedAt" LIMIT 1`,
+      );
+      expect(st.rows.length, "в сиде есть студенты").toBeGreaterThan(0);
+      expect(doc.rows[0], "у Алисы в сиде есть выданная справка").toBeTruthy();
+      const values: [string, string][] = st.rows.flatMap((r, i): [string, string][] => [
+        [`номер зачётки студента №${i + 1}`, r.recordBookNo],
+        [`токен календаря студента №${i + 1}`, r.calendarToken],
+      ]);
+      return { values, verifyToken: doc.rows[0]!.token, alisaRequest: doc.rows[0]!.number };
+    });
+  }
+
+  const FIELD_NAMES = ["$argon2id$", "passwordHash", "recordBookNo", "calendarToken"];
+
+  /** Тексты HTML и RSC-ответа; в сообщениях — только адрес и название находки, без значений. */
+  async function leaksOn(page: Page, path: string, values: [string, string][]): Promise<string[]> {
+    const res = await page.goto(path);
+    expect(res?.status(), path).toBe(200);
+    const html = await page.content();
+    const rsc = await (await page.request.get(path, { headers: { RSC: "1" } })).text();
+    const found: string[] = [];
+    for (const [kind, body] of [
+      ["HTML", html],
+      ["RSC", rsc],
+    ] as const) {
+      for (const f of FIELD_NAMES) if (body.includes(f)) found.push(`${path} ${kind}: «${f}»`);
+      for (const [name, v] of values)
+        if (v && body.includes(v)) found.push(`${path} ${kind}: ${name}`);
+    }
+    return found;
+  }
+
+  test("/staff, /staff/requests/<номер>, /requests, /requests/<номер>, /verify/<токен>", async ({
+    browser,
+  }) => {
+    const { values, verifyToken, alisaRequest } = await secrets();
+    const leaks: string[] = [];
+
+    const alisa = await (await browser.newContext({ storageState: STORAGE.alisa })).newPage();
+    leaks.push(...(await leaksOn(alisa, "/requests", values)));
+    leaks.push(...(await leaksOn(alisa, `/requests/${encodeURIComponent(alisaRequest)}`, values)));
+    // Положительный контроль: в профиле свой токен календаря показан намеренно — поиск его находит
+    expect((await leaksOn(alisa, "/profile", values)).length).toBeGreaterThan(0);
+
+    const irina = await (await browser.newContext({ storageState: STORAGE.irina })).newPage();
+    leaks.push(...(await leaksOn(irina, "/staff", values)));
+    // Первая заявка очереди Ирины — та, что сотрудник реально открывает (свой факультет)
+    await irina.goto("/staff");
+    const href = await irina
+      .locator('main a[href^="/staff/requests/"]')
+      .first()
+      .getAttribute("href");
+    expect(href, "в очереди Ирины есть заявки").toBeTruthy();
+    leaks.push(...(await leaksOn(irina, href!, values)));
+
+    const anon = await (await browser.newContext({ storageState: ANON })).newPage();
+    leaks.push(...(await leaksOn(anon, `/verify/${verifyToken}`, values)));
+
+    expect(leaks).toEqual([]);
   });
 });
 
@@ -472,9 +542,7 @@ test.describe("вход и сессии (T03)", () => {
 
   test("/login при тексте 200% — без скролла вбок", async ({ page }) => {
     await page.goto("/login");
-    await page.evaluate(() => {
-      document.documentElement.style.fontSize = "200%";
-    });
+    await setTextScale(page, "200%");
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
     );

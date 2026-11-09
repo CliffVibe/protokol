@@ -6,6 +6,7 @@ import { expect, test, type APIRequestContext, type Browser } from "@playwright/
 import { ANON } from "./helpers/auth";
 import { withDb } from "./helpers/db";
 import { tempStudent } from "./helpers/temp-student";
+import { setTextScale } from "./helpers/text-scale";
 
 type Who = { token: string; lastName: string; recordBookNo: string; group: string };
 
@@ -158,9 +159,7 @@ test.describe("профиль: 360px и крупный текст", () => {
     test(`/profile при тексте ${scale} — без скролла вбок`, async ({ page }) => {
       await page.goto("/profile");
       await expect(page.getByRole("heading", { level: 1, name: "Профиль" })).toBeVisible();
-      await page.evaluate((s) => {
-        document.documentElement.style.fontSize = s;
-      }, scale);
+      await setTextScale(page, scale);
       // Длинные подписи кнопок («Добавить в Google Календарь») переносятся, а не растягивают экран
       expect(
         await page.evaluate(

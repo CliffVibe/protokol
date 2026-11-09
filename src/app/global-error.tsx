@@ -1,32 +1,72 @@
 "use client";
 
-import { CONCEPT_NOTICE } from "@/components/concept-banner";
+import Link from "next/link";
+import { CloudOff } from "lucide-react";
+import { ConceptBanner } from "@/components/concept-banner";
+import { LogoMark } from "@/components/logo-mark";
 import "./globals.css";
 
 // Последний рубеж: упал корневой layout. Next подменяет им весь документ — поэтому свои <html>/<body>
 // и стили; тема — по системной настройке (класс из cookie сюда не доходит, см. доку Next по global-error).
-export default function GlobalError({ retry }: { retry: () => void }) {
+// Вид — как у SystemPage (500), но без шрифтов из layout: их загружал упавший корень.
+// Кнопка — обычная <button>, без style={{}}: прод-CSP режет inline-стили.
+export default function GlobalError({
+  error,
+  retry,
+}: {
+  error: Error & { digest?: string };
+  retry: () => void;
+}) {
   return (
     <html lang="ru">
-      <body className="flex min-h-dvh flex-col items-center justify-center gap-4 bg-bg px-4 text-center font-sans text-ink">
+      <body className="flex min-h-dvh flex-col bg-bg font-sans text-ink">
         <title>Ошибка · Протокол</title>
-        <h1 className="text-xl">Что-то пошло не так</h1>
-        <p className="max-w-sm text-base text-ink-muted">
-          Попробуйте ещё раз. Если не помогает — зайдите чуть позже.
-        </p>
-        <button
-          type="button"
-          onClick={() => retry()}
-          className="min-h-11 rounded-lg bg-brand px-4 text-sm text-bg"
-        >
-          Повторить
-        </button>
-        <p
-          role="note"
-          className="max-w-md border-l-2 border-brand py-1 pl-3 text-left text-sm text-ink"
-        >
-          {CONCEPT_NOTICE}
-        </p>
+        <header className="border-b border-line px-4 md:px-6">
+          <div className="mx-auto flex min-h-14 w-full max-w-[1120px] items-center gap-2.5">
+            <LogoMark className="size-9" />
+            <span className="font-heading text-lg font-bold">Протокол</span>
+          </div>
+        </header>
+        <main className="mx-auto w-full max-w-[1120px] flex-1 px-4 pt-8 pb-10 md:px-6 lg:pt-14">
+          <div className="flex max-w-2xl flex-col gap-6">
+            <section className="flex gap-4 border-l-4 border-danger py-1 pl-4 text-danger">
+              <CloudOff aria-hidden className="mt-1 size-[32px] shrink-0" />
+              <div className="flex min-w-0 flex-col gap-1">
+                <p className="text-sm text-ink-muted">Ошибка 500</p>
+                <h1 className="text-2xl break-words text-ink lg:text-3xl">Что-то пошло не так</h1>
+              </div>
+            </section>
+            <p className="max-w-prose text-base text-ink-muted">
+              Сбой на нашей стороне. Нажмите «Повторить»; если не помогает — зайдите через несколько
+              минут.
+            </p>
+            {error.digest ? (
+              <p className="text-sm text-ink-muted">
+                Код ошибки: <span className="font-mono break-all text-ink">{error.digest}</span>.
+                Если пишете в деканат — назовите его.
+              </p>
+            ) : null}
+            <div className="flex flex-wrap gap-3">
+              <button
+                type="button"
+                onClick={() => retry()}
+                className="min-h-[44px] rounded-xl bg-brand px-4 text-base font-bold text-bg focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                Повторить
+              </button>
+              {/* Полная загрузка главной: корень упал, клиентский переход через него не нужен */}
+              <Link
+                href="/"
+                className="inline-flex min-h-[44px] items-center rounded-xl border border-line bg-surface px-4 text-base font-bold text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand"
+              >
+                На главную
+              </Link>
+            </div>
+          </div>
+        </main>
+        <footer className="mx-auto w-full max-w-[1120px] px-4 pt-8 pb-6 md:px-6">
+          <ConceptBanner />
+        </footer>
       </body>
     </html>
   );

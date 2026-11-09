@@ -112,6 +112,8 @@ const eslintConfig = defineConfig([
       "tests/e2e/calendar.spec.ts",
       // T11: пара Алисы на следующей неделе — что ждать в офлайн-копии, которую онлайн не открывали
       "tests/e2e/pwa.spec.ts",
+      // T13: отдельная база e2e — создать, если нет (миграции и сид — через prisma CLI)
+      "tests/e2e/prepare-db.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

@@ -72,9 +72,25 @@ describe("шаги", () => {
     expect(languageOptions(s.type, s.recommended)).toEqual(["en", "ru"]);
   });
 
-  it("без цели язык не навязываем", () => {
-    const s = step({ type: "embassy" });
-    expect(s.kind === "language" && s.recommended).toBe(null);
+  it("без цели советуем по самой справке: визовая — английский первым (T13), прочие — без совета", () => {
+    // Справка «для посольства» — только визовая; из полного каталога цель не выбрана, но совет тот же
+    const visa = step({ type: "embassy" });
+    expect(visa.kind === "language" && visa.recommended).toBe("en");
+    const other = step({ type: "academic" });
+    expect(other.kind === "language" && other.recommended).toBe(null);
+  });
+
+  it("дисциплина пересдачи — только формат id; битая отбрасывается, ссылка её сохраняет", () => {
+    expect(parseWizardParams({ type: "retake", discipline: "dis-mf" })).toEqual({
+      type: "retake",
+      discipline: "dis-mf",
+    });
+    expect(parseWizardParams({ type: "retake", discipline: "<script>" })).toEqual({
+      type: "retake",
+    });
+    expect(wizardHref({ type: "retake", discipline: "dis-mf" })).toBe(
+      "/requests/new?type=retake&discipline=dis-mf",
+    );
   });
 
   it("язык выбран — форма; язык, которого у справки нет, — снова выбор", () => {

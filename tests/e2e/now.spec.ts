@@ -27,8 +27,10 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: /, Алиса$/ })).toBeVisible();
     await expect(page.getByRole("article", { name: /пара|Идёт сейчас/ })).toBeVisible();
+    // first(): reschedule.spec (T09) параллельно переносит пару группы Алисы и возвращает её — на время
+    // теста переносов бывает два (поймал первый прогон на своей базе e2e, T13)
     await expect(
-      page.getByRole("region", { name: "Изменения" }).getByText("Перенос"),
+      page.getByRole("region", { name: "Изменения" }).getByText("Перенос").first(),
     ).toBeVisible();
     // first(): параллельные тесты заявок (T08) могут ненадолго добавить Алисе свою «Готова»
     await expect(page.getByText("Готова — заберите").first()).toBeVisible();

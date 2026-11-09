@@ -1,21 +1,16 @@
 // Прямой доступ к БД в e2e — только для проверок, которые иначе не сделать честно (двойная отправка),
-// и для уборки за собой. e2e работают с той же локальной базой, что и демо человека: заявки, которые
-// создал тест, тест и удаляет (T08). Это уборка тестовых данных, а не продуктовое удаление заявок.
+// и для уборки за собой. С T13 e2e работают в своей базе protokol_e2e (e2e-db.ts), не в демо человека;
+// заявки, которые создал тест, тест всё равно удаляет (T08): параллельные тесты видят общую базу.
 import pg from "pg";
+import { assertE2eDatabase, e2eDatabaseUrl } from "../e2e-db";
 
-/** Только локальная база: если e2e когда-нибудь запустят с прод-строкой, уборка не тронет прод. */
-function localDatabaseUrl(): string {
-  const url = process.env.DATABASE_URL ?? "";
-  const host = url ? new URL(url).hostname : "";
-  if (!["localhost", "127.0.0.1", "::1", "[::1]", "db"].includes(host))
-    throw new Error(
-      `e2e ходят в БД только локально, а DATABASE_URL указывает на «${host || "пусто"}»`,
-    );
-  return url;
+/** Только локальная база e2e: ни прод, ни демо-база человека уборкой не задеваются. */
+export function e2eDb(): string {
+  return assertE2eDatabase(e2eDatabaseUrl());
 }
 
 export async function withDb<T>(fn: (c: pg.Client) => Promise<T>): Promise<T> {
-  const client = new pg.Client({ connectionString: localDatabaseUrl() });
+  const client = new pg.Client({ connectionString: e2eDb() });
   await client.connect();
   try {
     return await fn(client);

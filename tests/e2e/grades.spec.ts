@@ -3,6 +3,7 @@
 // Алиса — сессия по умолчанию (setup); Тимур и Вера — демо-вход в отдельном контексте.
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { ANON } from "./helpers/auth";
+import { setTextScale } from "./helpers/text-scale";
 
 async function as(browser: Browser, who: "Тимур" | "Вера"): Promise<Page> {
   const ctx = await browser.newContext({ storageState: ANON });
@@ -197,9 +198,7 @@ test.describe("360px и крупный текст", () => {
         const page = await as(browser, "Тимур");
         await page.goto(route);
         await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
-        await page.evaluate((s) => {
-          document.documentElement.style.fontSize = s;
-        }, scale);
+        await setTextScale(page, scale);
         expect(await horizontalOverflow(page)).toBeLessThanOrEqual(0);
       });
     }
