@@ -10,6 +10,10 @@ playwright-report
 test-results
 docs
 tests
+# Конфиги тестов — вместе с тестами: playwright.config.ts импортирует tests/e2e, и без папки tests
+# проверка типов next build в образе падает (T13, первая сборка в CI)
+playwright.config.ts
+vitest.config.mts
 *.log
 .env
 .env.*
