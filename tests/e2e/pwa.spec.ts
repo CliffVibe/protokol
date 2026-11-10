@@ -36,6 +36,9 @@ test("манифест, воркер, значки и офлайн-страни�
   expect(json.short_name).toBe("Протокол");
   expect(json.display).toBe("standalone");
   expect(json.icons.map((i: { purpose: string }) => i.purpose)).toContain("maskable");
+  // T13: без цветов в манифесте — иначе в тёмной теме системная полоса Android внизу белая
+  expect(json.theme_color).toBeUndefined();
+  expect(json.background_color).toBeUndefined();
 
   const sw = await api.get("/sw.js");
   expect(sw.status()).toBe(200);
