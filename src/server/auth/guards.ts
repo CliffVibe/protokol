@@ -50,6 +50,16 @@ export const requireStaff = cache(async (): Promise<StaffCtx> => {
   return ctx;
 });
 
+/**
+ * Сотрудник или null — БЕЗ редиректа. Только для оболочки (кто вошёл — в шапке, T13): не проверка доступа,
+ * страницу защищает requireStaff() в самой page.
+ */
+export const optionalStaff = cache(async (): Promise<StaffCtx | null> => {
+  const session = await getSession();
+  if (!session || session.role !== "STAFF") return null;
+  return loadStaffCtx(session.userId);
+});
+
 /** Куда вести после входа. */
 export function homeFor(role: SessionUser["role"]): "/" | "/staff" {
   return role === "STAFF" ? "/staff" : "/";

@@ -294,6 +294,19 @@ test.describe("служебные страницы", () => {
 
   test.describe("сотрудник", () => {
     useSessionFor("/staff");
+    test("T13: видно, кто вошёл — ФИО и «Сотрудник деканата ФМО и МЭО»", async ({
+      page,
+      isMobile,
+    }) => {
+      await page.goto("/staff");
+      // Телефон — блок «Профиль» внизу страницы; ≥ 1024 — справа в шапке
+      const where = isMobile
+        ? page.getByRole("region", { name: "Профиль" })
+        : page.getByRole("banner");
+      await expect(where.getByText("Морозова Ирина Сергеевна")).toBeVisible();
+      await expect(where.getByText("Сотрудник деканата ФМО и МЭО")).toBeVisible();
+    });
+
     test("кабинет сотрудника рендерится в своей оболочке", async ({ page }) => {
       await page.goto("/staff");
       await expect(page.getByRole("heading", { level: 1, name: "Очередь заявок" })).toBeVisible();
@@ -301,18 +314,25 @@ test.describe("служебные страницы", () => {
       await expect(mainNav(page)).toHaveCount(0);
     });
 
-    test("в шапке «Заявки» не уходит под переключатель темы (ux-reviewer T03)", async ({
+    test("на десктопе шапка в одну строку: разделы, кто вошёл и «Выйти» не наезжают (T03, T13)", async ({
       page,
+      isMobile,
     }) => {
+      test.skip(isMobile, "раскладка десктопа");
       await page.goto("/staff");
-      const nav = await page.getByRole("navigation", { name: "Разделы кабинета" }).boundingBox();
-      const theme = await page.getByRole("group", { name: "Тема" }).boundingBox();
-      expect(nav && theme).toBeTruthy();
-      const overlapX =
-        Math.min(nav!.x + nav!.width, theme!.x + theme!.width) - Math.max(nav!.x, theme!.x);
-      const overlapY =
-        Math.min(nav!.y + nav!.height, theme!.y + theme!.height) - Math.max(nav!.y, theme!.y);
-      expect(overlapX <= 0 || overlapY <= 0, "блоки шапки пересекаются").toBe(true);
+      const header = (await page.getByRole("banner").boundingBox())!;
+      // Одна строка ~60px; с ФИО рядом с темой и «Сбросить демо» шапка разъезжалась в две (~92px)
+      expect(header.height).toBeLessThanOrEqual(80);
+      const nav = (await page.getByRole("navigation", { name: "Разделы кабинета" }).boundingBox())!;
+      const who = (await page
+        .getByRole("banner")
+        .getByText("Морозова Ирина Сергеевна")
+        .boundingBox())!;
+      expect(who.x, "ФИО правее разделов").toBeGreaterThanOrEqual(nav.x + nav.width);
+      // Тема и «Сбросить демо» — в «Профиле» под содержимым, не в шапке
+      const theme = page.getByRole("group", { name: "Тема" });
+      await expect(theme).toHaveCount(1);
+      expect((await theme.boundingBox())!.y).toBeGreaterThan(header.y + header.height);
     });
 
     test("на телефоне шапка в две строки, тема — внизу страницы (ревью T07–T08)", async ({
@@ -440,7 +460,7 @@ test.describe("клавиатура: фокус виден на каждом ш�
       page,
     }) => {
       await page.goto("/staff");
-      // «Сбросить демо» — в шапке на десктопе и в «Настройках» на телефоне; видима одна
+      // «Сбросить демо» — в блоке «Профиль» внизу страницы (T13), одна на всех ширинах
       const trigger = page.getByRole("button", { name: "Сбросить демо" });
       await trigger.focus();
       await page.keyboard.press("Enter");

@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { Pin, ShieldCheck } from "lucide-react";
+import { Pin, ShieldAlert, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusChip } from "@/components/status-chip";
 import { cn } from "@/lib/utils";
@@ -249,13 +249,60 @@ export function StudyBlock({
             <span className="min-w-0 break-words">Стипендия сохраняется</span>
           </p>
         </div>
+      ) : study && !study.scholarship.kept ? (
+        // Угроза стипендии — так же заметно, как мятное «сохраняется», но языком статусов Б′: черта 4px слева,
+        // значок и заголовок цветом статуса (долг — --danger, иначе --warn), рейтинг тем же крупным числом,
+        // причины и шаг «что делать». Без жёлтой заливки: пастельные подложки Б′ не использует, а контраст
+        // текста на них не держится (решение человека 10.11: «когда под угрозой — ничего нет»)
+        <div
+          className={cn(
+            "flex flex-col gap-3 border-l-4 py-1 pl-4",
+            study.debts > 0 ? "border-l-danger" : "border-l-warn",
+          )}
+        >
+          <p
+            className={cn(
+              "flex items-start gap-2 font-heading text-lg font-semibold",
+              study.debts > 0 ? "text-danger" : "text-warn",
+            )}
+          >
+            <ShieldAlert aria-hidden className="mt-0.5 size-6 shrink-0" />
+            <span className="min-w-0 break-words">Стипендия под угрозой</span>
+          </p>
+          {study.averageRating !== null ? (
+            <div className="flex flex-col gap-0.5 text-ink">
+              <p className="text-base">Средний рейтинг, {study.semester}-й семестр</p>
+              <p className="flex flex-wrap items-baseline gap-x-2">
+                <span className="font-heading text-4xl font-semibold tracking-tight tabular">
+                  {study.averageRating}
+                </span>
+                <span className="text-base">из 100</span>
+              </p>
+            </div>
+          ) : null}
+          <ul aria-label="Причины" className="list-disc pl-5 text-base break-words text-ink">
+            {study.scholarship.reasons.map((r) => (
+              <li key={r}>{r}</li>
+            ))}
+          </ul>
+          <Button
+            asChild
+            variant="outline"
+            className="h-auto min-h-11 max-w-full self-start py-2 whitespace-normal"
+          >
+            {study.debts > 0 ? (
+              <Link href="/grades">Как закрыть долг</Link>
+            ) : (
+              <Link href="/grades#what-if">Посчитать, что будет после сессии</Link>
+            )}
+          </Button>
+        </div>
       ) : study ? (
         <div className="flex flex-col gap-3 border-t border-line pt-3">
           <p className="text-base text-ink">
             {study.averageRating !== null ? (
               <>
                 Средний рейтинг за {study.semester}-й семестр:{" "}
-                {/* «66 из 100» — одним куском: на 360 «100» уезжала на строку ниже */}
                 <span className="whitespace-nowrap">
                   <span className="font-heading text-2xl font-semibold tabular">
                     {study.averageRating}

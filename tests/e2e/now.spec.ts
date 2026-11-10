@@ -127,6 +127,13 @@ test("изоляция: Тимур не видит номера заявок А�
   expect(timurText).not.toContain("Изменение расписания группы 2МО-3");
   // visible: блок «Учёба» в DOM дважды — колонка ≥ 1024 и лента < 1024 (Б′)
   await expect(timur.getByText("Стипендия под угрозой").filter({ visible: true })).toBeVisible();
+  // T13: угроза — не тише «сохраняется»: рейтинг крупно, причины и шаг «что делать» (у Тимура — долг)
+  const study = timur.getByRole("region", { name: "Учёба" }).filter({ visible: true });
+  await expect(study.getByRole("list", { name: "Причины" })).toContainText("Эконометрика");
+  await expect(study.getByRole("link", { name: "Как закрыть долг" })).toHaveAttribute(
+    "href",
+    "/grades",
+  );
 });
 
 test("LCP < 2,5 с на эмуляции телефона (CPU ×4, медленный 4G)", async ({ page, isMobile }) => {
