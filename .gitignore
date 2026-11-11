@@ -17,3 +17,6 @@ docs/process/survey/raw/
 
 # Сессии e2e (storageState) — токены входа, не коммитим
 tests/e2e/.auth/
+
+# Отчёты Claude Security — локальные, у каждой папки свой .gitignore
+CLAUDE-SECURITY-*/

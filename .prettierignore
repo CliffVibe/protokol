@@ -11,3 +11,5 @@ docs/
 *.md
 src/generated/
 tests/e2e/.auth/
+# Отчёты Claude Security (папка с собственным .gitignore, в git не попадает)
+CLAUDE-SECURITY-*/
