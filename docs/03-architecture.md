@@ -247,6 +247,14 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 - **Логи** — `{"event":"assistant","mode","ms","code"?}`: без текста вопроса, имени и id.
 - Ключ `GIGACHAT_AUTH_KEY` — только env сервера (S4); на страницу уходит лишь «есть ИИ / нет» для подписи. Тест 5 ищет значение ключа в HTML `/assistant`, ответе `/api/assistant` и всех бандлах.
 
+## Идеи из ресерча T14: «Вам положено», оценка заявки, свободные аудитории
+
+- **Миграция `20261111180000_offers_ratings`:** `Request.offered` («предложено деканатом»), `Request.rating` / `ratingComment` / `ratedAt` (оценка решения 1–5, одна на заявку), `Announcement.youSaid` («Вы сказали — мы сделали»), таблица `OfferDismissal` (студент + код + семестр — «Не сейчас»; входит в полный пересев `run-seed.ts`). Новый тип заявки `scholarship_up` «Заявление на повышенную стипендию».
+- **«Вам положено» (J):** правила — чистые функции `src/server/services/offer-rules.ts` (`offersFor(study, taken, dismissed)`, порог вымышленный — средний ≥ 80, долгов нет, стипендия сохраняется); данные — `repos/offers.ts` (только свои заявки и отказы); лента — `getNowFeed` → `offers`. Принять — `actions/offers.ts` → `services/offers.ts`: правило **пересчитывается на сервере**, заявка — обычной `submitRequest` с `offered: true`; повтор той же формы (тот же `clientKey`) возвращает ту же заявку.
+- **Оценка (K):** `rateRequestAction` → `repos/requests.ts` `rateRequest` — `updateMany` по `{number, studentId: ctx.studentId, status ∈ {READY, ISSUED}, rating: null}`: чужая, не готовая или уже оценённая — `false` без различий. Сводка сотрудника — `repos/staff-requests.ts` `ratingsOf` (фильтр факультетов, **без ФИО и номеров**) → `summarizeRatings` в `request-rules.ts`.
+- **Свободные аудитории (N):** `repos/rooms.ts` `roomUsage(ctx, building, from, to)` — исключение из правила «только свои данные»: все пары корпуса, но наружу только `room`, `startsAt`, `endsAt` (проверяет интеграционный тест). Окна от `WINDOW_MIN_MINUTES` = 60 и свободные номера — `services/schedule.ts` (`buildWindows`, `freeRoomsIn`): «свободна» = встречалась в расписании корпуса на неделе и не занята в окно; отменённая пара аудиторию не занимает.
+- **Прод:** после пуша — `docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy` (миграция) и `… pnpm db:reset-demo` (сид с оценками и объявлением); ночной пересев дальше делает это сам.
+
 ## Деплой
 
 - `docker-compose.prod.yml`: `app` (Next standalone), `db` (postgres:16, volume), `caddy` (автоматический HTTPS Let's Encrypt).
