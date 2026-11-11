@@ -6,7 +6,6 @@ import { EmptyState } from "@/components/empty-state";
 import {
   AnnouncementsBlock,
   ChangesBlock,
-  FreeNowNote,
   RequestsBlock,
   SoonBlock,
   StudyBlock,
@@ -52,10 +51,7 @@ export default async function NowPage() {
         className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-2"
       >
         {feed.next ? (
-          <div className="flex flex-col gap-3">
-            <NowCard next={feed.next} now={now} />
-            <FreeNowNote freeNow={feed.freeNow} />
-          </div>
+          <NowCard next={feed.next} now={now} />
         ) : (
           <EmptyState
             title="В ближайшие дни пар нет"

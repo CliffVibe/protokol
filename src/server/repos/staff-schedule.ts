@@ -1,6 +1,6 @@
 import "server-only";
 import { db } from "@/server/db";
-import { rescheduleNotification } from "@/server/services/staff-rules";
+import { rescheduleNotification, type RescheduleClash } from "@/server/services/staff-rules";
 import type { StaffCtx } from "./auth";
 
 // Расписание групп для сотрудника (T09): только академические группы его факультетов (S1: staff.facultyIds).
@@ -63,13 +63,18 @@ export async function nextLessonStart(ctx: StaffCtx, groupId: string, now: Date)
 export type StaffLesson = Awaited<ReturnType<typeof groupLessonsBetween>>[number];
 
 export type RescheduleResult =
-  { result: "ok"; recipients: number } | { result: "not_found" | "conflict" | "cancelled" };
+  | { result: "ok"; recipients: number }
+  | { result: "busy"; clash: RescheduleClash }
+  | { result: "not_found" | "conflict" | "cancelled" };
 
 /**
  * Перенос пары: новое время с той же длительностью, аудитория (если указана), отметка «перенос» и причина;
  * в той же транзакции — уведомление каждому студенту группы.
  * `originalStartsAt` — первое исходное время: повторный перенос не теряет «было 10:10».
  * Два сотрудника разом: updateMany с ожидаемым startsAt и count === 1 → второй получает conflict.
+ * До записи — проверка накладок (группа, языковые пары студентов, преподаватель, аудитория): накладка →
+ * busy, ничего не меняем. Два переноса разных пар в одну аудиторию в одну секунду проверка не ловит
+ * (READ COMMITTED) — для прототипа деканата это приемлемо, в 03-architecture записано.
  */
 export async function rescheduleLesson(
   ctx: StaffCtx,
@@ -91,6 +96,7 @@ export async function rescheduleLesson(
         endsAt: true,
         building: true,
         room: true,
+        teacherId: true,
         change: true,
         originalStartsAt: true,
         discipline: { select: { name: true } },
@@ -102,6 +108,67 @@ export async function rescheduleLesson(
 
     const endsAt = new Date(+input.startsAt + (+l.endsAt - +l.startsAt));
     const room = input.room ?? l.room;
+
+    // Накладки: пары, которые пересекают новое время (кроме самой переносимой и отменённых)
+    const overlap = {
+      id: { not: input.lessonId },
+      change: { not: "CANCELLED" as const },
+      startsAt: { lt: endsAt },
+      endsAt: { gt: input.startsAt },
+    };
+    const time = { startsAt: true, endsAt: true } as const;
+    const groupClash = await tx.lesson.findFirst({
+      where: { ...overlap, groupId: l.groupId },
+      orderBy: { startsAt: "asc" },
+      select: { ...time, discipline: { select: { name: true } } },
+    });
+    if (groupClash)
+      return {
+        result: "busy",
+        clash: {
+          kind: "group",
+          discipline: groupClash.discipline.name,
+          startsAt: groupClash.startsAt,
+          endsAt: groupClash.endsAt,
+        },
+      };
+    const langClash = await tx.lesson.findFirst({
+      where: {
+        ...overlap,
+        languageGroup: { members: { some: { student: { groupId: l.groupId } } } },
+      },
+      orderBy: { startsAt: "asc" },
+      select: { ...time, languageGroupId: true },
+    });
+    if (langClash?.languageGroupId) {
+      const students = await tx.studentLanguageGroup.count({
+        where: { languageGroupId: langClash.languageGroupId, student: { groupId: l.groupId } },
+      });
+      return {
+        result: "busy",
+        clash: {
+          kind: "language",
+          students,
+          startsAt: langClash.startsAt,
+          endsAt: langClash.endsAt,
+        },
+      };
+    }
+    const teacherClash = await tx.lesson.findFirst({
+      where: { ...overlap, teacherId: l.teacherId },
+      orderBy: { startsAt: "asc" },
+      select: time,
+    });
+    if (teacherClash) return { result: "busy", clash: { kind: "teacher", ...teacherClash } };
+    const roomClash = await tx.lesson.findFirst({
+      where: { ...overlap, building: l.building, room },
+      select: { id: true },
+    });
+    if (roomClash)
+      return {
+        result: "busy",
+        clash: { kind: "room", building: l.building, room, startsAt: input.startsAt, endsAt },
+      };
     const { count } = await tx.lesson.updateMany({
       where: { id: input.lessonId, startsAt: input.expectedStartsAt, group: ofMyFaculties(ctx) },
       data: {

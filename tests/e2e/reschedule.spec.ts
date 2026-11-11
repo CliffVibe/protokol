@@ -5,9 +5,9 @@
 // (`FOR UPDATE OF l2`): без OF блокировалась бы и строка группы, и параллельный тест со SKIP LOCKED
 // пропускал бы все пары 2МО-3.
 import { randomUUID } from "node:crypto";
-import { expect, test } from "@playwright/test";
+import { expect, test, type TestInfo } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
-import { addDays, mskDateKey, mskStartOfDay } from "../../src/lib/msk";
+import { addDays, mskAt, mskDateKey, mskStartOfDay } from "../../src/lib/msk";
 import { withDb } from "./helpers/db";
 
 type Claimed = {
@@ -17,6 +17,9 @@ type Claimed = {
   endsAt: Date;
   room: string;
   discipline: string;
+  building: string;
+  teacherId: string;
+  disciplineId: string;
 };
 
 /**
@@ -36,7 +39,8 @@ async function claimLesson(marker: string): Promise<Claimed> {
            AND EXTRACT(ISODOW FROM l2."startsAt" AT TIME ZONE 'Europe/Moscow') <> 4
          ORDER BY l2."startsAt" LIMIT 1 FOR UPDATE OF l2 SKIP LOCKED
        ) AND d.id = l."disciplineId"
-       RETURNING l.id, l."groupId", l."startsAt", l."endsAt", l.room, d.name AS discipline`,
+       RETURNING l.id, l."groupId", l."startsAt", l."endsAt", l.room, d.name AS discipline,
+         l.building, l."teacherId", l."disciplineId"`,
       [marker],
     );
     const row = r.rows[0];
@@ -58,6 +62,34 @@ async function restore(l: Claimed, marker: string) {
   });
 }
 
+const isMobile = (t: TestInfo) => t.project.name === "mobile-360";
+
+/**
+ * Пара-помеха в аудитории переносимой пары (другой преподаватель, без группы) — удаляется в finally.
+ * Время — ISO-строкой в UTC: колонка без часового пояса, а node-pg пишет Date местным временем
+ * (помеха вставала на 3 часа позже и ничего не занимала — найдено в T14+).
+ */
+async function occupyRoom(l: Claimed, marker: string, startsAt: Date) {
+  return withDb(async (c) => {
+    const id = `e2e-block-${marker}`;
+    await c.query(
+      `INSERT INTO "Lesson" (id, "disciplineId", "teacherId", kind, "startsAt", "endsAt", building, room, change)
+       SELECT $1, $2, t.id, 'SEMINAR', $3, $4, $5, $6, 'NONE'
+       FROM "Teacher" t WHERE t.id <> $7 ORDER BY t.id LIMIT 1`,
+      [
+        id,
+        l.disciplineId,
+        startsAt.toISOString(),
+        new Date(+startsAt + 80 * 60_000).toISOString(),
+        l.building,
+        l.room,
+        l.teacherId,
+      ],
+    );
+    return id;
+  });
+}
+
 const notifiedStudents = (marker: string) =>
   withDb(async (c) => {
     const r = await c.query<{ studentId: string }>(
@@ -70,12 +102,13 @@ const notifiedStudents = (marker: string) =>
 test("приёмка: перенос пары — у Алисы уведомление и «было …» на главной, у Тимура ничего", async ({
   page,
   browser,
-}) => {
+}, testInfo) => {
   const marker = `e2e-${randomUUID().slice(0, 8)}`;
   const reason = `Преподаватель на конференции ${marker}`;
   const l = await claimLesson(marker);
   try {
-    // Завтра 20:00 — попадает в «Изменения» на «Сейчас» (сегодня и завтра)
+    // Завтра вечером — попадает в «Изменения» на «Сейчас» (сегодня и завтра). У проектов разное время:
+    // оба переносят пары 2МО-3, и в одно время второй получил бы «у группы уже пара» (T14+)
     const tomorrow = addDays(mskStartOfDay(new Date()), 1);
     const irina = await (await browser.newContext({ storageState: STORAGE.irina })).newPage();
     await irina.goto(`/staff/schedule?group=${l.groupId}&day=${mskDateKey(l.startsAt)}`);
@@ -83,7 +116,7 @@ test("приёмка: перенос пары — у Алисы уведомле
     await row.getByRole("button", { name: new RegExp(`^Перенести: ${l.discipline}`) }).click();
     const dialog = irina.getByRole("dialog");
     await dialog.getByLabel("Дата").fill(mskDateKey(tomorrow));
-    await dialog.getByLabel("Начало").fill("20:00");
+    await dialog.getByLabel("Начало").fill(isMobile(testInfo) ? "20:40" : "19:10");
     await dialog.getByLabel("Причина").fill(reason);
     await dialog.getByRole("button", { name: "Перенести пару" }).click();
     await expect(dialog).toBeHidden();
@@ -140,6 +173,67 @@ test("перенос в прошлое — ошибка у поля, пара н
     );
     expect(after.rows[0]).toEqual({ startsAt: l.startsAt, change: "NONE" });
   } finally {
+    await restore(l, marker);
+  }
+});
+
+test("аудитория занята — ошибка у поля, свободные кнопками, перенос с выбранной (T14+)", async ({
+  browser,
+}, testInfo) => {
+  const marker = `e2e-${randomUUID().slice(0, 8)}`;
+  const reason = `Аудитория на ремонте ${marker}`;
+  const l = await claimLesson(marker);
+  // Вечер через 2–3 дня (у проектов разные дни): накладок из сида нет, кроме нашей помехи
+  const day = addDays(mskStartOfDay(new Date()), isMobile(testInfo) ? 3 : 2);
+  const at = mskAt(day, "20:00");
+  const blockId = await occupyRoom(l, marker, at);
+  try {
+    const irina = await (await browser.newContext({ storageState: STORAGE.irina })).newPage();
+    await irina.goto(`/staff/schedule?group=${l.groupId}&day=${mskDateKey(l.startsAt)}`);
+    await irina
+      .locator(`[data-lesson="${l.id}"]`)
+      .getByRole("button", { name: /^Перенести:/ })
+      .click();
+    const dialog = irina.getByRole("dialog");
+    await dialog.getByLabel("Дата").fill(mskDateKey(day));
+    await dialog.getByLabel("Начало").fill("20:00");
+    await dialog.getByLabel("Причина").fill(reason);
+    await dialog.getByRole("button", { name: "Перенести пару" }).click();
+
+    // Ошибка у поля «Аудитория», введённое не пропало, свободные — кнопками без занятой
+    const room = dialog.getByLabel("Аудитория (необязательно)");
+    await expect(
+      dialog.getByText(new RegExp(`Ауд\\.\\s${l.room} в это время занята`)),
+    ).toBeVisible();
+    await expect(room).toHaveAttribute("aria-invalid", "true");
+    await expect(dialog.getByLabel("Причина")).toHaveValue(reason);
+    await expect(dialog.getByLabel("Начало")).toHaveValue("20:00");
+    const free = dialog
+      .getByRole("group", { name: /^Свободны с 20:00 до 21:20:$/ })
+      .getByRole("button");
+    await expect(free.first()).toBeVisible();
+    const names = await free.allTextContents();
+    expect(names).not.toContain(l.room);
+    const pick = names[0]!.trim();
+    await free.first().click();
+    await expect(room).toHaveValue(pick);
+    await expect(room).toBeFocused();
+
+    await dialog.getByRole("button", { name: "Перенести пару" }).click();
+    await expect(dialog).toBeHidden();
+    const after = await withDb((c) =>
+      c.query<{ at: string; room: string; change: string }>(
+        `SELECT to_char("startsAt", 'YYYY-MM-DD"T"HH24:MI') AS at, room, change FROM "Lesson" WHERE id = $1`,
+        [l.id],
+      ),
+    );
+    expect(after.rows[0]).toEqual({
+      at: at.toISOString().slice(0, 16),
+      room: pick,
+      change: "MOVED",
+    });
+  } finally {
+    await withDb((c) => c.query(`DELETE FROM "Lesson" WHERE id = $1`, [blockId]));
     await restore(l, marker);
   }
 });

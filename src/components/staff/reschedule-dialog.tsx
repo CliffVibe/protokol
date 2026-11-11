@@ -2,8 +2,12 @@
 
 // «Перенести пару» (T09): нативный <dialog> через DialogForm (Radix вставлял бы <style> без nonce — прод-CSP).
 // Новая дата и время, аудитория (необязательно), причина — её увидят студенты. Длительность пары сохраняется.
+// T14+: накладку (группа, языковая пара, преподаватель, аудитория) ловит сервер — ошибка у поля, а если
+// занята аудитория — свободные в корпусе в это время кнопками: одно касание подставляет номер.
+import { useRef } from "react";
 import { DialogForm, TextArea } from "@/components/dialog-form";
 import { FormField } from "@/components/form-field";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { rescheduleLessonAction, type RescheduleState } from "@/server/actions/staff-schedule";
 
@@ -28,6 +32,7 @@ export function RescheduleDialog({
   minDate: string;
   maxDate: string;
 }) {
+  const roomRef = useRef<HTMLInputElement>(null);
   return (
     <DialogForm<RescheduleState>
       triggerLabel="Перенести"
@@ -41,6 +46,7 @@ export function RescheduleDialog({
     >
       {(state) => {
         const e = state.fieldErrors ?? {};
+        const v = state.values;
         return (
           <>
             <div className="flex flex-wrap gap-3">
@@ -55,7 +61,7 @@ export function RescheduleDialog({
                     {...control}
                     type="date"
                     name="date"
-                    defaultValue={defaultDate}
+                    defaultValue={v?.date ?? defaultDate}
                     min={minDate}
                     max={maxDate}
                     required
@@ -74,7 +80,7 @@ export function RescheduleDialog({
                     {...control}
                     type="time"
                     name="time"
-                    defaultValue={defaultTime}
+                    defaultValue={v?.time ?? defaultTime}
                     min="08:00"
                     max="21:00"
                     step={300}
@@ -86,18 +92,65 @@ export function RescheduleDialog({
             <FormField
               id={`r-${lessonId}`}
               label="Аудитория (необязательно)"
-              hint={`Сейчас — ауд. ${room}. Пусто — останется прежняя`}
+              hint={e.room ? undefined : `Сейчас — ауд. ${room}. Пусто — останется прежняя`}
               error={e.room}
             >
-              {(control) => <Input {...control} name="room" maxLength={20} autoComplete="off" />}
+              {(control) => (
+                <Input
+                  {...control}
+                  ref={roomRef}
+                  name="room"
+                  maxLength={20}
+                  autoComplete="off"
+                  defaultValue={v?.room ?? ""}
+                />
+              )}
             </FormField>
+            {state.freeRooms ? (
+              // Сразу под ошибкой «занята»: текст ошибки говорит «выберите свободную ниже»
+              <div
+                role="group"
+                aria-labelledby={`free-${lessonId}`}
+                className="-mt-2 flex flex-col gap-1.5"
+              >
+                <p id={`free-${lessonId}`} className="text-sm text-ink">
+                  {state.freeRooms.label}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {state.freeRooms.rooms.map((r) => (
+                    <Button
+                      key={r}
+                      type="button"
+                      variant="outline"
+                      className="min-h-11 min-w-11 tabular"
+                      aria-label={`Подставить ауд. ${r}`}
+                      onClick={() => {
+                        if (!roomRef.current) return;
+                        roomRef.current.value = r;
+                        roomRef.current.focus();
+                      }}
+                    >
+                      {r}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            ) : null}
             <FormField
               id={`why-${lessonId}`}
               label="Причина"
               hint="Её увидят студенты: «Преподаватель на конференции»"
               error={e.reason}
             >
-              {(control) => <TextArea {...control} name="reason" maxLength={200} required />}
+              {(control) => (
+                <TextArea
+                  {...control}
+                  name="reason"
+                  maxLength={200}
+                  required
+                  defaultValue={v?.reason ?? ""}
+                />
+              )}
             </FormField>
           </>
         );

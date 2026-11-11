@@ -1,12 +1,11 @@
 // День расписания: заголовок и пары под тонкими линиями — графы бланка, без карточек (как лента «Сейчас»).
 import { Fragment } from "react";
-import { CircleCheck, Clock, DoorOpen, Footprints, GraduationCap, Languages } from "lucide-react";
+import { CircleCheck, Clock, Footprints, GraduationCap, Languages } from "lucide-react";
 import { formatLongDay, formatTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
-import type { FreeWindow, ScheduleDay, Transition } from "@/server/services/schedule";
+import type { ScheduleDay, Transition } from "@/server/services/schedule";
 import { CHANGE } from "@/components/now/labels";
 import { StatusChip } from "@/components/status-chip";
-import { FreeRoomsText } from "./free-rooms-text";
 import { LessonOpenButton } from "./lesson-sheet";
 import { toLessonView, type LessonView } from "./lesson-view";
 
@@ -47,11 +46,9 @@ export function DaySection({
           aria-label={`Пары: ${title}`}
           className="flex flex-col divide-y divide-line border-y border-line"
         >
-          {day.items.map(({ lesson, transition, window }) => (
+          {day.items.map(({ lesson, transition }) => (
             <Fragment key={lesson.id}>
               {transition ? <TransitionRow transition={transition} /> : null}
-              {/* Прошедшее окно не нужно: сидеть уже негде (ux-reviewer, T14) */}
-              {window && +window.endsAt > +now ? <WindowRow window={window} /> : null}
               <LessonRow lesson={toLessonView(lesson, now)} />
             </Fragment>
           ))}
@@ -190,48 +187,6 @@ function TransitionRow({ transition }: { transition: Transition }) {
         <span className="text-ink">
           {transition.from} → {transition.to}
         </span>
-      </div>
-    </li>
-  );
-}
-
-/** «1 ч 20 мин» — неразрывными пробелами */
-function duration(minutes: number): string {
-  const h = Math.floor(minutes / 60);
-  const m = minutes % 60;
-  if (h === 0) return `${m}\u00a0мин`;
-  return m === 0 ? `${h}\u00a0ч` : `${h}\u00a0ч ${m}\u00a0мин`;
-}
-
-/**
- * Окно между парами (T14, «Свободные аудитории»): своя строка той же сеткой, что переход между корпусами.
- * Свободные — по расписанию корпуса следующей пары; только номера, без чужих групп и людей.
- */
-function WindowRow({ window: w }: { window: FreeWindow }) {
-  return (
-    <li className="flex flex-wrap gap-x-4 gap-y-1 py-2.5 text-sm">
-      {/* Скринридер: «С 14:00 до 16:00, окно 2 ч» — «окно» один раз (ux-reviewer, T14) */}
-      <p className="flex w-[4.5rem] shrink-0 flex-col text-ink-muted tabular">
-        <span className="sr-only">С </span>
-        <span>{formatTime(w.startsAt)}</span>
-        <span className="sr-only"> до </span>
-        <span>{formatTime(w.endsAt)}</span>
-      </p>
-      <div className="flex min-w-[min(12rem,100%)] flex-1 flex-col gap-0.5">
-        <span className="flex items-start gap-1.5 font-bold text-ink">
-          <DoorOpen aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
-          Окно {duration(w.minutes)}
-        </span>
-        <span className="break-words text-ink">
-          <FreeRoomsText
-            free={w.free}
-            known={w.known}
-            near={w.near}
-            nearRoom={w.nearRoom}
-            nearOf={w.nearOf}
-          />
-        </span>
-        <span className="text-ink-muted">{w.building}</span>
       </div>
     </li>
   );

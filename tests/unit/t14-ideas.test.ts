@@ -1,4 +1,5 @@
-// T14: три идеи из ресерча — «Вам положено» (J), оценка заявки (K), свободные аудитории (N). Чистые функции.
+// T14: идеи из ресерча — «Вам положено» (J), оценка заявки (K) и подбор свободной аудитории (N; у студента
+// снято 11.11 — аудитории закрыты, ключи студентам не дают; осталось сотруднику при переносе пары). Чистые функции.
 import { describe, expect, it } from "vitest";
 import type { StudySummary } from "@/server/services/academics";
 import { offersFor, SCHOLARSHIP_UP_MIN_AVERAGE } from "@/server/services/offer-rules";
@@ -8,14 +9,7 @@ import {
   ratingSchema,
   summarizeRatings,
 } from "@/server/services/request-rules";
-import {
-  buildWindows,
-  freeRoomsIn,
-  anchorRoom,
-  nearestRooms,
-  WINDOW_MIN_MINUTES,
-} from "@/server/services/schedule";
-import type { LessonRow } from "@/server/repos/schedule";
+import { freeRoomsIn, nearestRooms } from "@/server/services/schedule";
 
 const study = (over: Partial<StudySummary> = {}): StudySummary => ({
   semester: 3,
@@ -124,38 +118,10 @@ describe("K. Оценка решения заявки", () => {
   });
 });
 
-describe("N. Окна между парами и свободные аудитории", () => {
+describe("N. Свободные аудитории для переноса пары", () => {
   const msk = (iso: string) => new Date(`${iso}+03:00`);
-  const MAIN = "Главный корпус (пр-т Вернадского)";
-  let seq = 0;
-  const lesson = (start: string, end: string, over: Partial<LessonRow> = {}): LessonRow =>
-    ({
-      id: `l${++seq}`,
-      kind: "SEMINAR",
-      startsAt: msk(start),
-      endsAt: msk(end),
-      building: MAIN,
-      room: "2118",
-      change: "NONE",
-      changeNote: null,
-      originalStartsAt: null,
-      discipline: { name: "Предмет" },
-      teacher: { fullName: "Преподаватель" },
-      languageGroup: null,
-      ...over,
-    }) as LessonRow;
 
-  it(`окно — перерыв от ${WINDOW_MIN_MINUTES} мин; короткий перерыв и отменённая пара — не окно`, () => {
-    const a = lesson("2026-11-11T09:00", "2026-11-11T10:20");
-    const b = lesson("2026-11-11T10:40", "2026-11-11T12:00"); // перерыв 20 мин
-    const c = lesson("2026-11-11T14:00", "2026-11-11T15:20"); // окно 2 ч
-    const cancelled = lesson("2026-11-11T12:20", "2026-11-11T13:40", { change: "CANCELLED" });
-    const w = buildWindows([c, a, cancelled, b]);
-    expect([...w.keys()]).toEqual([c.id]);
-    expect(w.get(c.id)).toMatchObject({ minutes: 120, building: MAIN });
-  });
-
-  it("свободна — встречается в расписании корпуса и не занята в окно; по возрастанию номера", () => {
+  it("свободна — встречается в расписании корпуса и не занята в новое время; по возрастанию номера", () => {
     const from = msk("2026-11-11T12:00");
     const to = msk("2026-11-11T14:00");
     const usage = [
@@ -167,17 +133,11 @@ describe("N. Окна между парами и свободные аудито
     expect(freeRoomsIn(usage, from, to)).toEqual(["1052", "3014", "10010"]);
   });
 
-  it("рядом — ближайшие по номеру к аудитории следующей пары; нечисловая — первые по порядку", () => {
+  it("рядом — ближайшие по номеру к занятой аудитории; нечисловая — «рядом» нет", () => {
     const free = ["1001", "2024", "2031", "2035", "3014", "Л-503"];
     expect(nearestRooms(free, "2029")).toEqual(["2031", "2024", "2035"]);
     // Нечисловой ориентир — «рядом» не выдумываем
     expect(nearestRooms(free, "Л-503")).toEqual([]);
     expect(nearestRooms([], "2029")).toEqual([]);
-  });
-
-  it("ориентир «рядом»: следующая пара, если номер числовой; иначе прошлая; иначе никакого", () => {
-    expect(anchorRoom("2028", "3014")).toEqual({ nearRoom: "3014", nearOf: "next" });
-    expect(anchorRoom("2028", "Л-503")).toEqual({ nearRoom: "2028", nearOf: "prev" });
-    expect(anchorRoom("Л-402", "Л-503")).toEqual({ nearRoom: "", nearOf: null });
   });
 });

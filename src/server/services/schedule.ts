@@ -1,11 +1,12 @@
 import "server-only";
 import { addDays, mskDateKey, mskStartOfWeek, mskWeekday } from "@/lib/msk";
-import type { StudentCtx } from "@/server/auth/guards";
+import type { StaffCtx, StudentCtx } from "@/server/auth/guards";
 import { roomUsage } from "@/server/repos/rooms";
 import { lessonsBetween, type LessonRow } from "@/server/repos/schedule";
 
 // Расписание (T06): день и неделя из одного источника — lessonsBetween (группы из ctx, S1).
 // Здесь только раскладка по дням и подсказки; запросов к БД, кроме lessonsBetween, нет.
+// Исключение — suggestRooms (T14+): подбор свободной аудитории сотруднику при переносе пары (repos/rooms.ts).
 
 /**
  * Подряд две пары в разных корпусах. Показываем отдельной строкой между ними: когда перерыв
@@ -21,34 +22,9 @@ export type Transition = {
   breakMinutes: number;
 };
 
-/**
- * Окно между парами (T14, «Свободные аудитории»): перерыв от часа — и какие аудитории корпуса следующей
- * пары свободны в это время по расписанию (без групп и людей — только номера, repos/rooms.ts).
- */
-export type FreeWindow = {
-  startsAt: Date;
-  endsAt: Date;
-  minutes: number;
-  building: string;
-  /** От какой аудитории считаем «рядом»: следующей пары, а если её номер не числовой (Л-503) — прошлой */
-  nearRoom: string;
-  nearOf: NearOf;
-  /** Свободные аудитории — по возрастанию номера; пусто — свободных по расписанию нет */
-  free: string[];
-  /** Сколько аудиторий корпуса вообще встречается в расписании недели */
-  known: number;
-  /** До трёх свободных — ближайшие по номеру к аудитории следующей пары */
-  near: string[];
-};
-
-/** Окно — от часа: короткий перерыв уходит на дорогу и очередь в буфет */
-export const WINDOW_MIN_MINUTES = 60;
-
 export type ScheduleItem = {
   lesson: LessonRow;
   transition: Transition | null;
-  /** Только в виде «День»: окно перед этой парой */
-  window: FreeWindow | null;
 };
 
 export type ScheduleDay = {
@@ -95,50 +71,11 @@ export function buildTransitions(dayLessons: LessonRow[]): Map<string, Transitio
   return result;
 }
 
-type WindowSlot = Omit<FreeWindow, "free" | "known" | "near">;
-
-/** Окна за день: соседние неотменённые пары с перерывом от WINDOW_MIN_MINUTES; корпус — следующей пары. */
-export function buildWindows(dayLessons: LessonRow[]): Map<string, WindowSlot> {
-  const live = dayLessons
-    .filter((l) => l.change !== "CANCELLED")
-    .sort((a, b) => +a.startsAt - +b.startsAt);
-  const result = new Map<string, WindowSlot>();
-  for (let i = 1; i < live.length; i++) {
-    const prev = live[i - 1]!;
-    const cur = live[i]!;
-    const minutes = Math.round((+cur.startsAt - +prev.endsAt) / 60_000);
-    if (minutes < WINDOW_MIN_MINUTES) continue;
-    result.set(cur.id, {
-      startsAt: prev.endsAt,
-      endsAt: cur.startsAt,
-      minutes,
-      building: cur.building,
-      ...anchorRoom(prev.room, cur.room),
-    });
-  }
-  return result;
-}
-
 const roomNumber = (r: string) => (/^\d+$/.test(r) ? Number(r) : NaN);
 
-export type NearOf = "next" | "prev" | null;
-
 /**
- * От какой аудитории считать «рядом»: следующей пары; если её номер не числовой (языковые Л-503) —
- * прошлой; если обе нечисловые — ни от какой (не выдаём первые по списку за «рядом»).
- */
-export function anchorRoom(
-  prevRoom: string,
-  nextRoom: string,
-): { nearRoom: string; nearOf: NearOf } {
-  if (!Number.isNaN(roomNumber(nextRoom))) return { nearRoom: nextRoom, nearOf: "next" };
-  if (!Number.isNaN(roomNumber(prevRoom))) return { nearRoom: prevRoom, nearOf: "prev" };
-  return { nearRoom: "", nearOf: null };
-}
-
-/**
- * Ближайшие к аудитории по номеру (тот же этаж и крыло). Пять первых номеров списка ничего не говорили,
- * куда идти (ux-reviewer, T14). Нечисловая аудитория-ориентир — пусто: «рядом» не выдумываем.
+ * Ближайшие к аудитории по номеру (тот же этаж и крыло): сотруднику при переносе полезнее соседняя
+ * аудитория, чем первая по списку. Нечисловая аудитория-ориентир — пусто: «рядом» не выдумываем.
  */
 export function nearestRooms(free: string[], target: string, n = 3): string[] {
   const num = roomNumber;
@@ -151,8 +88,8 @@ export function nearestRooms(free: string[], target: string, n = 3): string[] {
 }
 
 /**
- * Свободные аудитории в окне: те, что встречаются в расписании корпуса (`usage` — за неделю), минус занятые
- * парами, которые пересекают окно. Только номера — по возрастанию.
+ * Свободные аудитории в промежутке: те, что встречаются в расписании корпуса (`usage` — за неделю), минус
+ * занятые парами, которые его пересекают. Только номера — по возрастанию.
  */
 export function freeRoomsIn(
   usage: { room: string; startsAt: Date; endsAt: Date }[],
@@ -168,34 +105,29 @@ export function freeRoomsIn(
     .sort((a, b) => a.localeCompare(b, "ru", { numeric: true }));
 }
 
-/** Окна дня со свободными аудиториями: по одному запросу на корпус за неделю дня. */
-async function windowsWithRooms(
-  ctx: StudentCtx,
-  dayLessons: LessonRow[],
-  weekStart: Date,
-): Promise<Map<string, FreeWindow>> {
-  const slots = buildWindows(dayLessons);
-  const result = new Map<string, FreeWindow>();
-  if (!slots.size) return result;
-  const buildings = [...new Set([...slots.values()].map((w) => w.building))];
-  const usageBy = new Map(
-    await Promise.all(
-      buildings.map(
-        async (b) => [b, await roomUsage(ctx, b, weekStart, addDays(weekStart, 7))] as const,
-      ),
-    ),
+/** Сколько свободных аудиторий подсказываем сотруднику при переносе (T14+) */
+export const SUGGEST_ROOMS = 4;
+
+/**
+ * Перенос пары (T14+): аудитория занята — какие свободны в корпусе в новое время. «Известные» аудитории —
+ * из расписания корпуса на неделе нового времени; ближайшие по номеру к занятой, а если номер не числовой —
+ * первые по списку. Переносимая пара сама себе не мешает.
+ */
+export async function suggestRooms(
+  ctx: StaffCtx,
+  slot: { building: string; room: string; startsAt: Date; endsAt: Date; lessonId: string },
+): Promise<string[]> {
+  const weekStart = mskStartOfWeek(slot.startsAt);
+  const usage = await roomUsage(
+    ctx,
+    slot.building,
+    weekStart,
+    addDays(weekStart, 7),
+    slot.lessonId,
   );
-  for (const [lessonId, w] of slots) {
-    const usage = usageBy.get(w.building) ?? [];
-    const free = freeRoomsIn(usage, w.startsAt, w.endsAt);
-    result.set(lessonId, {
-      ...w,
-      free,
-      known: new Set(usage.map((u) => u.room)).size,
-      near: nearestRooms(free, w.nearRoom),
-    });
-  }
-  return result;
+  const free = freeRoomsIn(usage, slot.startsAt, slot.endsAt).filter((r) => r !== slot.room);
+  const near = nearestRooms(free, slot.room, SUGGEST_ROOMS);
+  return near.length ? near : free.slice(0, SUGGEST_ROOMS);
 }
 
 function toDay(start: Date, lessons: LessonRow[]): ScheduleDay {
@@ -210,7 +142,6 @@ function toDay(start: Date, lessons: LessonRow[]): ScheduleDay {
     items: own.map((lesson) => ({
       lesson,
       transition: transitions.get(lesson.id) ?? null,
-      window: null,
     })),
   };
 }
@@ -244,17 +175,7 @@ export async function getDaySchedule(ctx: StudentCtx, dayStart: Date): Promise<D
   const nextStart = addDays(dayStart, 1);
   const until = new Date(Math.max(+addDays(weekStart, 7), +addDays(dayStart, 2)));
   const lessons = await lessonsBetween(ctx, weekStart, until);
-  const plainDay = toDay(dayStart, lessons);
-  // T14: окна от часа — со свободными аудиториями (только в виде «День»)
-  const windows = await windowsWithRooms(
-    ctx,
-    plainDay.items.map((i) => i.lesson),
-    weekStart,
-  );
-  const day = {
-    ...plainDay,
-    items: plainDay.items.map((i) => ({ ...i, window: windows.get(i.lesson.id) ?? null })),
-  };
+  const day = toDay(dayStart, lessons);
   const week = groupByDay(lessons, weekStart);
   if (!week.some((d) => d.key === day.key)) week.push(day);
   const nextLive = toDay(nextStart, lessons).items.filter((i) => i.lesson.change !== "CANCELLED");

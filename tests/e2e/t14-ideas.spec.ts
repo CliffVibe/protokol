@@ -1,14 +1,13 @@
-// T14: три идеи из ресерча — «Вам положено» (J), оценка заявки и «Вы сказали — мы сделали» (K),
-// свободные аудитории в окно (N). Мутации — на временном студенте (helpers/temp-student.ts): демо-аккаунты
+// T14: идеи из ресерча — «Вам положено» (J), оценка заявки и «Вы сказали — мы сделали» (K). Свободные
+// аудитории в окно (N) у студента сняты 11.11 (аудитории закрыты, ключей студентам не дают) — подбор
+// аудитории остался сотруднику при переносе пары, его проверяет reschedule.spec. Мутации — на временном студенте (helpers/temp-student.ts): демо-аккаунты
 // и параллельные проекты (desktop, mobile-360) не трогаем. После теста студент удаляется вместе с заявками.
 import { randomBytes } from "node:crypto";
 import AxeBuilder from "@axe-core/playwright";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
-import { addDays, mskDateKey, mskStartOfWeek } from "../../src/lib/msk";
 import { withDb } from "./helpers/db";
 import { tempStudent, type TempStudent } from "./helpers/temp-student";
-import { setTextScale } from "./helpers/text-scale";
 
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
@@ -164,25 +163,5 @@ test.describe("K. Оценка заявки и «Вы сказали — мы с
     await page.goto("/notifications?tab=announcements");
     await expect(page.getByText("Вы сказали — мы сделали").first()).toBeVisible();
     await expect(page.getByText("Вы просили — выдаём справки по четвергам до 19:00")).toBeVisible();
-  });
-});
-
-test.describe("N. Свободные аудитории в окно", () => {
-  test("в среду у Алисы окно перед французским — ближайшие к следующей паре аудитории; 200 % без скролла", async ({
-    page,
-  }) => {
-    // Среда следующей недели: прошедшие окна скрыты, а эта всегда впереди
-    const wednesday = mskDateKey(addDays(mskStartOfWeek(new Date()), 9));
-    await page.goto(`/schedule?day=${wednesday}`);
-    const row = page
-      .getByRole("list", { name: /^Пары: / })
-      .getByRole("listitem")
-      .filter({ hasText: /Окно \d/ });
-    await expect(row).toHaveCount(1);
-    await expect(row).toContainText(/По расписанию свободно \d+|Почти все аудитории свободны/);
-    await expect(row).toContainText(/рядом (со следующей|с прошлой) парой \(ауд\.\s\d+\): \d+/);
-    expect(await overflow(page)).toBeLessThanOrEqual(0);
-    await setTextScale(page, "200%");
-    expect(await overflow(page)).toBeLessThanOrEqual(0);
   });
 });

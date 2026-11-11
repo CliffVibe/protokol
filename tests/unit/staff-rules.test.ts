@@ -6,6 +6,7 @@ import {
   announcementFormSchema,
   announcementNotification,
   buildAudience,
+  clashMessage,
   describeAudience,
   newStartsAt,
   readAnnouncementForm,
@@ -223,5 +224,58 @@ describe("вкладки уведомлений", () => {
   it("адрес вкладки", () => {
     expect(notificationsHref("all")).toBe("/notifications");
     expect(notificationsHref("deadlines")).toBe("/notifications?tab=deadlines");
+  });
+});
+
+describe("накладки при переносе (T14+)", () => {
+  const at = new Date("2026-11-12T09:40:00.000Z"); // 12:40 МСК
+  const to = new Date("2026-11-12T11:00:00.000Z"); // 14:00 МСК
+  it("группа, языковая, преподаватель — ошибка у поля «Начало» с временем помехи", () => {
+    const g = clashMessage({ kind: "group", discipline: "Эконометрика", startsAt: at, endsAt: to });
+    expect(g.field).toBe("time");
+    expect(g.message).toBe(
+      "У группы в это время уже пара: Эконометрика, 12:40–14:00. Выберите другое время",
+    );
+    expect(
+      clashMessage({ kind: "language", students: 1, startsAt: at, endsAt: to }).message,
+    ).toMatch(/^У одного студента группы в это время языковая пара/);
+    expect(
+      clashMessage({ kind: "language", students: 7, startsAt: at, endsAt: to }).message,
+    ).toMatch(/^У 7 студентов группы/);
+    const t = clashMessage({ kind: "teacher", startsAt: at, endsAt: to });
+    expect(t).toEqual({
+      field: "time",
+      message: "У преподавателя в это время другая пара (12:40–14:00). Выберите другое время",
+    });
+  });
+  it("склонение после числа: у 21 студента, у 22 студентов, у 11 студентов", () => {
+    const lang = (students: number) =>
+      clashMessage({ kind: "language", students, startsAt: at, endsAt: to }).message;
+    expect(lang(21)).toMatch(/^У 21 студента группы/);
+    expect(lang(22)).toMatch(/^У 22 студентов группы/);
+    expect(lang(11)).toMatch(/^У 11 студентов группы/);
+  });
+  it("аудитория: ошибка у «Аудитории»; свободных нет — у «Начала»; без чужих групп и людей", () => {
+    const room = {
+      kind: "room" as const,
+      building: "Главный корпус",
+      room: "2029",
+      startsAt: at,
+      endsAt: to,
+    };
+    // Подсказка не загрузилась — не выдаём это за «свободных нет»
+    expect(clashMessage(room)).toEqual({
+      field: "room",
+      message: "Ауд.\u00a02029 в это время занята. Укажите другую",
+    });
+    expect(clashMessage(room, 3)).toEqual({
+      field: "room",
+      message: "Ауд.\u00a02029 в это время занята. Выберите свободную ниже или впишите другую",
+    });
+    expect(clashMessage(room, 0)).toEqual({
+      field: "time",
+      message:
+        "Ауд.\u00a02029 в это время занята, а свободных в корпусе по расписанию нет. Выберите другое время",
+    });
   });
 });

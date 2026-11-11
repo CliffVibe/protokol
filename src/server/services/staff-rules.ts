@@ -2,7 +2,7 @@
 // объявление (поля, адресаты только своих факультетов) и перенос пары (дата, время, причина, текст уведомления).
 import { z } from "zod";
 import type { Audience } from "@/lib/audience";
-import { formatRelativeDay, formatTime } from "@/lib/dates";
+import { formatRelativeDay, formatTime, plural } from "@/lib/dates";
 import { assertLink } from "@/lib/links";
 import { markdownToPlain } from "@/lib/markdown";
 import { addDays, mskAt, mskDateKey, mskDayFromKey, mskStartOfDay } from "@/lib/msk";
@@ -177,6 +177,68 @@ export function newStartsAt(
   if (form.date > addDays(mskStartOfDay(now), RESCHEDULE_DAYS_AHEAD))
     return { ok: false, error: `Перенести можно не дальше чем на ${RESCHEDULE_DAYS_AHEAD} дней` };
   return { ok: true, at };
+}
+
+/**
+ * Почему в новое время нельзя (T14+): у группы уже пара; у части её студентов — языковая пара
+ * (языковые группы смешаны по факультетам — наружу только время и сколько студентов); преподаватель
+ * занят; аудитория занята. Чужие группы и людей не называем — только время и номер аудитории.
+ */
+export type RescheduleClash =
+  | { kind: "group"; discipline: string; startsAt: Date; endsAt: Date }
+  | { kind: "language"; students: number; startsAt: Date; endsAt: Date }
+  | { kind: "teacher"; startsAt: Date; endsAt: Date }
+  | { kind: "room"; building: string; room: string; startsAt: Date; endsAt: Date };
+
+const span = (c: { startsAt: Date; endsAt: Date }) =>
+  `${formatTime(c.startsAt)}–${formatTime(c.endsAt)}`;
+
+/**
+ * Накладка → ошибка у поля, которое её исправит: время (группа, языковая, преподаватель) или аудитория.
+ * Для аудитории `freeRooms` — сколько свободных подсказали: 0 — менять надо время, а не номер (ошибка у
+ * «Начала», ux-reviewer T14+); есть — «выберите ниже»; null — подсказка не загрузилась.
+ */
+export function clashMessage(
+  c: RescheduleClash,
+  freeRooms: number | null = null,
+): { field: "time" | "room"; message: string } {
+  switch (c.kind) {
+    case "group":
+      return {
+        field: "time",
+        message: `У группы в это время уже пара: ${c.discipline}, ${span(c)}. Выберите другое время`,
+      };
+    case "language": {
+      // «у 1 / 21 студента», «у 2 / 5 студентов» — родительный падеж
+      const who =
+        c.students === 1
+          ? "одного студента"
+          : `${c.students} ${plural(c.students, ["студента", "студентов", "студентов"])}`;
+      return {
+        field: "time",
+        message: `У ${who} группы в это время языковая пара (${span(c)}). Выберите другое время`,
+      };
+    }
+    case "teacher":
+      return {
+        field: "time",
+        message: `У преподавателя в это время другая пара (${span(c)}). Выберите другое время`,
+      };
+    case "room": {
+      const busy = `Ауд. ${c.room} в это время занята`;
+      if (freeRooms === 0)
+        return {
+          field: "time",
+          message: `${busy}, а свободных в корпусе по расписанию нет. Выберите другое время`,
+        };
+      return {
+        field: "room",
+        message: freeRooms
+          ? `${busy}. Выберите свободную ниже или впишите другую`
+          : `${busy}. Укажите другую`,
+      };
+    }
+  }
 }
 
 /** Ссылка на день в расписании студента. */

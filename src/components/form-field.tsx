@@ -38,7 +38,7 @@ export function FormField({ id, label, hint, error, children, className }: FormF
         ...(error ? { "aria-invalid": true as const } : {}),
       })}
       {error ? (
-        <p id={errorId} className="flex items-start gap-1.5 text-sm text-danger">
+        <p id={errorId} className="flex items-start gap-1.5 text-sm break-words text-danger">
           <CircleAlert aria-hidden className="mt-0.5 size-4 shrink-0" />
           {error}
         </p>

@@ -118,12 +118,12 @@ describe.skipIf(!url)("T14: предложения, оценки, аудитор
     });
   });
 
-  describe("N. Свободные аудитории", () => {
-    it("roomUsage отдаёт только номер и время — без групп, дисциплин и людей", async () => {
-      const vera = await student(DEMO.vera.userId);
+  describe("N. Свободные аудитории (сотруднику при переносе)", () => {
+    it("roomUsage (подбор аудитории сотруднику) — только номер и время, без групп, дисциплин и людей", async () => {
+      const irina = (await loadStaffCtx(DEMO.irina.userId))!;
       const from = new Date(Date.now() - 7 * 24 * 3600_000);
       const rows = await rooms.roomUsage(
-        vera,
+        irina,
         "Главный корпус (пр-т Вернадского)",
         from,
         new Date(),
