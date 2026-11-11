@@ -64,7 +64,10 @@ export function NowCard({ next, now }: { next: NextLesson; now: Date }) {
         <span className="text-xl font-semibold text-plate-muted">–{formatTime(lesson.endsAt)}</span>
       </p>
       <div className="relative flex flex-col gap-0.5">
-        <p className="text-xl font-semibold break-words">{lesson.discipline.name}</p>
+        {/* Переносы по слогам: при тексте 200 % «Международных» рвалось без дефиса «междунар / одных» (T14) */}
+        <p className="text-xl font-semibold break-words hyphens-auto [hyphenate-limit-chars:10_4_4]">
+          {lesson.discipline.name}
+        </p>
         <p className="text-sm text-plate-muted">
           {LESSON_KIND[lesson.kind]}
           {lesson.languageGroup ? `, ${lesson.languageGroup.name}` : null}
