@@ -51,6 +51,7 @@ export async function queueFor(ctx: StaffCtx, f: QueueFilters) {
       status: true,
       createdAt: true,
       updatedAt: true,
+      offered: true,
       type: { select: { title: true, code: true, slaDays: true } },
       student: { select: STUDENT_SELECT },
     },
@@ -83,6 +84,7 @@ export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
       payload: true,
       createdAt: true,
       updatedAt: true,
+      offered: true,
       type: { select: { title: true, slaDays: true, fields: true } },
       student: { select: STUDENT_SELECT },
       // Справка (T10): срок, ссылка проверки и отзыв
@@ -202,5 +204,23 @@ export async function revokeDocument(
       },
     });
     return "ok";
+  });
+}
+
+/**
+ * Оценки студентов своих факультетов (T14, «Вы сказали — мы сделали»): для сводки в очереди.
+ * Без ФИО и номеров — только тип справки, оценка, комментарий и дата: отзыв анонимен для сотрудника.
+ */
+export async function ratingsOf(ctx: StaffCtx) {
+  return db.request.findMany({
+    where: { ...ofMyFaculties(ctx), rating: { not: null } },
+    orderBy: { ratedAt: "desc" },
+    take: 500,
+    select: {
+      rating: true,
+      ratingComment: true,
+      ratedAt: true,
+      type: { select: { code: true, title: true } },
+    },
   });
 }

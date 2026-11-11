@@ -2,7 +2,7 @@ import "server-only";
 import { Prisma } from "@/generated/prisma/client";
 import { mskYear } from "@/lib/msk";
 import { db } from "@/server/db";
-import { formatRequestNumber } from "@/server/services/request-rules";
+import { formatRequestNumber, RATABLE_STATUSES } from "@/server/services/request-rules";
 import type { StudentCtx } from "./auth";
 
 // Заявки студента — всегда WHERE studentId = ctx.studentId (S1). Номер из адреса ищется только вместе
@@ -54,6 +54,10 @@ export async function requestByNumber(ctx: StudentCtx, number: string) {
       payload: true,
       createdAt: true,
       updatedAt: true,
+      // T14: «Вам положено» и оценка студента
+      offered: true,
+      rating: true,
+      ratingComment: true,
       type: { select: { code: true, title: true, slaDays: true, fields: true } },
       // Отзыв справки (T10): студент видит причину у себя в заявке; на /verify её нет
       document: { select: { revoked: true, revokedAt: true, revokedReason: true } },
@@ -76,7 +80,14 @@ const isUniqueViolation = (e: unknown) =>
  */
 export async function createRequest(
   ctx: StudentCtx,
-  input: { typeId: string; language: string; payload: Record<string, string>; clientKey: string },
+  input: {
+    typeId: string;
+    language: string;
+    payload: Record<string, string>;
+    clientKey: string;
+    /** T14: заявку предложил деканат («Вам положено»), студент подтвердил */
+    offered?: boolean;
+  },
 ): Promise<string> {
   try {
     return await db.$transaction(async (tx) => {
@@ -93,6 +104,7 @@ export async function createRequest(
           language: input.language,
           payload: input.payload,
           clientKey: input.clientKey,
+          offered: input.offered ?? false,
         },
         select: { id: true, number: true },
       });
@@ -110,6 +122,39 @@ export async function createRequest(
     if (!existing) throw e;
     return existing.number;
   }
+}
+
+/** Своя заявка, уже созданная с этим ключом формы (повтор отправки) — её номер или null. */
+export async function numberByClientKey(
+  ctx: StudentCtx,
+  clientKey: string,
+): Promise<string | null> {
+  const r = await db.request.findFirst({
+    where: { studentId: ctx.studentId, clientKey },
+    select: { number: true },
+  });
+  return r?.number ?? null;
+}
+
+/**
+ * Оценка решения своей заявки (T14): только «Готова»/«Выдана» и только один раз. false — нет такой своей
+ * заявки, не тот статус или уже оценена: снаружи не различаем (не подтверждаем существование чужой).
+ */
+export async function rateRequest(
+  ctx: StudentCtx,
+  number: string,
+  input: { rating: number; comment: string | null },
+): Promise<boolean> {
+  const { count } = await db.request.updateMany({
+    where: {
+      number,
+      studentId: ctx.studentId,
+      status: { in: [...RATABLE_STATUSES] },
+      rating: null,
+    },
+    data: { rating: input.rating, ratingComment: input.comment, ratedAt: new Date() },
+  });
+  return count === 1;
 }
 
 /**

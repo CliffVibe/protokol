@@ -10,6 +10,7 @@ import {
 import type { NotificationKind } from "@/generated/prisma/client";
 import { Markdown } from "@/components/markdown";
 import { formatRelativeDay, formatTime } from "@/lib/dates";
+import { YouSaidMark } from "./you-said-mark";
 import { safeLink } from "@/lib/links";
 import type { Tab } from "@/lib/notification-tabs";
 import { cn } from "@/lib/utils";
@@ -121,6 +122,8 @@ export type BoardAnnouncement = {
   body: string;
   publishedAt: Date;
   pinned: boolean;
+  /** T14: ответ деканата на отзывы студентов */
+  youSaid?: boolean;
 };
 
 /** Объявление на доске: закреплённое — с булавкой и словом; текст — с разметкой (S5, без сырого HTML). */
@@ -156,6 +159,7 @@ export function AnnouncementItem({
             Закреплено
           </span>
         ) : null}
+        {a.youSaid ? <YouSaidMark /> : null}
         <span className="tabular">
           {formatRelativeDay(a.publishedAt, now)}, {formatTime(a.publishedAt)}
         </span>

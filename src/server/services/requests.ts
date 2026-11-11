@@ -5,6 +5,7 @@ import type { StaffCtx, StudentCtx } from "@/server/auth/guards";
 import {
   cancelRequest,
   createRequest,
+  rateRequest,
   requestByNumber,
   requestsOf,
   requestTypes,
@@ -12,6 +13,7 @@ import {
 import {
   changeStatus,
   queueFor,
+  ratingsOf,
   revokeDocument,
   queueOptions,
   staffRequestByNumber,
@@ -25,8 +27,10 @@ import {
   buildPayloadSchema,
   canTransition,
   dueDate,
+  isRatable,
   overdueDays,
   parseFields,
+  summarizeRatings,
   timelineOf,
   TRANSITIONS,
   type FieldSpec,
@@ -68,6 +72,8 @@ export async function getMyRequest(ctx: StudentCtx, number: string) {
     timeline: timelineOf({ ...r, slaDays: r.type.slaDays }),
     fields: labeledPayload(parseFields(r.type.fields), r.payload),
     canCancel: r.status === "SUBMITTED",
+    // T14: оценить можно «Готова»/«Выдана», один раз
+    canRate: isRatable(r.status) && r.rating === null,
     // PDF с QR (T10): готова или выдана и документ не отозван; то же условие — в documentForPdf
     canDownload:
       (r.status === "READY" || r.status === "ISSUED") && !!r.document && !r.document.revoked,
@@ -95,7 +101,14 @@ export type SubmitResult =
 /** Подать заявку: zod-схема строится из описания полей типа на сервере. */
 export async function submitRequest(
   ctx: StudentCtx,
-  input: { code: string; language: unknown; payload: Record<string, unknown>; clientKey: string },
+  input: {
+    code: string;
+    language: unknown;
+    payload: Record<string, unknown>;
+    clientKey: string;
+    /** T14: заявку предложил деканат («Вам положено») — проверяет вызывающий (services/offers.ts) */
+    offered?: boolean;
+  },
 ): Promise<SubmitResult> {
   const type = await getRequestType(ctx, input.code);
   if (!type) return { ok: false, fieldErrors: { form: "Такой справки нет — выберите из списка" } };
@@ -116,12 +129,22 @@ export async function submitRequest(
     language: parsed.data.language,
     payload: parsed.data.payload,
     clientKey: input.clientKey,
+    offered: input.offered,
   });
   return { ok: true, number };
 }
 
 export async function cancelMyRequest(ctx: StudentCtx, number: string): Promise<boolean> {
   return cancelRequest(ctx, number);
+}
+
+/** Оценка решения своей заявки (T14). false — нельзя (чужая, не тот статус, уже оценена). */
+export async function rateMyRequest(
+  ctx: StudentCtx,
+  number: string,
+  input: { rating: number; comment: string | null },
+): Promise<boolean> {
+  return rateRequest(ctx, number, input);
 }
 
 // ── Сотрудник ──
@@ -140,6 +163,11 @@ export async function getQueue(ctx: StaffCtx, filters: QueueFilters, now: Date) 
 }
 
 export type QueueItem = Awaited<ReturnType<typeof getQueue>>["items"][number];
+
+/** «Что говорят студенты» (T14): оценки заявок своих факультетов, без имён. */
+export async function getRatingsSummary(ctx: StaffCtx) {
+  return summarizeRatings(await ratingsOf(ctx));
+}
 
 export async function getStaffRequest(ctx: StaffCtx, number: string) {
   const r = await staffRequestByNumber(ctx, number);

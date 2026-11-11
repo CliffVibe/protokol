@@ -20,7 +20,14 @@ type Options = {
 const CHECK = "size-5 shrink-0 accent-brand";
 const CHECK_ROW = "flex min-h-11 items-center gap-2.5 text-base text-ink";
 
-export function AnnouncementForm({ options }: { options: Options }) {
+export function AnnouncementForm({
+  options,
+  defaultYouSaid = false,
+}: {
+  options: Options;
+  /** Пришли из «Что говорят студенты» — галочка «Вы сказали — мы сделали» уже стоит */
+  defaultYouSaid?: boolean;
+}) {
   const [state, action, pending] = useActionState<PublishState, FormData>(
     publishAnnouncementAction,
     {},
@@ -179,6 +186,17 @@ export function AnnouncementForm({ options }: { options: Options }) {
           className={CHECK}
         />
         Закрепить — будет первым на доске объявлений и на главной
+      </label>
+
+      {/* T14: ответ на отзывы студентов — у объявления пометка «Вы сказали — мы сделали» */}
+      <label className={CHECK_ROW}>
+        <input
+          type="checkbox"
+          name="youSaid"
+          defaultChecked={v?.youSaid ?? defaultYouSaid}
+          className={CHECK}
+        />
+        Ответ на отзывы студентов — пометка «Вы сказали — мы сделали»
       </label>
 
       <div>

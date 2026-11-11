@@ -5,11 +5,12 @@ import { z } from "zod";
 import { EmptyState } from "@/components/empty-state";
 import { PageHeader } from "@/components/page-header";
 import { QueueRow } from "@/components/staff/queue-row";
+import { RatingsSummaryBlock } from "@/components/staff/ratings-summary";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import { requireStaff } from "@/server/auth/guards";
-import { getQueue } from "@/server/services/requests";
+import { getQueue, getRatingsSummary } from "@/server/services/requests";
 import type { RequestStatus } from "@/generated/prisma/client";
 
 export const metadata: Metadata = { title: "Кабинет деканата" };
@@ -54,11 +55,15 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
   const type = rawType.success ? rawType.data : null;
 
   const now = new Date();
-  const { items, faculties, types } = await getQueue(
-    ctx,
-    { statuses: [...GROUPS[status].statuses], facultyId: faculty, typeCode: type },
-    now,
-  );
+  const [{ items, faculties, types }, ratings] = await Promise.all([
+    getQueue(
+      ctx,
+      { statuses: [...GROUPS[status].statuses], facultyId: faculty, typeCode: type },
+      now,
+    ),
+    // Сводка второстепенна: сбой — строка «не загрузилась», а не ошибка всей очереди (ux-reviewer, T14)
+    getRatingsSummary(ctx).catch(() => null),
+  ]);
   const overdue = items.filter((i) => i.overdue > 0).length;
 
   return (
@@ -152,6 +157,9 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
           }
         />
       )}
+
+      {/* T14: под очередью, а не над ней — главное на экране остаются заявки */}
+      <RatingsSummaryBlock summary={ratings} />
     </div>
   );
 }

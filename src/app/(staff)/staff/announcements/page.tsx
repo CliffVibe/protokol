@@ -4,6 +4,7 @@ import { EmptyState } from "@/components/empty-state";
 import { Markdown } from "@/components/markdown";
 import { PageHeader } from "@/components/page-header";
 import { AnnouncementForm } from "@/components/staff/announcement-form";
+import { YouSaidMark } from "@/components/notifications/you-said-mark";
 import { Button } from "@/components/ui/button";
 import { formatRelativeDay, formatTime, plural } from "@/lib/dates";
 import { requireStaff } from "@/server/auth/guards";
@@ -16,8 +17,12 @@ export const metadata: Metadata = { title: "Объявления" };
 // Объявления сотрудника (T09): новое объявление для своих факультетов/курсов/групп — публикация создаёт
 // уведомления адресатам; ниже — свои объявления с «Закрепить / Открепить».
 // Доступ — requireStaff() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
-export default async function StaffAnnouncementsPage() {
+export default async function StaffAnnouncementsPage({
+  searchParams,
+}: PageProps<"/staff/announcements">) {
   const ctx = await requireStaff();
+  // T14: из «Что говорят студенты» — ?youSaid=1 ставит галочку «Вы сказали — мы сделали»
+  const youSaid = (await searchParams).youSaid === "1";
   const [options, mine] = await Promise.all([staffAudienceOptions(ctx), myAnnouncements(ctx)]);
   const now = new Date();
 
@@ -32,7 +37,7 @@ export default async function StaffAnnouncementsPage() {
         <h2 id="new-announcement" className="text-lg">
           Новое объявление
         </h2>
-        <AnnouncementForm options={options} />
+        <AnnouncementForm options={options} defaultYouSaid={youSaid} />
       </section>
 
       <section aria-labelledby="my-announcements" className="flex flex-col gap-4 lg:max-w-3xl">
@@ -50,6 +55,7 @@ export default async function StaffAnnouncementsPage() {
                       Закреплено
                     </span>
                   ) : null}
+                  {a.youSaid ? <YouSaidMark /> : null}
                   <span className="tabular">
                     {formatRelativeDay(a.publishedAt, now)}, {formatTime(a.publishedAt)}
                   </span>

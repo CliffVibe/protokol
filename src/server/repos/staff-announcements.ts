@@ -63,7 +63,7 @@ export type PublishResult =
 /** Публикация: объявление и уведомления адресатам — одной транзакцией (нет «объявления без уведомлений»). */
 export async function publishAnnouncement(
   ctx: StaffCtx,
-  input: { title: string; body: string; audience: Audience; pinned: boolean },
+  input: { title: string; body: string; audience: Audience; pinned: boolean; youSaid?: boolean },
   now: Date = new Date(),
 ): Promise<PublishResult> {
   const audience = audienceSchema.parse(input.audience);
@@ -81,6 +81,7 @@ export async function publishAnnouncement(
         authorId: ctx.staffId,
         publishedAt: now,
         pinned: input.pinned,
+        youSaid: input.youSaid ?? false,
       },
       select: { id: true },
     });
@@ -101,7 +102,15 @@ export async function myAnnouncements(ctx: StaffCtx) {
     where: { authorId: ctx.staffId },
     orderBy: { publishedAt: "desc" },
     take: 50,
-    select: { id: true, title: true, body: true, audience: true, publishedAt: true, pinned: true },
+    select: {
+      id: true,
+      title: true,
+      body: true,
+      audience: true,
+      publishedAt: true,
+      pinned: true,
+      youSaid: true,
+    },
   });
   return Promise.all(
     rows.map(async (r) => {
@@ -112,6 +121,7 @@ export async function myAnnouncements(ctx: StaffCtx) {
         body: r.body,
         publishedAt: r.publishedAt,
         pinned: r.pinned,
+        youSaid: r.youSaid,
         audience: parsed.success ? parsed.data : null,
         audienceSize: parsed.success ? await countRecipients(ctx, parsed.data) : 0,
       };

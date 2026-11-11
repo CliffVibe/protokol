@@ -25,6 +25,7 @@ export async function announcementsFor(ctx: StudentCtx, now: Date) {
         body: true,
         publishedAt: true,
         pinned: true,
+        youSaid: true,
         audience: true,
       },
     }),
@@ -32,7 +33,14 @@ export async function announcementsFor(ctx: StudentCtx, now: Date) {
   if (!reader) return [];
   return rows
     .filter((r) => matchesAudience(r.audience, reader))
-    .map(({ id, title, body, publishedAt, pinned }) => ({ id, title, body, publishedAt, pinned }));
+    .map(({ id, title, body, publishedAt, pinned, youSaid }) => ({
+      id,
+      title,
+      body,
+      publishedAt,
+      pinned,
+      youSaid,
+    }));
 }
 
 export async function deadlinesFor(ctx: StudentCtx, from: Date) {

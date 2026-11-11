@@ -116,6 +116,8 @@ const eslintConfig = defineConfig([
       "tests/e2e/prepare-db.ts",
       // T13 (mobile-qa): сквозные сценарии жюри — уборка созданной заявки Тимура и уведомлений по ней
       "tests/e2e/scenarios/jury-scenarios.spec.ts",
+      // T14: «Вам положено» и оценка заявки — оценки и готовая заявка временного студента, уборка
+      "tests/e2e/t14-ideas.spec.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

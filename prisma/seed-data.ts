@@ -441,6 +441,24 @@ const REQUEST_TYPES = [
     ],
   },
   {
+    // T14, «Вам положено»: заявление деканат предлагает сам, когда студент проходит правило (вымышленное)
+    code: "scholarship_up",
+    title: "Заявление на повышенную стипендию",
+    description: "Повышенная академическая стипендия за учёбу — по итогам рейтинга.",
+    purposeTags: ["other"],
+    languages: ["ru"],
+    slaDays: 5,
+    fields: [
+      {
+        name: "comment",
+        label: "Комментарий для деканата (необязательно)",
+        type: "text",
+        required: false,
+        maxLength: 300,
+      },
+    ],
+  },
+  {
     code: "academic",
     title: "Академическая справка",
     description: "Перечень освоенных дисциплин с оценками — для перевода или продолжения обучения.",
@@ -736,6 +754,17 @@ export function buildSeed(now: Date): SeedData {
       authorId: DEMO.irina.staffId,
       publishedAt: at(0, "07:30"),
       pinned: false,
+    },
+    {
+      // T14: «Вы сказали — мы сделали» — ответ на отзыв о часах приёма (оценка заявки koroleva-old)
+      id: "ann-7",
+      title: "Вы просили — выдаём справки по четвергам до 19:00",
+      body: "Студенты, которые работают или на стажировке, писали в отзывах, что не успевают забрать справку до 17:00. С этой недели по четвергам деканат выдаёт готовые справки до 19:00, кабинет 2104.",
+      audience: audience({ facultyCodes: ["ФМО", "МЭО"] }),
+      authorId: DEMO.irina.staffId,
+      publishedAt: at(-4, "16:00"),
+      pinned: false,
+      youSaid: true,
     },
   ];
   const deadlines = [
@@ -1148,6 +1177,8 @@ function buildRequests({
     language: string;
     payload: Record<string, string>;
     steps: Step[];
+    /** T14: оценка студента после «Выдана» — для сводки «Что говорят студенты» у сотрудника */
+    rating?: { value: number; comment?: string; dayOffset: number; time: string };
   }) => {
     const seq = requests.length + 1;
     const createdAt = at(r.steps[0]!.dayOffset, r.steps[0]!.time);
@@ -1164,6 +1195,13 @@ function buildRequests({
       status: last.status,
       createdAt,
       updatedAt: at(last.dayOffset, last.time),
+      ...(r.rating
+        ? {
+            rating: r.rating.value,
+            ratingComment: r.rating.comment ?? null,
+            ratedAt: at(r.rating.dayOffset, r.rating.time),
+          }
+        : {}),
     });
     r.steps.forEach((s, i) => {
       requestEvents.push({
@@ -1280,6 +1318,67 @@ function buildRequests({
       { status: "READY", dayOffset: -9, time: "12:00" },
       { status: "ISSUED", dayOffset: -8, time: "11:30", comment: "Выдана лично" },
     ],
+    rating: { value: 5, comment: "Быстро, спасибо", dayOffset: -8, time: "12:10" },
+  });
+  // T14: закрытые заявки с оценками студентов ФМО и МЭО — у Ирины сводка «Что говорят студенты».
+  // Одна низкая оценка с комментарием про часы приёма → объявление «Вы сказали — мы сделали» (ann-7)
+  add({
+    key: "savelev-old",
+    studentKey: "savelev",
+    type: "study_ru",
+    language: "ru",
+    payload: { addressee: "По месту требования" },
+    steps: [
+      { status: "SUBMITTED", dayOffset: -24, time: "10:20" },
+      { status: "ACCEPTED", dayOffset: -24, time: "13:00" },
+      { status: "READY", dayOffset: -23, time: "15:40" },
+      { status: "ISSUED", dayOffset: -22, time: "11:05" },
+    ],
+    rating: {
+      value: 4,
+      comment: "Хорошо, но за бумажной всё равно ехать",
+      dayOffset: -22,
+      time: "18:30",
+    },
+  });
+  add({
+    key: "koroleva-old",
+    studentKey: "koroleva",
+    type: "study_en",
+    language: "en",
+    payload: { addressee: "To whom it may concern" },
+    steps: [
+      { status: "SUBMITTED", dayOffset: -30, time: "19:45" },
+      { status: "ACCEPTED", dayOffset: -29, time: "10:10" },
+      { status: "IN_PROGRESS", dayOffset: -28, time: "09:30" },
+      { status: "READY", dayOffset: -26, time: "16:00" },
+      { status: "ISSUED", dayOffset: -25, time: "12:20" },
+    ],
+    rating: {
+      value: 2,
+      comment: "Справка готова, а забрать некогда: приём до 17:00, а я днём на стажировке",
+      dayOffset: -25,
+      time: "20:15",
+    },
+  });
+  add({
+    key: "ershova-old",
+    studentKey: "ershova",
+    type: "social",
+    language: "ru",
+    payload: { office: "МФЦ района Раменки" },
+    steps: [
+      { status: "SUBMITTED", dayOffset: -19, time: "08:50" },
+      { status: "ACCEPTED", dayOffset: -19, time: "11:15" },
+      { status: "READY", dayOffset: -17, time: "14:30" },
+      { status: "ISSUED", dayOffset: -16, time: "10:40" },
+    ],
+    rating: {
+      value: 3,
+      comment: "Не сразу понятно, какую справку брать",
+      dayOffset: -16,
+      time: "21:00",
+    },
   });
   add({
     key: "borisov",

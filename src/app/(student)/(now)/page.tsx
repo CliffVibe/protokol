@@ -6,11 +6,13 @@ import { EmptyState } from "@/components/empty-state";
 import {
   AnnouncementsBlock,
   ChangesBlock,
+  FreeNowNote,
   RequestsBlock,
   SoonBlock,
   StudyBlock,
 } from "@/components/now/blocks";
 import { NowCard } from "@/components/now/now-card";
+import { OffersBlock } from "@/components/now/offers-block";
 import { PageHeader } from "@/components/page-header";
 import { Button } from "@/components/ui/button";
 import { formatLongDay, greetingFor } from "@/lib/dates";
@@ -50,7 +52,10 @@ export default async function NowPage() {
         className="flex min-w-0 flex-col gap-8 lg:sticky lg:top-6 lg:col-start-2 lg:row-span-2 lg:row-start-2"
       >
         {feed.next ? (
-          <NowCard next={feed.next} now={now} />
+          <div className="flex flex-col gap-3">
+            <NowCard next={feed.next} now={now} />
+            <FreeNowNote freeNow={feed.freeNow} />
+          </div>
         ) : (
           <EmptyState
             title="В ближайшие дни пар нет"
@@ -66,6 +71,8 @@ export default async function NowPage() {
       </section>
 
       <div className="flex min-w-0 flex-col gap-8 lg:col-start-1 lg:row-start-2">
+        {/* T14, «Вам положено»: деканат предлагает сам — первым в ленте, пока предложение есть */}
+        <OffersBlock offers={feed.offers} />
         <ChangesBlock changes={feed.changes} now={now} />
         <SoonBlock soon={feed.soon} now={now} deadlinesFailed={feed.deadlinesFailed} />
         {studyAlert ? <StudyBlock study={feed.study} className="lg:hidden" /> : null}

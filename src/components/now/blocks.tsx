@@ -1,6 +1,6 @@
 import type { Route } from "next";
 import Link from "next/link";
-import { Pin, ShieldAlert, ShieldCheck } from "lucide-react";
+import { DoorOpen, Pin, ShieldAlert, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusChip } from "@/components/status-chip";
 import { cn } from "@/lib/utils";
@@ -12,7 +12,10 @@ import type { FeedRequest, NowFeed, SoonItem } from "@/server/services/now";
 import type { LessonRow } from "@/server/repos/schedule";
 import { FeedList, FeedSection } from "./feed-section";
 import { CHANGE, requestStatus } from "./labels";
+import { PICKUP_HOURS } from "@/lib/dean-office";
+import { FreeRoomsText } from "@/components/schedule/free-rooms-text";
 import { markdownToPlain } from "@/lib/markdown";
+import { YouSaidMark } from "@/components/notifications/you-said-mark";
 import { requestHref } from "@/server/services/request-rules";
 
 const when = (d: Date, now: Date) => `${formatRelativeDay(d, now)}, ${formatTime(d)}`;
@@ -146,7 +149,7 @@ export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now:
                 </Link>
                 <p className="text-sm text-ink-muted">
                   {r.status === "READY"
-                    ? "Заберите в деканате своего факультета: пн–пт, с 10:00 до 17:00."
+                    ? `Заберите в деканате своего факультета: ${PICKUP_HOURS}.`
                     : r.dueAt < now
                       ? `Срок прошёл: ${formatRelativeDay(r.dueAt, now)}. Деканат уже видит заявку`
                       : `Ожидаемый срок: ${formatRelativeDay(r.dueAt, now)}`}
@@ -201,6 +204,7 @@ export function AnnouncementsBlock({
                     Закреплено
                   </span>
                 ) : null}
+                {a.youSaid ? <YouSaidMark /> : null}
                 <span>{formatRelativeDay(a.publishedAt, now)}</span>
               </p>
               <p className="font-bold text-ink">{a.title}</p>
@@ -322,5 +326,29 @@ export function StudyBlock({
         </p>
       )}
     </FeedSection>
+  );
+}
+
+/**
+ * Окно прямо сейчас (T14, «Свободные аудитории»): под плашкой пары — где посидеть до следующей.
+ * Только номера аудиторий по расписанию корпуса; без групп и людей.
+ */
+export function FreeNowNote({ freeNow }: { freeNow: NowFeed["freeNow"] }) {
+  if (!freeNow) return null;
+  return (
+    // Черта 2px — информационная сноска, как плашка концепта; 4px — у статусов и предложений (ux-reviewer, T14)
+    <p className="flex items-start gap-2 border-l-2 border-l-brand py-1 pl-3 text-base text-ink">
+      <DoorOpen aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
+      <span className="min-w-0 break-words">
+        <span className="font-bold">Окно до {formatTime(freeNow.until)}.</span>{" "}
+        <FreeRoomsText
+          free={freeNow.free}
+          known={freeNow.known}
+          near={freeNow.near}
+          nearRoom={freeNow.nearRoom}
+          nearOf={freeNow.nearOf}
+        />
+      </span>
+    </p>
   );
 }

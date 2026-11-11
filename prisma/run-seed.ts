@@ -9,6 +9,8 @@ import { buildSeed, SEED_PASSWORD_ENVS } from "./seed-data";
 
 /** Все таблицы — для полного пересева одной командой TRUNCATE (список фиксирован, не из ввода). */
 const TABLES = [
+  // T14: «Не сейчас» на предложениях деканата — тоже сбрасывается ночным пересевом демо
+  "OfferDismissal",
   "Notification",
   "Deadline",
   "Announcement",

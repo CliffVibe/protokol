@@ -5,8 +5,13 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireStudent } from "@/server/auth/guards";
-import { requestHref, requestNumberSchema } from "@/server/services/request-rules";
-import { cancelMyRequest, submitRequest } from "@/server/services/requests";
+import {
+  ratingCommentSchema,
+  ratingSchema,
+  requestHref,
+  requestNumberSchema,
+} from "@/server/services/request-rules";
+import { cancelMyRequest, rateMyRequest, submitRequest } from "@/server/services/requests";
 
 // Server Actions студента (T08). Первой инструкцией — requireStudent() (guards.test.ts).
 // Кто студент — только из сессии; номер, тип и поля формы — ввод, всё через zod (S1, S5).
@@ -71,4 +76,35 @@ export async function cancelRequestAction(
   revalidatePath(requestHref(number.data));
   revalidatePath("/");
   return {};
+}
+
+export type RateState = {
+  ok?: boolean;
+  error?: string;
+  fieldErrors?: { rating?: string; comment?: string };
+};
+
+/**
+ * Оценка решения заявки (T14, «Вы сказали — мы сделали»). Номер — ввод: репозиторий оценит только свою
+ * заявку в статусе «Готова»/«Выдана» и только один раз.
+ */
+export async function rateRequestAction(_prev: RateState, formData: FormData): Promise<RateState> {
+  const ctx = await requireStudent();
+  const number = requestNumberSchema.safeParse(formData.get("number"));
+  const rating = ratingSchema.safeParse(formData.get("rating"));
+  const comment = ratingCommentSchema.safeParse(formData.get("comment") ?? "");
+  if (!rating.success || !comment.success)
+    return {
+      fieldErrors: {
+        rating: rating.success ? undefined : rating.error.issues[0]?.message,
+        comment: comment.success ? undefined : comment.error.issues[0]?.message,
+      },
+    };
+  const rated =
+    number.success &&
+    (await rateMyRequest(ctx, number.data, { rating: rating.data, comment: comment.data }));
+  if (!rated) return { error: "Оценить нельзя: заявка уже оценена или ещё не готова." };
+  revalidatePath(requestHref(number.data));
+  revalidatePath("/staff");
+  return { ok: true };
 }

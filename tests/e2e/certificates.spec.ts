@@ -115,7 +115,7 @@ test.describe("мастер «Зачем нужна справка?»", () => {
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Все справки");
     await expect(
       page.getByRole("list", { name: "Справки и заявления" }).getByRole("link"),
-    ).toHaveCount(9); // 8 справок T08–T10 + «Заявление на пересдачу» (T13)
+    ).toHaveCount(10); // 8 справок T08–T10 + «Заявление на пересдачу» (T13) + «на повышенную стипендию» (T14)
 
     for (const bad of ["?purpose=hack", "?purpose=visa&purpose=work", "?type=%00", "?lang=xx"]) {
       const res = await page.goto(`/requests/new${bad}`);

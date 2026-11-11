@@ -1,0 +1,183 @@
+// T14: три идеи из ресерча — «Вам положено» (J), оценка заявки (K), свободные аудитории (N). Чистые функции.
+import { describe, expect, it } from "vitest";
+import type { StudySummary } from "@/server/services/academics";
+import { offersFor, SCHOLARSHIP_UP_MIN_AVERAGE } from "@/server/services/offer-rules";
+import {
+  isRatable,
+  ratingCommentSchema,
+  ratingSchema,
+  summarizeRatings,
+} from "@/server/services/request-rules";
+import {
+  buildWindows,
+  freeRoomsIn,
+  anchorRoom,
+  nearestRooms,
+  WINDOW_MIN_MINUTES,
+} from "@/server/services/schedule";
+import type { LessonRow } from "@/server/repos/schedule";
+
+const study = (over: Partial<StudySummary> = {}): StudySummary => ({
+  semester: 3,
+  averageRating: 82,
+  debts: 0,
+  scholarship: { kept: true },
+  ...over,
+});
+const none = new Set<string>();
+
+describe("J. «Вам положено»: правило повышенной стипендии (вымышленное)", () => {
+  it("подходит: средний ≥ 80, долгов нет, стипендия сохраняется — с объяснением по данным", () => {
+    const [o] = offersFor(study(), none, none);
+    expect(o?.code).toBe("scholarship_up");
+    expect(o?.typeCode).toBe("scholarship_up");
+    expect(o?.why).toContain("82 из 100");
+    expect(o?.why).toContain("3-й семестр");
+  });
+
+  it("не подходит: ниже порога, есть долг, стипендия под угрозой, нет оценок", () => {
+    expect(offersFor(study({ averageRating: SCHOLARSHIP_UP_MIN_AVERAGE - 1 }), none, none)).toEqual(
+      [],
+    );
+    expect(offersFor(study({ debts: 1 }), none, none)).toEqual([]);
+    expect(
+      offersFor(study({ scholarship: { kept: false, reasons: ["Долг"] } }), none, none),
+    ).toEqual([]);
+    expect(offersFor(study({ averageRating: null }), none, none)).toEqual([]);
+    expect(offersFor(null, none, none)).toEqual([]);
+  });
+
+  it("ровно на пороге — подходит", () => {
+    expect(
+      offersFor(study({ averageRating: SCHOLARSHIP_UP_MIN_AVERAGE }), none, none),
+    ).toHaveLength(1);
+  });
+
+  it("не предлагаем повторно: заявление уже подано или «Не сейчас» в этом семестре", () => {
+    expect(offersFor(study(), new Set(["scholarship_up"]), none)).toEqual([]);
+    expect(offersFor(study(), none, new Set(["scholarship_up"]))).toEqual([]);
+  });
+});
+
+describe("K. Оценка решения заявки", () => {
+  it("оценить можно только «Готова» и «Выдана»", () => {
+    expect(isRatable("READY")).toBe(true);
+    expect(isRatable("ISSUED")).toBe(true);
+    for (const s of ["SUBMITTED", "ACCEPTED", "IN_PROGRESS", "REJECTED", "CANCELLED"] as const)
+      expect(isRatable(s)).toBe(false);
+  });
+
+  it("оценка — целое 1–5, комментарий до 300 символов, пустой → null", () => {
+    expect(ratingSchema.parse("5")).toBe(5);
+    for (const bad of ["0", "6", "3.5", "", "пять", null])
+      expect(ratingSchema.safeParse(bad).success).toBe(false);
+    expect(ratingCommentSchema.parse("  ")).toBeNull();
+    expect(ratingCommentSchema.safeParse("а".repeat(301)).success).toBe(false);
+  });
+
+  it("сводка: средняя по всем и по типам (хуже — выше), последние отзывы с комментарием", () => {
+    const t = (code: string, title: string) => ({ code, title });
+    const rows = [
+      {
+        rating: 2,
+        ratingComment: "Долго",
+        ratedAt: new Date("2026-11-10"),
+        type: t("en", "На английском"),
+      },
+      {
+        rating: 5,
+        ratingComment: null,
+        ratedAt: new Date("2026-11-09"),
+        type: t("ru", "Об обучении"),
+      },
+      {
+        rating: 4,
+        ratingComment: "Ок",
+        ratedAt: new Date("2026-11-08"),
+        type: t("ru", "Об обучении"),
+      },
+      { rating: null, ratingComment: null, ratedAt: null, type: t("ru", "Об обучении") },
+    ];
+    const s = summarizeRatings(rows);
+    expect(s.count).toBe(3);
+    expect(s.average).toBe(3.7);
+    expect(s.byType.map((x) => [x.code, x.average, x.count])).toEqual([
+      ["en", 2, 1],
+      ["ru", 4.5, 2],
+    ]);
+    // Сначала низкие оценки
+    expect(s.recent.map((r) => r.comment)).toEqual(["Долго", "Ок"]);
+    const later = summarizeRatings([
+      {
+        rating: 5,
+        ratingComment: "Отлично",
+        ratedAt: new Date("2026-11-11"),
+        type: t("ru", "Об обучении"),
+      },
+      ...rows,
+    ]);
+    expect(later.recent.map((r) => r.comment)).toEqual(["Долго", "Ок", "Отлично"]);
+  });
+
+  it("пусто — средней нет", () => {
+    expect(summarizeRatings([])).toMatchObject({ count: 0, average: null, byType: [], recent: [] });
+  });
+});
+
+describe("N. Окна между парами и свободные аудитории", () => {
+  const msk = (iso: string) => new Date(`${iso}+03:00`);
+  const MAIN = "Главный корпус (пр-т Вернадского)";
+  let seq = 0;
+  const lesson = (start: string, end: string, over: Partial<LessonRow> = {}): LessonRow =>
+    ({
+      id: `l${++seq}`,
+      kind: "SEMINAR",
+      startsAt: msk(start),
+      endsAt: msk(end),
+      building: MAIN,
+      room: "2118",
+      change: "NONE",
+      changeNote: null,
+      originalStartsAt: null,
+      discipline: { name: "Предмет" },
+      teacher: { fullName: "Преподаватель" },
+      languageGroup: null,
+      ...over,
+    }) as LessonRow;
+
+  it(`окно — перерыв от ${WINDOW_MIN_MINUTES} мин; короткий перерыв и отменённая пара — не окно`, () => {
+    const a = lesson("2026-11-11T09:00", "2026-11-11T10:20");
+    const b = lesson("2026-11-11T10:40", "2026-11-11T12:00"); // перерыв 20 мин
+    const c = lesson("2026-11-11T14:00", "2026-11-11T15:20"); // окно 2 ч
+    const cancelled = lesson("2026-11-11T12:20", "2026-11-11T13:40", { change: "CANCELLED" });
+    const w = buildWindows([c, a, cancelled, b]);
+    expect([...w.keys()]).toEqual([c.id]);
+    expect(w.get(c.id)).toMatchObject({ minutes: 120, building: MAIN });
+  });
+
+  it("свободна — встречается в расписании корпуса и не занята в окно; по возрастанию номера", () => {
+    const from = msk("2026-11-11T12:00");
+    const to = msk("2026-11-11T14:00");
+    const usage = [
+      { room: "3014", startsAt: msk("2026-11-10T09:00"), endsAt: msk("2026-11-10T10:20") },
+      { room: "2029", startsAt: msk("2026-11-11T12:40"), endsAt: msk("2026-11-11T14:00") }, // занята
+      { room: "1052", startsAt: msk("2026-11-11T14:00"), endsAt: msk("2026-11-11T15:20") }, // сразу после — свободна
+      { room: "10010", startsAt: msk("2026-11-09T09:00"), endsAt: msk("2026-11-09T10:20") },
+    ];
+    expect(freeRoomsIn(usage, from, to)).toEqual(["1052", "3014", "10010"]);
+  });
+
+  it("рядом — ближайшие по номеру к аудитории следующей пары; нечисловая — первые по порядку", () => {
+    const free = ["1001", "2024", "2031", "2035", "3014", "Л-503"];
+    expect(nearestRooms(free, "2029")).toEqual(["2031", "2024", "2035"]);
+    // Нечисловой ориентир — «рядом» не выдумываем
+    expect(nearestRooms(free, "Л-503")).toEqual([]);
+    expect(nearestRooms([], "2029")).toEqual([]);
+  });
+
+  it("ориентир «рядом»: следующая пара, если номер числовой; иначе прошлая; иначе никакого", () => {
+    expect(anchorRoom("2028", "3014")).toEqual({ nearRoom: "3014", nearOf: "next" });
+    expect(anchorRoom("2028", "Л-503")).toEqual({ nearRoom: "2028", nearOf: "prev" });
+    expect(anchorRoom("Л-402", "Л-503")).toEqual({ nearRoom: "", nearOf: null });
+  });
+});

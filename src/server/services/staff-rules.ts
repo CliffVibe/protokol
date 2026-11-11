@@ -31,6 +31,8 @@ export const announcementFormSchema = z.object({
   courses: z.array(z.coerce.number().int().min(1).max(6)).max(6),
   groups: z.array(shortCode).max(100),
   pinned: z.boolean(),
+  /** T14: ответ на отзывы студентов — пометка «Вы сказали — мы сделали» */
+  youSaid: z.boolean().default(false),
 });
 export type AnnouncementForm = z.infer<typeof announcementFormSchema>;
 
@@ -44,6 +46,7 @@ export function readAnnouncementForm(fd: FormData) {
     courses: all("course"),
     groups: all("group"),
     pinned: fd.get("pinned") === "on",
+    youSaid: fd.get("youSaid") === "on",
   };
 }
 

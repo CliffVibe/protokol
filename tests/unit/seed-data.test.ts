@@ -39,8 +39,10 @@ describe("buildSeed", () => {
     expect(d.groups.length).toBeGreaterThanOrEqual(10);
     expect(d.disciplines.length).toBeGreaterThanOrEqual(15);
     expect(d.teachers.length).toBeGreaterThanOrEqual(12);
-    expect(d.requestTypes).toHaveLength(9);
-    expect(d.announcements).toHaveLength(6);
+    // T14: + «Заявление на повышенную стипендию» (предлагает деканат) и объявление «Вы сказали — мы сделали»
+    expect(d.requestTypes).toHaveLength(10);
+    expect(d.announcements).toHaveLength(7);
+    expect(d.announcements.filter((a) => "youSaid" in a && a.youSaid)).toHaveLength(1);
     expect(d.announcements.filter((a) => a.pinned)).toHaveLength(2);
     expect(d.deadlines).toHaveLength(4);
     const nearest = [...d.deadlines].sort((a, b) => +new Date(a.dueAt) - +new Date(b.dueAt))[0]!;
@@ -143,6 +145,21 @@ describe("buildSeed", () => {
         const ready = r.find((x) => x.status === "READY");
         expect(ready).toBeTruthy();
         expect(d.issuedDocuments.some((doc) => doc.requestId === ready!.id)).toBe(true);
+      });
+
+      it("T14: оценки — только у закрытых заявок фоновых студентов ФМО и МЭО, в диапазоне 1–5", () => {
+        const rated = d.requests.filter((x) => x.rating != null);
+        expect(rated.length).toBeGreaterThanOrEqual(4);
+        const demo = [DEMO.alisa.studentId, DEMO.timur.studentId, DEMO.vera.studentId];
+        for (const r of rated) {
+          expect(r.status).toBe("ISSUED");
+          expect(demo).not.toContain(r.studentId);
+          expect(r.rating).toBeGreaterThanOrEqual(1);
+          expect(r.rating).toBeLessThanOrEqual(5);
+          expect(+new Date(r.ratedAt!)).toBeLessThanOrEqual(+now);
+        }
+        // Есть хотя бы одна низкая оценка с комментарием — повод для «Вы сказали — мы сделали»
+        expect(rated.some((r) => r.rating! <= 2 && r.ratingComment)).toBe(true);
       });
 
       it("у Веры нет заявок, оценок и уведомлений — для пустых состояний", () => {

@@ -4,14 +4,16 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PageHeader } from "@/components/page-header";
-import { CircleCheck, CircleX, FileDown, ShieldX } from "lucide-react";
+import { BadgeCheck, CircleCheck, CircleX, FileDown, Heart, ShieldX } from "lucide-react";
 import { requestStatus } from "@/components/now/labels";
 import { CancelRequest } from "@/components/requests/cancel-request";
+import { RateRequest } from "@/components/requests/rate-request";
 import { RequestTimeline } from "@/components/requests/timeline";
 import { StampRings } from "@/components/stamp-rings";
 import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { formatRelativeDay } from "@/lib/dates";
+import { PICKUP_HOURS } from "@/lib/dean-office";
 import { requireStudent } from "@/server/auth/guards";
 import { LANGUAGE_LABEL, requestHref, requestNumberSchema } from "@/server/services/request-rules";
 import { getMyRequest } from "@/server/services/requests";
@@ -78,7 +80,8 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
               </span>
             </p>
             <p className="relative text-base">
-              Заберите справку в деканате своего факультета — с паспортом или студенческим билетом.
+              Заберите справку в деканате своего факультета ({PICKUP_HOURS}) — с паспортом или
+              студенческим билетом.
               {r.canDownload
                 ? " Электронную копию с QR-кодом проверки можно скачать уже сейчас."
                 : null}
@@ -171,6 +174,13 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
             <span className="font-bold">{formatRelativeDay(r.timeline.dueAt, now)}</span>
           </p>
         ) : null}
+        {r.offered ? (
+          // T14, «Вам положено»: заявку предложил деканат — студент её только подтвердил
+          <p className="flex items-start gap-2 text-sm text-ink-muted">
+            <BadgeCheck aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
+            <span>Заявку предложил деканат — вы подтвердили её в одно касание.</span>
+          </p>
+        ) : null}
       </section>
 
       <section aria-labelledby="timeline-title" className="flex flex-col gap-3">
@@ -181,6 +191,35 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
           <RequestTimeline timeline={r.timeline} now={now} />
         </div>
       </section>
+
+      {/* T14, «Вы сказали — мы сделали»: оценка решения, когда справка готова или выдана.
+          После таймлайна: сначала — как забрать справку, потом — оценка (ux-reviewer, T14) */}
+      {r.canRate || r.rating !== null ? (
+        <section aria-labelledby="rate-title" className="flex flex-col gap-3">
+          <h2 id="rate-title" className="text-lg">
+            Как вам работа деканата?
+          </h2>
+          {r.rating !== null ? (
+            <p className="flex items-start gap-2 border-t border-line pt-4 text-base text-ink">
+              <Heart aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
+              <span>
+                Спасибо! Ваша оценка:{" "}
+                <span className="font-bold tabular">{r.rating}&nbsp;из&nbsp;5</span>. По отзывам
+                деканат улучшает работу — ответы публикует в{" "}
+                <Link
+                  href="/notifications?tab=announcements"
+                  className="font-bold text-brand underline-offset-4 hover:underline"
+                >
+                  объявлениях «Вы сказали — мы сделали»
+                </Link>
+                .
+              </span>
+            </p>
+          ) : (
+            <RateRequest number={r.number} />
+          )}
+        </section>
+      ) : null}
 
       <section aria-labelledby="given-title" className="flex flex-col gap-3">
         <h2 id="given-title" className="text-lg">

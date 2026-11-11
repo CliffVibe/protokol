@@ -159,21 +159,22 @@ model StudentLanguageGroup {
 }
 
 model Student {
-  id             String                 @id @default(cuid())
-  userId         String                 @unique
-  user           User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
-  lastName       String
-  firstName      String
-  middleName     String?
-  recordBookNo   String                 @unique // вымышленный; не показывать на /verify (S7)
-  groupId        String
-  group          Group                  @relation(fields: [groupId], references: [id])
+  id              String                 @id @default(cuid())
+  userId          String                 @unique
+  user            User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lastName        String
+  firstName       String
+  middleName      String?
+  recordBookNo    String                 @unique // вымышленный; не показывать на /verify (S7)
+  groupId         String
+  group           Group                  @relation(fields: [groupId], references: [id])
   /// Токен .ics-подписки (S7): перевыпускается из профиля
-  calendarToken  String                 @unique
-  languageGroups StudentLanguageGroup[]
-  grades         Grade[]
-  requests       Request[]
-  notifications  Notification[]
+  calendarToken   String                 @unique
+  languageGroups  StudentLanguageGroup[]
+  grades          Grade[]
+  requests        Request[]
+  notifications   Notification[]
+  offerDismissals OfferDismissal[]
 
   @@index([groupId])
 }
@@ -266,23 +267,29 @@ model RequestType {
 }
 
 model Request {
-  id        String          @id @default(cuid())
+  id            String          @id @default(cuid())
   /// Порядковый номер для человекочитаемого number без гонок. Дополнение к эскизу 03
-  seq       Int             @unique @default(autoincrement())
-  number    String          @unique // «С-2026-00042»
-  studentId String
-  student   Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
-  typeId    String
-  type      RequestType     @relation(fields: [typeId], references: [id])
-  language  String          @default("ru")
-  payload   Json
-  status    RequestStatus   @default(SUBMITTED)
-  events    RequestEvent[]
-  document  IssuedDocument?
+  seq           Int             @unique @default(autoincrement())
+  number        String          @unique // «С-2026-00042»
+  studentId     String
+  student       Student         @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  typeId        String
+  type          RequestType     @relation(fields: [typeId], references: [id])
+  language      String          @default("ru")
+  payload       Json
+  status        RequestStatus   @default(SUBMITTED)
+  events        RequestEvent[]
+  document      IssuedDocument?
   /// Одноразовый ключ формы: повторная отправка (двойной клик) не создаёт вторую заявку (T08)
-  clientKey String?
-  createdAt DateTime        @default(now())
-  updatedAt DateTime        @updatedAt
+  clientKey     String?
+  /// «Вам положено» (T14): заявку предложил деканат по правилу, студент подтвердил в одно касание
+  offered       Boolean         @default(false)
+  /// Оценка решения заявки студентом (T14): 1–5, одна на заявку, на «Готова»/«Выдана»
+  rating        Int?
+  ratingComment String?
+  ratedAt       DateTime?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
 
   @@unique([studentId, clientKey])
   @@index([studentId, createdAt])
@@ -331,8 +338,22 @@ model Announcement {
   author      Staff    @relation(fields: [authorId], references: [id])
   publishedAt DateTime
   pinned      Boolean  @default(false)
+  /// «Вы сказали — мы сделали» (T14): объявление — ответ деканата на отзывы студентов
+  youSaid     Boolean  @default(false)
 
   @@index([publishedAt])
+}
+
+/// «Не сейчас» на предложении деканата (T14, «Вам положено»): прячет его до следующего семестра
+model OfferDismissal {
+  id        String   @id @default(cuid())
+  studentId String
+  student   Student  @relation(fields: [studentId], references: [id], onDelete: Cascade)
+  code      String
+  semester  Int
+  createdAt DateTime @default(now())
+
+  @@unique([studentId, code, semester])
 }
 
 model Deadline {

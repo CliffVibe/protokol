@@ -33,6 +33,7 @@ export type PublishState = {
     courses: string[];
     groups: string[];
     pinned: boolean;
+    youSaid: boolean;
   };
 };
 
@@ -51,6 +52,7 @@ export async function publishAnnouncementAction(
     courses: raw.courses.slice(0, 6),
     groups: raw.groups.slice(0, 100),
     pinned: raw.pinned,
+    youSaid: raw.youSaid,
   };
   const parsed = announcementFormSchema.safeParse(raw);
   if (!parsed.success) {
@@ -70,6 +72,7 @@ export async function publishAnnouncementAction(
     body: parsed.data.body,
     audience: audience.audience,
     pinned: parsed.data.pinned,
+    youSaid: parsed.data.youSaid,
   });
   if (!result.ok)
     return {

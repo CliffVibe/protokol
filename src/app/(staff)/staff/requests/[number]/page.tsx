@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { cache } from "react";
 import { AlarmClock, ShieldX } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
+import { OfferedMark } from "@/components/staff/offered-mark";
 import { requestStatus } from "@/components/now/labels";
 import { STAFF_READY_LABEL } from "@/components/staff/labels";
 import { RequestTimeline } from "@/components/requests/timeline";
@@ -58,8 +59,11 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
         title={r.type.title}
         back={{ href: "/staff", label: "Очередь" }}
         description={
-          <span className="tabular">
-            №&nbsp;{r.number}, подана {formatRelativeDay(r.createdAt, now)}
+          <span className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <span className="tabular">
+              №&nbsp;{r.number}, подана {formatRelativeDay(r.createdAt, now)}
+            </span>
+            {r.offered ? <OfferedMark /> : null}
           </span>
         }
       />

@@ -141,6 +141,72 @@ export const commentSchema = z
   .max(500, "Не длиннее 500 символов")
   .transform((s) => (s === "" ? null : s));
 
+// ── Оценка решения заявки (T14, «Вы сказали — мы сделали») ──
+
+/** Оценивать можно, когда деканат сделал работу: справка готова или выдана. */
+export const RATABLE_STATUSES = ["READY", "ISSUED"] as const satisfies readonly RequestStatus[];
+export const isRatable = (status: RequestStatus) =>
+  (RATABLE_STATUSES as readonly RequestStatus[]).includes(status);
+
+export const ratingSchema = z.coerce
+  .number({ error: "Выберите оценку от 1 до 5" })
+  .int("Выберите оценку от 1 до 5")
+  .min(1, "Выберите оценку от 1 до 5")
+  .max(5, "Выберите оценку от 1 до 5");
+
+export const ratingCommentSchema = z
+  .string()
+  .trim()
+  .max(300, "Не длиннее 300 символов")
+  .transform((s) => (s === "" ? null : s));
+
+type RatingRow = {
+  rating: number | null;
+  ratingComment: string | null;
+  ratedAt: Date | null;
+  type: { code: string; title: string };
+};
+
+const average = (xs: number[]) =>
+  xs.length ? Math.round((xs.reduce((a, b) => a + b, 0) / xs.length) * 10) / 10 : null;
+
+/**
+ * Сводка «Что говорят студенты» для сотрудника (T14): средняя по всем и по типам справок (хуже — выше:
+ * сотруднику важнее, где плохо) и отзывы с комментарием — сначала низкие оценки. Строки — от новых к старым.
+ */
+export function summarizeRatings(rows: RatingRow[], recentCount = 3) {
+  const rated = rows.filter((r): r is RatingRow & { rating: number } => r.rating !== null);
+  const byCode = new Map<string, { code: string; title: string; ratings: number[] }>();
+  for (const r of rated) {
+    const t = byCode.get(r.type.code) ?? { code: r.type.code, title: r.type.title, ratings: [] };
+    t.ratings.push(r.rating);
+    byCode.set(r.type.code, t);
+  }
+  const byType = [...byCode.values()]
+    .map((t) => ({
+      code: t.code,
+      title: t.title,
+      count: t.ratings.length,
+      average: average(t.ratings)!,
+    }))
+    .sort((a, b) => a.average - b.average || b.count - a.count);
+  // Отзывы с комментарием: сначала низкие оценки (сотруднику важнее, что не так), внутри — новые первыми.
+  // Строки уже от новых к старым, а сортировка устойчива
+  const recent = rated
+    .filter((r) => r.ratingComment)
+    .sort((a, b) => a.rating - b.rating)
+    .slice(0, recentCount)
+    .map((r) => ({
+      typeTitle: r.type.title,
+      rating: r.rating,
+      comment: r.ratingComment!,
+      ratedAt: r.ratedAt,
+    }));
+  return { count: rated.length, average: average(rated.map((r) => r.rating)), byType, recent };
+}
+
+export type RatingsSummary = ReturnType<typeof summarizeRatings>;
+
 // ── Срок и просрочка ──
 
 /** Ожидаемая готовность: срок типа в рабочих днях от подачи (как на «Сейчас»). */

@@ -19,7 +19,11 @@ type Claimed = {
   discipline: string;
 };
 
-/** Ближайшая будущая пара без изменений у 2МО-3: метка в changeNote — пара занята этим тестом. */
+/**
+ * Ближайшая будущая пара без изменений у 2МО-3: метка в changeNote — пара занята этим тестом.
+ * Не четверг: там schedule.spec проверяет переход в Одинцово — вечером в среду ближайшими были как раз
+ * четверговые пары, перенос убирал переход, и параллельный тест падал (найдено в T14).
+ */
 async function claimLesson(marker: string): Promise<Claimed> {
   return withDb(async (c) => {
     const r = await c.query<Claimed>(
@@ -29,6 +33,7 @@ async function claimLesson(marker: string): Promise<Claimed> {
          SELECT l2.id FROM "Lesson" l2 JOIN "Group" g ON g.id = l2."groupId"
          WHERE g.name = '2МО-3' AND l2.change = 'NONE' AND l2."changeNote" IS NULL
            AND l2."startsAt" > now() + interval '2 hours'
+           AND EXTRACT(ISODOW FROM l2."startsAt" AT TIME ZONE 'Europe/Moscow') <> 4
          ORDER BY l2."startsAt" LIMIT 1 FOR UPDATE OF l2 SKIP LOCKED
        ) AND d.id = l."disciplineId"
        RETURNING l.id, l."groupId", l."startsAt", l."endsAt", l.room, d.name AS discipline`,
