@@ -19,6 +19,8 @@ const STUDENT_SELECT = {
   lastName: true,
   firstName: true,
   middleName: true,
+  // Только чтобы отрезать хвост ниже: наружу полный номер не уходит (см. withRecordBookTail)
+  recordBookNo: true,
   group: {
     select: {
       name: true,
@@ -35,10 +37,20 @@ export type QueueFilters = {
   typeCode: string | null;
 };
 
+/**
+ * Однофамильцы (T14+, решение человека 12.11): сотруднику — последние 4 цифры зачётки, «…0311», чтобы
+ * различить двух «Савельев И. А.» в одной группе. Полный номер остаётся в репозитории: в ответ страниц он
+ * не попадает (e2e «нет секретных полей» ищет и номер, и имя поля recordBookNo).
+ */
+function withRecordBookTail<S extends { recordBookNo: string }>(s: S) {
+  const { recordBookNo, ...rest } = s;
+  return { ...rest, recordBookTail: `…${recordBookNo.slice(-4)}` };
+}
+
 export async function queueFor(ctx: StaffCtx, f: QueueFilters) {
   // Один фильтр по факультетам: выбранный — только если он среди своих, иначе все свои
   const allowed = f.facultyId ? ctx.facultyIds.filter((id) => id === f.facultyId) : ctx.facultyIds;
-  return db.request.findMany({
+  const rows = await db.request.findMany({
     where: {
       student: { group: { program: { facultyId: { in: allowed } } } },
       status: { in: f.statuses },
@@ -56,6 +68,7 @@ export async function queueFor(ctx: StaffCtx, f: QueueFilters) {
       student: { select: STUDENT_SELECT },
     },
   });
+  return rows.map((r) => ({ ...r, student: withRecordBookTail(r.student) }));
 }
 
 export type QueueRow = Awaited<ReturnType<typeof queueFor>>[number];
@@ -75,7 +88,7 @@ export async function queueOptions(ctx: StaffCtx) {
 
 /** Карточка заявки — только своего факультета; иначе null (→ 404). */
 export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
-  return db.request.findFirst({
+  const r = await db.request.findFirst({
     where: { number, ...ofMyFaculties(ctx) },
     select: {
       number: true,
@@ -111,6 +124,7 @@ export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
       faqEntry: { select: { id: true, published: true } },
     },
   });
+  return r ? { ...r, student: withRecordBookTail(r.student) } : null;
 }
 
 export type StaffRequestDetails = NonNullable<Awaited<ReturnType<typeof staffRequestByNumber>>>;

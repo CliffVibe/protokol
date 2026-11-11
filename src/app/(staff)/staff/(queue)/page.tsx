@@ -8,7 +8,7 @@ import { BatchBar, BatchPicker } from "@/components/staff/batch-bar";
 import { requestStatus } from "@/components/now/labels";
 import { STAFF_READY_LABEL } from "@/components/staff/labels";
 import { BriefingBlock } from "@/components/staff/briefing";
-import { QueueRow } from "@/components/staff/queue-row";
+import { QueueRow, shortName } from "@/components/staff/queue-row";
 import { RatingsSummaryBlock } from "@/components/staff/ratings-summary";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/dates";
@@ -102,6 +102,14 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
       : due === "new"
         ? all.filter((i) => i.status === "SUBMITTED" && i.createdAt >= since)
         : all;
+  // T14+: однофамильцы в одной группе — у них в строке хвост зачётки (решение человека 12.11). Однофамильцы —
+  // одинаковые «Фамилия И. О.» и группа при РАЗНЫХ зачётках: один студент с двумя заявками — не однофамилец
+  const tails = new Map<string, Set<string>>();
+  for (const i of items) {
+    const key = personKey(i.student);
+    tails.set(key, (tails.get(key) ?? new Set()).add(i.student.recordBookTail));
+  }
+  const namesakes = new Set([...tails].filter(([, t]) => t.size > 1).map(([k]) => k));
   // T14+: пачкой — там, где есть шаги вперёд: «Ждут действия» (и «горят») и «Готовы к выдаче»
   const batchable = status === "pending" || status === "ready";
   const overdue = items.filter((i) => i.overdue > 0).length;
@@ -216,6 +224,7 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
               key={r.number}
               item={r}
               now={now}
+              namesake={namesakes.has(personKey(r.student))}
               pick={batchable && (BATCH_FORWARD[r.status]?.length ?? 0) > 0}
             />
           ))}
@@ -262,3 +271,7 @@ function pickGroups(items: { status: RequestStatus }[]) {
     count,
   }));
 }
+
+/** «Савельев И. А.|2МО-1» — кого сотрудник по строке не отличит: та же фамилия, инициалы и группа. */
+const personKey = (s: Parameters<typeof shortName>[0] & { group: { name: string } }) =>
+  `${shortName(s)}|${s.group.name}`;

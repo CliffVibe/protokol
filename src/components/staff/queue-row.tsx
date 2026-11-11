@@ -21,9 +21,12 @@ export function QueueRow({
   item: r,
   now,
   pick = false,
+  namesake = false,
 }: {
   item: QueueItem;
   now: Date;
+  /** T14+: в списке есть ещё «Фамилия И. О.» из той же группы — показать хвост зачётки, чтобы различить */
+  namesake?: boolean;
   /** T14+: чекбокс для пакетной обработки (связан с формой batch-form) */
   pick?: boolean;
 }) {
@@ -67,6 +70,11 @@ export function QueueRow({
         <p className="text-base text-ink">
           {shortName(r.student)}, {r.student.group.name}
           <span className="text-ink-muted"> ({r.student.group.program.faculty.code})</span>
+          {namesake ? (
+            <span className="text-ink-muted tabular">
+              , зачётка&nbsp;{r.student.recordBookTail}
+            </span>
+          ) : null}
         </p>
       </div>
       <p className="text-sm text-ink-muted tabular">

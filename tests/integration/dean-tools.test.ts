@@ -37,6 +37,26 @@ describe.skipIf(!url)("Инструменты деканата в PostgreSQL", a
       })
     ).number;
 
+  describe("однофамильцы: сотруднику — только хвост зачётки", () => {
+    it("очередь и карточка отдают «…0311», полного номера и поля recordBookNo нет", async () => {
+      const ctx = await irina();
+      const { items } = await requests.getQueue(
+        ctx,
+        { statuses: ["SUBMITTED"], facultyId: null, typeCode: null },
+        new Date(),
+      );
+      const savelevs = items.filter((i) => i.student.lastName === "Савельев");
+      expect(savelevs.map((i) => i.student.recordBookTail).sort()).toEqual(["…0311", "…0388"]);
+      for (const i of items) {
+        expect(i.student).not.toHaveProperty("recordBookNo");
+        expect(i.student.recordBookTail).toMatch(/^…\d{4}$/);
+      }
+      const card = await requests.getStaffRequest(ctx, savelevs[0]!.number);
+      expect(card?.student).not.toHaveProperty("recordBookNo");
+      expect(JSON.stringify(card)).not.toMatch(/24-МО-03(11|88)/);
+    });
+  });
+
   describe("пакетная обработка", () => {
     it("свои — принимаются с текстом шаблона, чужой факультет и устаревшая — нет", async () => {
       const zaitsev = await numberOf("stu-zaitsev", "study_ru", "SUBMITTED");

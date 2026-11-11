@@ -194,6 +194,25 @@ test("база знаний: ответ Ирины → черновик без �
   expect(await seriousAxe(irina)).toEqual([]);
 });
 
+test("однофамильцы в одной группе: в очереди различает хвост зачётки, полного номера нет", async ({
+  browser,
+}) => {
+  const irina = await asIrina(browser);
+  await irina.goto("/staff");
+  const rows = irina
+    .getByRole("list", { name: "Заявки в очереди" })
+    .getByRole("listitem")
+    .filter({ hasText: "Савельев И. А., 2МО-1" });
+  await expect(rows).toHaveCount(2);
+  await expect(rows.filter({ hasText: /зачётка\s…0311/ })).toHaveCount(1);
+  await expect(rows.filter({ hasText: /зачётка\s…0388/ })).toHaveCount(1);
+  // У остальных строк хвоста нет — только у тех, кого иначе не различить
+  await expect(
+    irina.getByRole("listitem").filter({ hasText: "Фомин М. Д." }).first(),
+  ).not.toContainText("зачётка");
+  expect(await irina.content()).not.toMatch(/24-МО-03(11|88)/);
+});
+
 test("чужой и битый id ответа — 404", async ({ browser }) => {
   const irina = await asIrina(browser);
   for (const id of ["no-such-entry", "..%2F..", "x".repeat(41)]) {

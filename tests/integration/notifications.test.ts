@@ -214,13 +214,15 @@ describe.skipIf(!url)("уведомления, объявления, перен�
         orderBy: { startsAt: "asc" },
         select: { id: true, startsAt: true, endsAt: true, room: true, groupId: true },
       });
+    // Время переноса — вечер после 19:00: в сиде пар нет, проверка накладок (T14+) не мешает в любой день
+    // недели. Раньше брали 10:10 и 12:00 — в четверг «+4/+5 дней» попадали на учебные дни → busy (найдено 12.11)
     const target = (days: number, time: string) =>
       mskAt(addDays(mskStartOfDay(new Date()), days), time);
 
     it("перенос: время, длительность, «было», уведомление каждому в группе", async () => {
       const ctx = await irina();
       const l = await futureLesson("2МО-3");
-      const to = target(3, "18:00");
+      const to = target(3, "19:20");
       const r = await sched.rescheduleLesson(ctx, {
         lessonId: l.id,
         expectedStartsAt: l.startsAt,
@@ -254,7 +256,7 @@ describe.skipIf(!url)("уведомления, объявления, перен�
       const again = await sched.rescheduleLesson(ctx, {
         lessonId: l.id,
         expectedStartsAt: to,
-        startsAt: target(4, "10:10"),
+        startsAt: target(4, "19:20"),
         room: null,
         reason: "Ещё раз",
       });
@@ -275,7 +277,7 @@ describe.skipIf(!url)("уведомления, объявления, перен�
           room: null,
           reason: "Гонка двух сотрудников",
         });
-      const results = await Promise.all([move("12:00"), move("14:00")]);
+      const results = await Promise.all([move("19:20"), move("20:40")]);
       expect(results.map((r) => r.result).sort()).toEqual(["conflict", "ok"]);
     });
 

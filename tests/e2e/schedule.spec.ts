@@ -240,7 +240,9 @@ test.describe("переключатель и недели", () => {
 });
 
 test.describe("360px и крупный текст", () => {
-  for (const route of ["/schedule", WEEK_URL, THURSDAY_URL]) {
+  // Set: по четвергам THURSDAY_URL === "/schedule" — два теста с одним именем, и Playwright не запускался вовсе
+  // (найдено в четверг 12.11)
+  for (const route of new Set(["/schedule", WEEK_URL, THURSDAY_URL])) {
     for (const scale of ["100%", "200%"]) {
       test(`${route} при тексте ${scale} — без скролла вбок`, async ({ page }) => {
         await page.goto(route);

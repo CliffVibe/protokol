@@ -665,6 +665,16 @@ export function buildSeed(now: Date): SeedData {
       group: "grp-2mo1",
       rb: "24-МО-0356",
     },
+    // T14+: однофамилец Савельева Игоря Андреевича в той же группе 2МО-1 — «Савельев И. А.» дважды:
+    // у Ирины в очереди их различает хвост зачётки
+    {
+      key: "savelev2",
+      last: "Савельев",
+      first: "Илья",
+      middle: "Андреевич",
+      group: "grp-2mo1",
+      rb: "24-МО-0388",
+    },
     {
       key: "fomin",
       last: "Фомин",
@@ -1076,9 +1086,12 @@ function applyChanges({
     lesson.changeNote = note;
   };
 
-  // 1) Сегодня у Алисы: первая пара переносится на вечер
+  // 1) Сегодня у Алисы: одна пара переносится на вечер — первая, но не та, что образует переход в Одинцово
+  // (по четвергам: пара в главном корпусе → пара в Одинцове). Раньше всегда брали первую: в четверг переход
+  // пропадал и в демо, и в тестах (найдено 12.11 — тесты расписания упали после полуночи среды)
   const todays = onDay(ALISA_GROUP, today);
-  const first = todays[0];
+  const od = todays.findIndex((l) => l.building === ODINTSOVO);
+  const first = todays.find((_, i) => od < 0 || (i !== od && i !== od - 1)) ?? todays[0];
   if (!first) throw new Error("У 2МО-3 нет пар сегодня — нарушено правило «сегодня учебный день»");
   moveLater(first, "Преподаватель на конференции");
 
@@ -1454,6 +1467,7 @@ function buildRequests({
       "19:05",
     ],
     ["fomin", "study_ru", "ru", { addressee: "По месту работы мамы" }, 0, "08:10"],
+    ["savelev2", "study_ru", "ru", { addressee: "В общежитие" }, -1, "11:20"],
     ["koroleva", "study_ru", "ru", { addressee: "Для стажировки" }, -1, "14:40"],
   ];
   for (const [studentKey, type, language, payload, dayOffset, time] of submitted)

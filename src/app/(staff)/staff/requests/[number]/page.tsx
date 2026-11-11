@@ -151,6 +151,10 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
           <Fact term="Группа">
             {s.group.name}, {s.group.course}-й курс
           </Fact>
+          {/* Последние цифры — различить однофамильцев; полный номер сотруднику не нужен (T14+) */}
+          <Fact term="Зачётка">
+            <span className="tabular">{s.recordBookTail}</span>
+          </Fact>
           <Fact term="Факультет">{s.group.program.faculty.name}</Fact>
         </dl>
       </section>
