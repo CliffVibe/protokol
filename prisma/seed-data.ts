@@ -43,6 +43,8 @@ export interface SeedData {
   announcements: Prisma.AnnouncementCreateManyInput[];
   deadlines: Prisma.DeadlineCreateManyInput[];
   notifications: Prisma.NotificationCreateManyInput[];
+  /** T14+: база знаний из заявок — ответы деканата, по которым отвечает помощник */
+  faqEntries: Prisma.FaqEntryCreateManyInput[];
 }
 
 /** Аудитория объявления/дедлайна. Пустой объект — всем. */
@@ -646,6 +648,31 @@ export function buildSeed(now: Date): SeedData {
       group: "grp-2mp1",
       rb: "24-МП-0402",
     },
+    // T14+: ещё трое на ФМО и МЭО — у Ирины в очереди есть что выдать пачкой
+    {
+      key: "zaitsev",
+      last: "Зайцев",
+      first: "Артём",
+      middle: "Ильич",
+      group: "grp-4meo1",
+      rb: "22-МЭО-0718",
+    },
+    {
+      key: "nikitina",
+      last: "Никитина",
+      first: "Дарья",
+      middle: "Павловна",
+      group: "grp-2mo1",
+      rb: "24-МО-0356",
+    },
+    {
+      key: "fomin",
+      last: "Фомин",
+      first: "Матвей",
+      middle: "Денисович",
+      group: "grp-1mo2",
+      rb: "25-МО-0164",
+    },
   ];
   for (const b of background) {
     users.push({
@@ -697,6 +724,26 @@ export function buildSeed(now: Date): SeedData {
     fields: t.fields.map((f) => ({ ...f })) as Prisma.InputJsonValue,
   }));
   const { requests, requestEvents, issuedDocuments } = buildRequests({ now, today, at });
+
+  // T14+: база знаний — одна уже опубликованная запись ФМО «из прошлого» (без заявки-источника).
+  // Черновик из заявки Ирина делает в демо сама — из выданной справки Савельева (savelev-visa)
+  const faqEntries: Prisma.FaqEntryCreateManyInput[] = [
+    {
+      id: "faq-typo",
+      facultyId: facultyId("ФМО"),
+      title: "Что делать, если в справке ошибка — например, в фамилии?",
+      keywords: "ошибка в справке, опечатка, неверная фамилия, исправить справку, перепутали",
+      body:
+        "Закажите ту же справку заново и в поле «Куда предоставляется» допишите: «исправление: …» — " +
+        "что не так. Справку с ошибкой деканат отзовёт: QR-код в ней покажет «Отозвана». " +
+        "Исправленную делаем за 1 рабочий день.",
+      published: true,
+      publishedAt: at(-6, "15:10"),
+      createdByUserId: DEMO.irina.userId,
+      createdAt: at(-6, "14:50"),
+      updatedAt: at(-6, "15:10"),
+    },
+  ];
 
   // ── Объявления, дедлайны, уведомления ──
   const audience = (a: Audience) => a as Prisma.InputJsonValue;
@@ -825,6 +872,12 @@ export function buildSeed(now: Date): SeedData {
     announcements,
     deadlines,
     notifications,
+    faqEntries: faqEntries.map((f) => ({
+      ...f,
+      createdAt: notLater(f.createdAt!),
+      updatedAt: notLater(f.updatedAt!),
+      publishedAt: f.publishedAt ? notLater(f.publishedAt) : null,
+    })),
   };
 }
 
@@ -1387,6 +1440,72 @@ function buildRequests({
     language: "ru",
     payload: { reason: "Перевод на другую программу" },
     steps: [{ status: "SUBMITTED", dayOffset: 0, time: "07:55" }],
+  });
+
+  // T14+: очередь для пакетной обработки — 4 новых и 4 «в работе» у фоновых студентов ФМО и МЭО
+  const submitted: [string, string, string, Record<string, string>, number, string][] = [
+    ["zaitsev", "study_ru", "ru", { addressee: "В банк для кредита на обучение" }, -2, "10:30"],
+    [
+      "nikitina",
+      "military",
+      "ru",
+      { commissariat: "Военный комиссариат Гагаринского района" },
+      -1,
+      "19:05",
+    ],
+    ["fomin", "study_ru", "ru", { addressee: "По месту работы мамы" }, 0, "08:10"],
+    ["koroleva", "study_ru", "ru", { addressee: "Для стажировки" }, -1, "14:40"],
+  ];
+  for (const [studentKey, type, language, payload, dayOffset, time] of submitted)
+    add({
+      key: `${studentKey}-new`,
+      studentKey,
+      type,
+      language,
+      payload,
+      steps: [{ status: "SUBMITTED", dayOffset, time }],
+    });
+  const working: [string, string, string, Record<string, string>, number][] = [
+    ["zaitsev", "military", "ru", { commissariat: "Военный комиссариат Раменского района" }, -3],
+    ["nikitina", "study_en", "en", { addressee: "To whom it may concern" }, -3],
+    ["fomin", "social", "ru", { office: "МФЦ района Проспект Вернадского" }, -2],
+    ["ershova", "study_ru", "ru", { addressee: "В бассейн" }, -2],
+  ];
+  for (const [studentKey, type, language, payload, d] of working)
+    add({
+      key: `${studentKey}-work`,
+      studentKey,
+      type,
+      language,
+      payload,
+      steps: [
+        { status: "SUBMITTED", dayOffset: d, time: "09:40" },
+        { status: "ACCEPTED", dayOffset: d, time: "13:15" },
+        { status: "IN_PROGRESS", dayOffset: d + 1, time: "10:20" },
+      ],
+    });
+  // T14+: выданная справка с ответом Ирины по существу — из него в демо делают ответ помощника.
+  // В комментарии есть имя студента — обезличивание его уберёт
+  add({
+    key: "savelev-visa",
+    studentKey: "savelev",
+    type: "embassy",
+    language: "en",
+    payload: { country: "Франция", tripDates: "02.01 — 09.01" },
+    steps: [
+      { status: "SUBMITTED", dayOffset: -12, time: "11:25" },
+      { status: "ACCEPTED", dayOffset: -12, time: "15:00" },
+      {
+        status: "READY",
+        dayOffset: -10,
+        time: "12:30",
+        comment:
+          "Игорь, справка готова. Для визы во Францию консульству достаточно справки на английском — " +
+          "её мы и сделали. Перевод на французский деканат не делает: если консульство всё же попросит, " +
+          "нужен нотариальный перевод, это 1–2 дня.",
+      },
+      { status: "ISSUED", dayOffset: -9, time: "10:05" },
+    ],
   });
 
   // Все моменты — не позже «сейчас»: иначе демо показывало бы события из будущего

@@ -3,15 +3,19 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { usePathname } from "next/navigation";
-import { CalendarClock, Inbox, Megaphone, type LucideIcon } from "lucide-react";
+import { BookOpenCheck, CalendarClock, Inbox, Megaphone, type LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 // Разделы кабинета сотрудника (T08 → T09). Активный — чернильная черта снизу + полужирный, не плашка.
 
-const ITEMS: { href: Route; label: string; icon: LucideIcon }[] = [
+const ITEMS: { href: Route; label: string; icon: LucideIcon; wide?: boolean }[] = [
   { href: "/staff", label: "Заявки", icon: Inbox },
   { href: "/staff/announcements", label: "Объявления", icon: Megaphone },
   { href: "/staff/schedule", label: "Расписание", icon: CalendarClock },
+  // T14+: база знаний из заявок — ответы, по которым отвечает помощник
+  // На телефоне — не в шапке (три строки шапки — решение T13; четвёртый раздел добавлял строку): туда ведут
+  // брифинг и ссылка под ним (ux-reviewer, T14+)
+  { href: "/staff/answers", label: "База ответов", icon: BookOpenCheck, wide: true },
 ];
 
 /** «Заявки» активны и на карточке заявки /staff/requests/…; остальные — по своему префиксу. */
@@ -25,10 +29,10 @@ export function StaffNav() {
   return (
     <nav aria-label="Разделы кабинета" className="min-w-0">
       <ul className="flex flex-wrap gap-x-1">
-        {ITEMS.map(({ href, label, icon: Icon }) => {
+        {ITEMS.map(({ href, label, icon: Icon, wide }) => {
           const active = isActive(href, pathname);
           return (
-            <li key={href}>
+            <li key={href} className={wide ? "hidden md:block" : undefined}>
               <Link
                 href={href}
                 aria-current={active ? "page" : undefined}
@@ -39,8 +43,8 @@ export function StaffNav() {
                     : "text-ink-muted hover:text-ink",
                 )}
               >
-                {/* Значки — только с 768: на телефоне без них три раздела встают в одну строку */}
-                <Icon aria-hidden className="hidden size-5 md:block" />
+                {/* Значки — только с 1440: на 768–1280 четыре раздела со значками и ФИО не помещались в строку */}
+                <Icon aria-hidden className="hidden size-5 min-[1440px]:block" />
                 {label}
               </Link>
             </li>

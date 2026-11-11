@@ -118,6 +118,9 @@ const eslintConfig = defineConfig([
       "tests/e2e/scenarios/jury-scenarios.spec.ts",
       // T14: «Вам положено» и оценка заявки — оценки и готовая заявка временного студента, уборка
       "tests/e2e/t14-ideas.spec.ts",
+      // T14+: инструменты деканата — своя выданная заявка с ответом Ирины, проверка статусов пачки,
+      // уборка заявок и ответов помощника
+      "tests/e2e/dean-tools.spec.ts",
     ],
     rules: { "@typescript-eslint/no-restricted-imports": "off", "no-restricted-syntax": "off" },
   },

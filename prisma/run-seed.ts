@@ -9,6 +9,8 @@ import { buildSeed, SEED_PASSWORD_ENVS } from "./seed-data";
 
 /** Все таблицы — для полного пересева одной командой TRUNCATE (список фиксирован, не из ввода). */
 const TABLES = [
+  // T14+: база знаний из заявок — ответы, опубликованные в демо, сбрасываются ночным пересевом
+  "FaqEntry",
   // T14: «Не сейчас» на предложениях деканата — тоже сбрасывается ночным пересевом демо
   "OfferDismissal",
   "Notification",
@@ -103,6 +105,7 @@ export async function runSeed(prisma: PrismaClient, options: SeedOptions = {}) {
     prisma.request.createMany({ data: data.requests }),
     prisma.requestEvent.createMany({ data: data.requestEvents }),
     prisma.issuedDocument.createMany({ data: issuedDocuments }),
+    prisma.faqEntry.createMany({ data: data.faqEntries }),
     prisma.announcement.createMany({ data: data.announcements }),
     prisma.deadline.createMany({ data: data.deadlines }),
     prisma.notification.createMany({ data: data.notifications }),

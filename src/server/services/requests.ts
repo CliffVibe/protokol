@@ -11,6 +11,7 @@ import {
   requestTypes,
 } from "@/server/repos/requests";
 import {
+  batchMetaFor,
   changeStatus,
   queueFor,
   ratingsOf,
@@ -21,6 +22,13 @@ import {
   type QueueFilters,
   type RevokeResult,
 } from "@/server/repos/staff-requests";
+import { countFaqDrafts } from "@/server/repos/faq-entries";
+import {
+  REPLY_TEMPLATES,
+  renderTemplate,
+  type BatchTarget,
+  type ReplyTemplateId,
+} from "@/lib/reply-templates";
 import { sortRequests } from "./now";
 import {
   ACTIVE_STATUSES,
@@ -30,6 +38,8 @@ import {
   isRatable,
   overdueDays,
   parseFields,
+  PENDING_STATUSES,
+  summarizeBriefing,
   summarizeRatings,
   timelineOf,
   TRANSITIONS,
@@ -164,6 +174,19 @@ export async function getQueue(ctx: StaffCtx, filters: QueueFilters, now: Date) 
 
 export type QueueItem = Awaited<ReturnType<typeof getQueue>>["items"][number];
 
+/** Утренний брифинг (T14+): вся очередь своих факультетов «ждут действия» и «готовы» + черновики ответов. */
+export async function getBriefing(ctx: StaffCtx, now: Date) {
+  const [{ items }, drafts] = await Promise.all([
+    getQueue(
+      ctx,
+      { statuses: [...PENDING_STATUSES, "READY"], facultyId: null, typeCode: null },
+      now,
+    ),
+    countFaqDrafts(ctx),
+  ]);
+  return summarizeBriefing(items, drafts, now);
+}
+
 /** «Что говорят студенты» (T14): оценки заявок своих факультетов, без имён. */
 export async function getRatingsSummary(ctx: StaffCtx) {
   return summarizeRatings(await ratingsOf(ctx));
@@ -189,6 +212,60 @@ export async function setStatus(
   // Переход проверяем на сервере: скрытая кнопка — не защита (S1)
   if (!canTransition(input.from, input.to)) return "forbidden_transition";
   return changeStatus(ctx, input);
+}
+
+export type BatchResult = { done: number; stale: number; skipped: number; ignored: number };
+
+/**
+ * Пакетная смена статуса (T14+). Каждая заявка — тем же путём, что одиночная (переход, факультет,
+ * «статус всё ещё from», событие, уведомление, документ при «Готова»), и в СВОЕЙ транзакции: одна устаревшая
+ * не откатывает остальные. ignored — у заявки другой статус и этот шаг к ней не относится (в «Ждут действия»
+ * выбор смешанный: «Принять» касается только поданных); stale — статус уже изменили; skipped — чужая или
+ * несуществующая (не различаем: не подтверждаем существование чужого). Текст шаблона собирается для каждой заявки.
+ */
+export async function batchSetStatus(
+  ctx: StaffCtx,
+  input: {
+    picks: { number: string; from: RequestStatus }[];
+    to: BatchTarget;
+    template: ReplyTemplateId | "none";
+  },
+  now: Date,
+): Promise<BatchResult> {
+  const meta = new Map(
+    (
+      await batchMetaFor(
+        ctx,
+        input.picks.map((p) => p.number),
+      )
+    ).map((m) => [m.number, m]),
+  );
+  const template = REPLY_TEMPLATES.find((t) => t.id === input.template) ?? null;
+  const result: BatchResult = { done: 0, stale: 0, skipped: 0, ignored: 0 };
+  // По очереди, не параллельно: 50 транзакций разом заняли бы весь пул соединений
+  for (const p of input.picks) {
+    const m = meta.get(p.number);
+    if (!canTransition(p.from, input.to)) {
+      result.ignored++;
+      continue;
+    }
+    if (!m) {
+      result.skipped++;
+      continue;
+    }
+    const comment = template
+      ? renderTemplate(template, {
+          typeTitle: m.type.title,
+          dueAt: dueDate(m.createdAt, m.type.slaDays),
+          now,
+        })
+      : null;
+    const r = await changeStatus(ctx, { number: p.number, from: p.from, to: input.to, comment });
+    if (r === "ok") result.done++;
+    else if (r === "conflict") result.stale++;
+    else result.skipped++;
+  }
+  return result;
 }
 
 /** Отозвать справку (T10): факультет и «ещё не отозвана» проверяет репозиторий. */

@@ -107,6 +107,8 @@ export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
           actor: { select: { role: true, staff: { select: { fullName: true } } } },
         },
       },
+      // T14+: сделан ли из ответа на эту заявку ответ помощника
+      faqEntry: { select: { id: true, published: true } },
     },
   });
 }
@@ -114,6 +116,17 @@ export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
 export type StaffRequestDetails = NonNullable<Awaited<ReturnType<typeof staffRequestByNumber>>>;
 
 export type ChangeResult = "ok" | "not_found" | "conflict";
+
+/**
+ * Пакетная обработка (T14+): что нужно для текста шаблона — тип и дата подачи. Только свои факультеты:
+ * чужой или несуществующий номер просто не вернётся, и пачка его пропустит без различий.
+ */
+export function batchMetaFor(ctx: StaffCtx, numbers: string[]) {
+  return db.request.findMany({
+    where: { number: { in: numbers }, ...ofMyFaculties(ctx) },
+    select: { number: true, createdAt: true, type: { select: { title: true, slaDays: true } } },
+  });
+}
 
 /**
  * Смена статуса сотрудником. Переход проверяет сервис (canTransition); здесь — владение факультетом

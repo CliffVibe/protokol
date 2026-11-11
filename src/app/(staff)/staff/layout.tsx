@@ -36,7 +36,9 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           </div>
           <StaffNav />
           <div className="ml-auto hidden min-w-0 items-center justify-end gap-4 md:flex">
-            {who ? <StaffIdentity who={who} className="hidden max-w-60 lg:flex" /> : null}
+            {/* ФИО в шапке — с 1280: на 1024 с четырьмя разделами шапка не помещалась в строку (T14+).
+                Ширину не ужимать: подпись «Сотрудник деканата ФМО и МЭО» переносится и шапка растёт (замер T14+) */}
+            {who ? <StaffIdentity who={who} className="hidden max-w-60 xl:flex" /> : null}
             <LogoutButton />
           </div>
         </div>

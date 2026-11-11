@@ -1,12 +1,15 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
-import { AlarmClock, ShieldX } from "lucide-react";
+import Link from "next/link";
+import type { Route } from "next";
+import { AlarmClock, BookOpenCheck, ShieldX } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
 import { OfferedMark } from "@/components/staff/offered-mark";
 import { requestStatus } from "@/components/now/labels";
 import { STAFF_READY_LABEL } from "@/components/staff/labels";
 import { RequestTimeline } from "@/components/requests/timeline";
+import { MakeAnswerButton } from "@/components/staff/make-answer-button";
 import { RevokeDocument } from "@/components/staff/revoke-document";
 import { StatusActions } from "@/components/staff/status-actions";
 import { StatusChip } from "@/components/status-chip";
@@ -51,6 +54,10 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
   // Кто сделал шаг: сотрудник — по ФИО, студент — «студент»
   const actors = Object.fromEntries(
     r.events.map((e) => [e.status, e.actor.staff?.fullName ?? "студент"]),
+  );
+  // T14+: ответ сотрудника студенту по существу (не причина отказа — она про конкретного студента)
+  const staffAnswered = r.events.some(
+    (e) => e.comment && e.status !== "REJECTED" && e.actor.role === "STAFF",
   );
 
   return (
@@ -170,6 +177,41 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
           <RequestTimeline timeline={r.timeline} now={now} actors={actors} />
         </div>
       </section>
+
+      {staffAnswered || r.faqEntry ? (
+        // T14+, база знаний: ответ одному студенту → ответ помощника всем (после проверки человеком)
+        <section aria-labelledby="kb-title" className="flex flex-col gap-3">
+          <h2 id="kb-title" className="text-lg">
+            Ответ помощника
+          </h2>
+          <div className="flex flex-col items-start gap-3 border-t border-line pt-4">
+            {r.faqEntry ? (
+              <p className="flex items-start gap-2 text-base text-ink">
+                <BookOpenCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-brand" />
+                <span>
+                  Из ответа на эту заявку уже сделан ответ помощника —{" "}
+                  {r.faqEntry.published ? "опубликован" : "черновик ждёт проверки"}.{" "}
+                  <Link
+                    href={`/staff/answers/${r.faqEntry.id}` as Route}
+                    className="font-bold text-brand underline-offset-4 hover:underline"
+                  >
+                    Открыть ответ помощника
+                  </Link>
+                </span>
+              </p>
+            ) : (
+              <>
+                <p className="text-base text-ink">
+                  Если ваш ответ пригодится и другим студентам, сделайте из него ответ помощника.
+                  Имя студента, номера и контакты уберём сами, а перед публикацией вы проверите
+                  текст.
+                </p>
+                <MakeAnswerButton number={r.number} />
+              </>
+            )}
+          </div>
+        </section>
+      ) : null}
     </div>
   );
 }

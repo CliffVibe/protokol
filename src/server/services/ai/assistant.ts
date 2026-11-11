@@ -3,8 +3,10 @@ import { parseActions, toActions, type AssistantAction } from "@/lib/assistant-a
 import { formatTime } from "@/lib/dates";
 import type { StudentCtx } from "@/server/auth/guards";
 import { reserveAiCall, type AiCallSlot } from "@/server/repos/assistant";
+import { publishedAnswers } from "@/server/repos/faq-entries";
+import { deanAnswerCaption } from "@/server/services/faq-rules";
 import { buildStudentContext, contextToText } from "./context";
-import { loadFaq, searchFaq, type FaqArticle, type FaqHit } from "./faq";
+import { deanArticle, loadFaq, searchFaq, type FaqArticle, type FaqHit } from "./faq";
 import { createGigaChat, GigaChatError } from "./gigachat";
 import { answerFromData, asksAboutOtherPerson, REFUSAL } from "./intents";
 import { createLineGate } from "./line-gate";
@@ -52,6 +54,16 @@ export function defaultProvider(): AiProvider | null {
   return gigachat.provider;
 }
 
+/**
+ * T14+: база знаний из заявок — опубликованные ответы деканата, свежим запросом (файловый кэш не трогаем).
+ * Сбой базы не мешает ответить по статьям с диска.
+ */
+async function deanArticles(ctx: StudentCtx): Promise<FaqArticle[]> {
+  return publishedAnswers(ctx)
+    .then((rows) => rows.map(deanArticle))
+    .catch(() => []);
+}
+
 /** Ответ по базе: сначала свои данные по правилам, затем лучшая статья, иначе — честное «не знаю». */
 export function faqAnswer(
   question: string,
@@ -63,8 +75,10 @@ export function faqAnswer(
   const top = hits[0];
   if (top) {
     const related = hits.slice(1).map((h) => h.article.title);
+    // Ответ деканата из базы знаний — с подписью и датой: видно, что это ответ людей, а не статья
+    const caption = top.article.deanAt ? ["", `*${deanAnswerCaption(top.article.deanAt)}*`] : [];
     return {
-      text: [`**${top.article.title}**`, "", top.article.body].join("\n"),
+      text: [`**${top.article.title}**`, "", top.article.body, ...caption].join("\n"),
       actions: toActions(top.article.actions),
       ...(related.length ? { related } : {}),
     };
@@ -106,7 +120,7 @@ export async function* answer(
     return;
   }
 
-  const hits = searchFaq(deps.faq ?? loadFaq(), question);
+  const hits = searchFaq(deps.faq ?? [...loadFaq(), ...(await deanArticles(ctx))], question);
   const provider = deps.provider === undefined ? defaultProvider() : deps.provider;
   let notice: string | undefined;
 

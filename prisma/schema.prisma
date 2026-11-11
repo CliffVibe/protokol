@@ -73,6 +73,7 @@ model User {
   requestEvents    RequestEvent[]   @relation("RequestEventActor")
   revokedDocuments IssuedDocument[] @relation("DocumentRevokedBy")
   assistantUsage   AssistantUsage[]
+  faqEntries       FaqEntry[]       @relation("FaqEntryAuthor")
 }
 
 /// Храним sha256(token); сам токен — только в cookie __Host-session (S3).
@@ -111,10 +112,11 @@ model AssistantUsage {
 // ── Структура вуза ───────────────────────────────────────────────────────
 
 model Faculty {
-  id       String    @id @default(cuid())
-  code     String    @unique // ФМО, МЭО, … (открытые названия)
-  name     String
-  programs Program[]
+  id         String     @id @default(cuid())
+  code       String     @unique // ФМО, МЭО, … (открытые названия)
+  name       String
+  programs   Program[]
+  faqEntries FaqEntry[]
 }
 
 model Program {
@@ -280,6 +282,7 @@ model Request {
   status        RequestStatus   @default(SUBMITTED)
   events        RequestEvent[]
   document      IssuedDocument?
+  faqEntry      FaqEntry?
   /// Одноразовый ключ формы: повторная отправка (двойной клик) не создаёт вторую заявку (T08)
   clientKey     String?
   /// «Вам положено» (T14): заявку предложил деканат по правилу, студент подтвердил в одно касание
@@ -354,6 +357,29 @@ model OfferDismissal {
   createdAt DateTime @default(now())
 
   @@unique([studentId, code, semester])
+}
+
+/// База знаний из заявок (T14+): ответ сотрудника, обезличенный и проверенный человеком, — помощник
+/// отвечает им всем студентам после публикации. Видят и правят сотрудники факультета записи.
+/// sourceRequestId — откуда взят ответ (одна запись на заявку); заявка удалена — связь обнуляется.
+model FaqEntry {
+  id              String    @id @default(cuid())
+  facultyId       String
+  faculty         Faculty   @relation(fields: [facultyId], references: [id])
+  title           String
+  keywords        String
+  body            String
+  published       Boolean   @default(false)
+  publishedAt     DateTime?
+  sourceRequestId String?   @unique
+  sourceRequest   Request?  @relation(fields: [sourceRequestId], references: [id], onDelete: SetNull)
+  createdByUserId String
+  createdBy       User      @relation("FaqEntryAuthor", fields: [createdByUserId], references: [id])
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  @@index([published])
+  @@index([facultyId])
 }
 
 model Deadline {

@@ -3,7 +3,8 @@
 // просрочка, тексты уведомлений, проверка ссылки уведомления.
 import { z } from "zod";
 import type { RequestStatus } from "@/generated/prisma/client";
-import { addBusinessDays, mskStartOfDay } from "@/lib/msk";
+import { addBusinessDays, addDays, mskDateKey, mskStartOfDay } from "@/lib/msk";
+import { BATCH_TARGETS, REPLY_TEMPLATES, type ReplyTemplateId } from "@/lib/reply-templates";
 
 // ── Поля типа заявки: RequestType.fields (JSON из БД — тоже ввод, проверяем) ──
 
@@ -224,6 +225,83 @@ export function overdueDays(
     (+mskStartOfDay(now) - +mskStartOfDay(dueDate(r.createdAt, r.slaDays))) / DAY_MS,
   );
   return Math.max(0, days);
+}
+
+// ── Пакетная обработка (T14+): «номер|статус, который видел сотрудник», куда и каким шаблоном ──
+
+export const BATCH_MAX = 50;
+const batchPickSchema = z
+  .string()
+  .regex(/^С-\d{4}-\d{5,9}\|(SUBMITTED|ACCEPTED|IN_PROGRESS|READY)$/)
+  .transform((s) => {
+    const [number, from] = s.split("|") as [string, RequestStatus];
+    return { number, from };
+  });
+
+export const batchFormSchema = z
+  .object({
+    picks: z
+      .array(batchPickSchema, { error: "Отметьте заявки" })
+      .min(1, "Отметьте заявки")
+      .max(BATCH_MAX, `Не больше ${BATCH_MAX} заявок за раз`)
+      .refine((p) => new Set(p.map((x) => x.number)).size === p.length, "Заявка выбрана дважды"),
+    to: z.enum(BATCH_TARGETS, { error: "Выберите действие" }),
+    template: z.union([
+      z.literal("none"),
+      z.enum(REPLY_TEMPLATES.map((t) => t.id) as [ReplyTemplateId, ...ReplyTemplateId[]]),
+    ]),
+  })
+  .refine(
+    (f) => f.template === "none" || REPLY_TEMPLATES.find((t) => t.id === f.template)!.to === f.to,
+    { message: "Шаблон не подходит к действию", path: ["template"] },
+  );
+
+export const readBatchForm = (fd: FormData) => ({
+  picks: fd.getAll("pick"),
+  to: fd.get("to") ?? undefined,
+  template: fd.get("template") ?? "none",
+});
+
+/** Срок — сегодня: заявка ждёт действия, ещё не просрочена, а ожидаемая готовность — сегодня (по Москве). */
+export function isDueToday(
+  r: { status: RequestStatus; overdue: number; dueAt: Date },
+  now: Date,
+): boolean {
+  return (
+    (PENDING_STATUSES as readonly string[]).includes(r.status) &&
+    r.overdue <= 0 &&
+    mskDateKey(r.dueAt) === mskDateKey(now)
+  );
+}
+
+// ── Утренний брифинг сотрудника (T14+): подсчёты, без ИИ ──
+
+export type Briefing = {
+  /** Просрочены или срок — сегодня */
+  urgent: number;
+  /** Из них просрочены — для тона строки */
+  overdue: number;
+  /** «Готова к выдаче» — можно выдать пачкой */
+  ready: number;
+  /** Подано со вчерашнего утра и ещё не принято */
+  fresh: number;
+  /** Черновики ответов помощника своих факультетов — ждут проверки */
+  drafts: number;
+};
+
+export function summarizeBriefing(
+  items: { status: RequestStatus; overdue: number; dueAt: Date; createdAt: Date }[],
+  drafts: number,
+  now: Date,
+): Briefing {
+  const since = addDays(mskStartOfDay(now), -1);
+  return {
+    urgent: items.filter((i) => i.overdue > 0 || isDueToday(i, now)).length,
+    overdue: items.filter((i) => i.overdue > 0).length,
+    ready: items.filter((i) => i.status === "READY").length,
+    fresh: items.filter((i) => i.status === "SUBMITTED" && i.createdAt >= since).length,
+    drafts,
+  };
 }
 
 // ── Таймлайн: Подана → Принята → В работе → Готова → Выдана ──

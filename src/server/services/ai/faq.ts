@@ -15,7 +15,30 @@ export type FaqArticle = {
   keywords: string[];
   actions: AssistantActionId[];
   body: string;
+  /** T14+: ответ деканата из базы знаний (не файл) — когда опубликован; у статей с диска нет */
+  deanAt?: Date;
 };
+
+/** T14+: опубликованная запись базы знаний → статья для поиска (ключевые слова — через запятую). */
+export function deanArticle(e: {
+  id: string;
+  title: string;
+  keywords: string;
+  body: string;
+  publishedAt: Date | null;
+}): FaqArticle {
+  return {
+    slug: `dean-${e.id}`,
+    title: e.title,
+    keywords: e.keywords
+      .split(",")
+      .map((k) => k.trim())
+      .filter(Boolean),
+    actions: [],
+    body: e.body,
+    ...(e.publishedAt ? { deanAt: e.publishedAt } : {}),
+  };
+}
 
 export type FaqHit = { article: FaqArticle; score: number };
 
