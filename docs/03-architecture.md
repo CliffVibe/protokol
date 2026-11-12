@@ -283,9 +283,16 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 
 ## Лицензии сторонних материалов
 
+Код проекта — MIT, файл `LICENSE`.
+
 | Что | Лицензия |
 |---|---|
 | Next.js, React, Prisma, zod (4.6.7), Tailwind | MIT / Apache-2.0 |
+| @prisma/adapter-pg 7.9.0 (драйвер-адаптер Prisma 7 для `pg`) | Apache-2.0 |
+| pg 8.23.1 (node-postgres) | MIT |
+| server-only 0.0.1 (запрет импорта серверных модулей в клиент) | MIT |
+| dotenv 18.0.9 (dev; `.env` для Prisma CLI и скриптов) | BSD-2-Clause |
+| tsx 4.23.15 (dev; запуск сида и скриптов на TypeScript, образ `:tools`) | MIT |
 | shadcn/ui (CLI `shadcn`, dev), `radix-ui`, `cn` (shadcn-ui/cn) | MIT |
 | class-variance-authority | Apache-2.0 |
 | tw-animate-css | MIT |
@@ -306,6 +313,9 @@ Server Action → zod.parse → requireRole → service → repo(ctx) → revali
 | Скиллы vercel-labs (react-best-practices, web-interface-guidelines) | MIT |
 | Плагины Anthropic (security-guidance и др.) | Apache-2.0 |
 | @playwright/mcp, chrome-devtools-mcp (dev) | Apache-2.0 |
+| Инструменты процесса (видео, T14), в проект не входят: Chatterbox Multilingual (Resemble AI, пакет `chatterbox-tts` 0.1.7 и модель `ResembleAI/chatterbox`) — озвучка | MIT |
+| faster-whisper 1.2.1 (SYSTRAN) — проверка озвучки распознаванием | MIT |
+| ffmpeg 9.0.2, сборка Gyan full (gyan.dev) — монтаж видео; используется только как отдельная программа, в проект не входит | GPL |
 | Иллюстрации | только сгенерированные нами или CC0 — указать источник |
 
 Добавляешь зависимость — допиши строку.
