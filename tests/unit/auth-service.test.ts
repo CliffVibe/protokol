@@ -40,6 +40,7 @@ vi.mock("@/server/repos/auth", () => ({
 const restoreSpy = vi.hoisted(() => ({ calls: [] as string[] }));
 vi.mock("@/server/repos/demo", () => ({
   restoreDemoScenarios: vi.fn(async (userId: string) => void restoreSpy.calls.push(userId)),
+  restoreStaffDemo: vi.fn(async (userId: string) => void restoreSpy.calls.push(`staff:${userId}`)),
 }));
 
 const verifySpy = vi.hoisted(() => ({ calls: [] as string[] }));

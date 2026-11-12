@@ -11,7 +11,7 @@ import {
   pruneThrottles,
   reserveAttempt,
 } from "@/server/repos/auth";
-import { restoreDemoScenarios } from "@/server/repos/demo";
+import { restoreDemoScenarios, restoreStaffDemo } from "@/server/repos/demo";
 import { createThrottle } from "@/server/services/ai/throttle";
 
 // Проверка логина и пароля (docs/05-security.md → S2).
@@ -141,5 +141,6 @@ export async function authenticateDemo(
   const user = await findUserByLogin(parsed.data.login);
   if (!user) return { ok: false, reason: "invalid" };
   if (user.role === "STUDENT") await restoreDemoScenarios(user.id, now);
+  else await restoreStaffDemo(user.id, now);
   return { ok: true, userId: user.id, role: user.role };
 }

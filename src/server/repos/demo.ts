@@ -14,6 +14,58 @@ import { requestHref } from "@/server/services/request-rules";
 
 export const RESTORE_AFTER_MS = 15 * 60 * 1000;
 
+/** Сид задаёт свои id (`rev-…`, `ntf-…`); всё, что создано на стенде, — с cuid Prisma. */
+const SEED_EVENT = "rev-";
+const SEED_NOTIFICATION = "ntf-";
+
+/**
+ * Демо-вход сотрудника: откатывает его же шаги по заявкам, сделанные на стенде больше 15 минут назад —
+ * иначе «выдать пачкой» у следующего эксперта было пусто до ночного пересева (mobile-qa, T14).
+ * Удаляются только события этого сотрудника не из сида; статус заявки — по последнему оставшемуся
+ * событию; уведомления об откатанных шагах — тоже. Справка, выпущенная на стенде, уходит, если заявка
+ * вернулась раньше «Готова». Объявления и ответы помощника не трогаем — их чистит ночной пересев.
+ */
+export async function restoreStaffDemo(userId: string, now = new Date()): Promise<void> {
+  const before = new Date(now.getTime() - RESTORE_AFTER_MS);
+  await db.$transaction(async (tx) => {
+    const staff = await tx.staff.findUnique({ where: { userId }, select: { id: true } });
+    if (!staff) return;
+    const events = await tx.requestEvent.findMany({
+      where: {
+        actorUserId: userId,
+        createdAt: { lt: before },
+        NOT: { id: { startsWith: SEED_EVENT } },
+      },
+      select: { id: true, requestId: true },
+    });
+    if (events.length === 0) return;
+    await tx.requestEvent.deleteMany({ where: { id: { in: events.map((e) => e.id) } } });
+
+    for (const requestId of new Set(events.map((e) => e.requestId))) {
+      const last = await tx.requestEvent.findFirst({
+        where: { requestId },
+        orderBy: { createdAt: "desc" },
+        select: { status: true },
+      });
+      const request = await tx.request.findUnique({
+        where: { id: requestId },
+        select: { number: true },
+      });
+      if (!last || !request) continue;
+      await tx.request.update({ where: { id: requestId }, data: { status: last.status } });
+      if (last.status !== "READY" && last.status !== "ISSUED")
+        await tx.issuedDocument.deleteMany({ where: { requestId } });
+      await tx.notification.deleteMany({
+        where: {
+          link: requestHref(request.number),
+          createdAt: { lt: before },
+          NOT: { id: { startsWith: SEED_NOTIFICATION } },
+        },
+      });
+    }
+  });
+}
+
 export async function restoreDemoScenarios(userId: string, now = new Date()): Promise<void> {
   const before = new Date(now.getTime() - RESTORE_AFTER_MS);
   await db.$transaction(async (tx) => {

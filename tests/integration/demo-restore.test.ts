@@ -15,8 +15,9 @@ describe.skipIf(!url)("возврат демо-сценариев при вхо�
   const offers = await import("@/server/services/offers");
   const requests = await import("@/server/services/requests");
   const now = await import("@/server/services/now");
-  const { restoreDemoScenarios, RESTORE_AFTER_MS } = await import("@/server/repos/demo");
-  const { loadStudentCtx } = await import("@/server/repos/auth");
+  const { restoreDemoScenarios, restoreStaffDemo, RESTORE_AFTER_MS } =
+    await import("@/server/repos/demo");
+  const { loadStaffCtx, loadStudentCtx } = await import("@/server/repos/auth");
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
 
   beforeAll(async () => {
@@ -106,5 +107,28 @@ describe.skipIf(!url)("возврат демо-сценариев при вхо�
     const before = await prisma.request.count();
     await restoreDemoScenarios(DEMO.irina.userId, new Date(Date.now() + RESTORE_AFTER_MS + 60_000));
     expect(await prisma.request.count()).toBe(before);
+  });
+
+  it("Ирина выдала справку — через 15 минут её демо-вход возвращает «Готова» (сценарий 4 для следующего эксперта)", async () => {
+    const irina = (await loadStaffCtx(DEMO.irina.userId))!;
+    const number = await readyNumber();
+    const eventsBefore = await prisma.requestEvent.count({ where: { request: { number } } });
+    expect(
+      await requests.setStatus(irina, { number, from: "READY", to: "ISSUED", comment: null }),
+    ).toBe("ok");
+    const status = async () =>
+      (await prisma.request.findUniqueOrThrow({ where: { number }, select: { status: true } }))
+        .status;
+    expect(await status()).toBe("ISSUED");
+
+    // Сразу — не трогаем: эксперт видит свой результат
+    await restoreStaffDemo(DEMO.irina.userId, new Date(Date.now() + 60_000));
+    expect(await status()).toBe("ISSUED");
+
+    await restoreStaffDemo(DEMO.irina.userId, new Date(Date.now() + RESTORE_AFTER_MS + 60_000));
+    expect(await status()).toBe("READY");
+    expect(await prisma.requestEvent.count({ where: { request: { number } } })).toBe(eventsBefore);
+    // Справка из сида на месте — QR «Готовой» работает
+    expect(await prisma.issuedDocument.count({ where: { request: { number } } })).toBe(1);
   });
 });

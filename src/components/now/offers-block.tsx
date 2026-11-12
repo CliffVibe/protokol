@@ -56,7 +56,8 @@ function OfferItem({ offer }: { offer: Offer }) {
               <input type="hidden" name="clientKey" value={clientKey} />
               <Button
                 type="submit"
-                variant="outline"
+                // Главное действие карточки — заливкой (mobile-qa, T14: была серая рядом с «Не сейчас»)
+                variant="default"
                 loading={accepting}
                 disabled={dismissing}
                 className="h-auto min-h-11 max-w-full py-2 whitespace-normal"

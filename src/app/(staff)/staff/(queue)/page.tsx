@@ -230,7 +230,9 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
           ))}
         </ul>
       ) : null}
-      {items.length && batchable ? <BatchBar forward={BATCH_FORWARD} /> : null}
+      {/* Не только при непустом списке: выдали последние — итог «Выдали…» не должен пропасть вместе с
+          панелью (mobile-qa, T14: вместо подтверждения было одно «Здесь пусто») */}
+      {batchable ? <BatchBar forward={BATCH_FORWARD} /> : null}
       {items.length ? null : (
         <EmptyState
           title={

@@ -118,7 +118,9 @@ function SemesterBlock({
           <div className="flex flex-col items-start gap-3 border-l-4 border-l-danger pl-3">
             <p className="text-base text-ink">
               <span className="font-bold">Пока долг не закрыт, стипендию не назначат.</span>{" "}
-              Пересдачу назначает деканат по заявлению — дисциплина в нём уже будет указана.
+              {grade.examDate && days !== null && days >= 0
+                ? "Пересдача уже назначена — дата ниже. Если она не подходит, подайте заявление: дисциплина в нём уже будет указана."
+                : "Пересдачу назначает деканат по заявлению — дисциплина в нём уже будет указана."}
             </p>
             {/* T13: из долга — сразу к заявлению. В адресе только id; название подставит сервер,
                 найдя дисциплину у этого студента. Outline: заливной кнопки на экране нет */}
@@ -133,11 +135,12 @@ function SemesterBlock({
 
         <dl className="flex flex-col gap-3 text-base">
           <Fact term="Форма контроля">{ASSESSMENT_KIND[grade.kind]}</Fact>
-          <Fact term="Дата">
+          {/* Будущая дата у долга — пересдача, а не экзамен закрытого семестра (mobile-qa, T14) */}
+          <Fact term={isDebt(grade) && days !== null && days >= 0 ? "Пересдача" : "Дата"}>
             {grade.examDate ? (
               <>
                 {formatDayMonth(grade.examDate)}, {formatTime(grade.examDate)}
-                {days !== null && days >= 0 && !resultLabel(grade) ? (
+                {days !== null && days >= 0 && (!resultLabel(grade) || isDebt(grade)) ? (
                   <span className="font-bold"> — {formatInDays(days)}</span>
                 ) : null}
               </>
