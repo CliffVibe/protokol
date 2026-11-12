@@ -8,7 +8,7 @@ import { chromium } from "@playwright/test";
 import { execFileSync } from "node:child_process";
 import { pathToFileURL } from "node:url";
 import { resolve } from "node:path";
-import { readFileSync, statSync } from "node:fs";
+import { readFileSync, statSync, writeFileSync } from "node:fs";
 
 const m = JSON.parse(
   execFileSync(process.execPath, ["scripts/ai-metrics.mjs", "--json"], { encoding: "utf8" }),
@@ -102,4 +102,21 @@ try {
   console.log(`PDF: ${pdf} (${Math.round(statSync(pdf).size / 1024)} КБ)`);
 } finally {
   await browser.close();
+}
+
+// Те же цифры — и в исходник report.html: эксперт, открывший HTML в репозитории, видит то же, что в PDF
+// (оценка «глазами жюри», 12.11: «в report.html 751, в test-run.json 753»)
+const source = readFileSync(html, "utf8");
+const synced = source
+  .replace(
+    /(<(\w+)\b[^>]*\bdata-metric="(\w+)"[^>]*>)([^<]*)(<\/\2>)/g,
+    (all, open, _tag, key, _old, close) =>
+      key in METRICS ? `${open}${METRICS[key]}${close}` : all,
+  )
+  .replace(/(data-bar="(\w+)" style="width:)[^"]*(")/g, (all, head, key, tail) =>
+    key in BARS ? `${head}${BARS[key]}${tail}` : all,
+  );
+if (synced !== source) {
+  writeFileSync(html, synced);
+  console.log("report.html: цифры обновлены по скриптам");
 }

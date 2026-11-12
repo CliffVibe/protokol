@@ -93,7 +93,7 @@ test("Вера: аккуратные пустые состояния, без ч�
   const page = await asDemo(browser, "Вера");
   await feedLoaded(page, "Вера");
   await expect(page.getByRole("heading", { level: 1, name: /, Вера$/ })).toBeVisible();
-  await expect(page.getByRole("heading", { name: "Заявок пока нет" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Активных заявок нет" })).toBeVisible();
   await expect(page.getByRole("link", { name: "Заказать справку" })).toBeVisible();
   await expect(page.getByText("Оценок пока нет").filter({ visible: true })).toBeVisible();
   // Из колонки «Ближайшее» в расписание можно попасть и без блока «Изменения»: с T13 ссылка — вся плашка

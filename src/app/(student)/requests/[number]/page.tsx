@@ -4,7 +4,15 @@ import type { Route } from "next";
 import { notFound } from "next/navigation";
 import { cache } from "react";
 import { PageHeader } from "@/components/page-header";
-import { BadgeCheck, CircleCheck, CircleX, FileDown, Heart, ShieldX } from "lucide-react";
+import {
+  BadgeCheck,
+  CircleCheck,
+  CircleX,
+  FileDown,
+  Heart,
+  ShieldCheck,
+  ShieldX,
+} from "lucide-react";
 import { requestStatus } from "@/components/now/labels";
 import { CancelRequest } from "@/components/requests/cancel-request";
 import { RateRequest } from "@/components/requests/rate-request";
@@ -28,6 +36,24 @@ const load = cache(async (raw: string) => {
   if (!number.success) return null;
   return getMyRequest(ctx, number.data);
 });
+
+/**
+ * Публичная проверка своей справки — то, что откроет посольство по QR (S7: там только статус, тип, дата,
+ * инициалы). С телефона QR внутри PDF не отсканировать, поэтому — ссылкой (оценка «глазами жюри», 12.11).
+ */
+function VerifyLink({ href, className }: { href: string; className: string }) {
+  return (
+    <Link
+      href={href as Route}
+      className={`inline-flex min-h-11 items-center gap-2 self-start text-base font-bold underline underline-offset-4 ${className}`}
+    >
+      <ShieldCheck aria-hidden className="size-5 shrink-0" />
+      <span className="min-w-0 break-words">
+        Проверить подлинность — так справку увидит получатель
+      </span>
+    </Link>
+  );
+}
 
 /** Битая %-последовательность в адресе — не 500, а «нет такой заявки». */
 function safeDecode(raw: string): string | null {
@@ -99,6 +125,13 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
                 </a>
               </Button>
             ) : null}
+            {r.verifyHref ? (
+              // Фокус — цветом текста на мяте: --brand в тёмной теме на мяте не виден (ux-reviewer, T14+)
+              <VerifyLink
+                href={r.verifyHref}
+                className="relative text-on-mint focus-visible:outline-on-mint"
+              />
+            ) : null}
           </div>
         ) : (
           <>
@@ -117,6 +150,7 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
                 </a>
               </Button>
             ) : null}
+            {r.verifyHref ? <VerifyLink href={r.verifyHref} className="text-brand" /> : null}
           </>
         )}
         {r.status === "REJECTED" ? (

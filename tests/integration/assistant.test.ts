@@ -229,14 +229,21 @@ describe.skipIf(!url)("ИИ-помощник в PostgreSQL", async () => {
           : req.status === "ACCEPTED"
             ? "IN_PROGRESS"
             : "READY";
-      const echo = echoProvider();
+      const seen: ChatMessage[][] = [];
+      const clean: AiProvider = {
+        name: "test",
+        async *stream(messages) {
+          seen.push(messages);
+          yield "Здравствуйте! Заявку приняли, напишем здесь, если что-то понадобится.";
+        },
+      };
       const r = await draftReply(staff, req.number, to, {
-        provider: echo.provider,
+        provider: clean,
         reserve: okReserve,
         now,
       });
       expect(r).toMatchObject({ ok: true, mode: "ai" });
-      const sent = echo.seen[0]!.map((m) => m.content).join("\n");
+      const sent = seen[0]!.map((m) => m.content).join("\n");
       expect(sent).not.toMatch(/Алиса|Петрова/);
       expect(sent).not.toContain(req.number);
       for (const v of Object.values((req.payload ?? {}) as Record<string, unknown>)) {
@@ -245,6 +252,21 @@ describe.skipIf(!url)("ИИ-помощник в PostgreSQL", async () => {
       // без ИИ — шаблон
       const t = await draftReply(staff, req.number, to, { provider: null, now });
       expect(t).toMatchObject({ ok: true, mode: "template" });
+
+      // Брак модели (дословно с прода, 12.11) — в поле не попадает, вместо него шаблон
+      const broken: AiProvider = {
+        name: "test",
+        async *stream() {
+          yield "Уважаемый [Имя Студента], Благодарим вас за заполнение поля «Кому».";
+        },
+      };
+      const b = await draftReply(staff, req.number, to, {
+        provider: broken,
+        reserve: okReserve,
+        now,
+      });
+      expect(b).toMatchObject({ ok: true, mode: "template", text: t.ok ? t.text : "" });
+      expect(b.ok && b.notice).toMatch(/не подошёл/);
     });
 
     it("заявка чужого факультета (МЖ) → «не найдена»; запрещённый переход — отказ", async () => {

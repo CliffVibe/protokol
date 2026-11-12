@@ -59,8 +59,12 @@ export async function requestByNumber(ctx: StudentCtx, number: string) {
       rating: true,
       ratingComment: true,
       type: { select: { code: true, title: true, slaDays: true, fields: true } },
-      // Отзыв справки (T10): студент видит причину у себя в заявке; на /verify её нет
-      document: { select: { revoked: true, revokedAt: true, revokedReason: true } },
+      // Отзыв справки (T10): студент видит причину у себя в заявке; на /verify её нет.
+      // verifyToken — своей справки (заявка уже отфильтрована по ctx.studentId): ссылка «Проверить
+      // подлинность» рядом с PDF — то же, что QR в самой справке (оценка «глазами жюри», 12.11)
+      document: {
+        select: { revoked: true, revokedAt: true, revokedReason: true, verifyToken: true },
+      },
       events: {
         orderBy: { createdAt: "asc" },
         select: { status: true, comment: true, createdAt: true },

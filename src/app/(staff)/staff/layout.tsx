@@ -1,12 +1,14 @@
 // Оболочка кабинета сотрудника деканата: десктоп-первая, но рабочая на телефоне.
 // Проверки доступа здесь НЕТ: requireStaff() вызывает каждая page (CLAUDE.md, T03).
 import { BrandMark } from "@/components/brand-mark";
+import { DemoSwitch } from "@/components/demo-switch";
 import { LogoutButton } from "@/components/logout-button";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
 import { StaffIdentity } from "@/components/staff/staff-identity";
 import { StaffNav } from "@/components/staff/staff-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
+import { DEMO_ACCOUNTS } from "@/lib/demo-accounts";
 import { getThemePreference } from "@/lib/theme-server";
 import { optionalStaff } from "@/server/auth/guards";
 import { staffIdentity } from "@/server/repos/staff-profile";
@@ -58,6 +60,12 @@ export default async function StaffLayout({ children }: { children: React.ReactN
             всех экспертов. Демо возвращается к исходному ночным пересевом, одноразовые сценарии студента —
             при его демо-входе (repos/demo.ts) */}
         <ThemeSwitcher value={theme} className="w-full max-w-80" />
+        {/* Кнопки — не проверка доступа: demoSwitch сам требует сессию и DEMO_MODE */}
+        <DemoSwitch
+          current={DEMO_ACCOUNTS.find((a) => who?.fullName.includes(a.name))?.name ?? null}
+          headingLevel={3}
+          className="w-full max-w-xl"
+        />
       </section>
       <SiteFooter />
     </div>

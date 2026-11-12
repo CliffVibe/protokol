@@ -187,8 +187,9 @@ test.describe("изоляция по id дисциплины", () => {
     const timurScores = await timur.getByText(/^\d+ из 100/).allInnerTexts();
     expect(timurScores.length).toBeGreaterThan(0);
     for (const s of alisaScores) expect(timurScores).not.toContain(s);
-    // И семестров Алисы там нет
-    await expect(timur.getByRole("region", { name: /3-й семестр/ })).toHaveCount(0);
+    // Свои семестры Тимура — есть (7-й — у Алисы такого нет); английский в 1-м и 3-м с 12.11 есть у обоих,
+    // поэтому отличие проверяем по баллам выше, а не по номерам семестров
+    await expect(timur.getByRole("region", { name: /7-й семестр/ })).toBeVisible();
   });
 
   for (const id of ["dsc-nope", "DROP%20TABLE", "..%2F..%2Fetc"]) {

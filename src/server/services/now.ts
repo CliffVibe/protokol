@@ -10,7 +10,7 @@ import { activeRequests, type RequestRow } from "@/server/repos/requests";
 import { lessonsBetween, type LessonRow } from "@/server/repos/schedule";
 import { dismissedOffers, takenTypeCodes } from "@/server/repos/offers";
 import { summarizeStudy, type StudySummary } from "./academics";
-import { offerTypeCodes, offersFor, type Offer } from "./offer-rules";
+import { deadlineRelevant, offerTypeCodes, offersFor, semesterOf, type Offer } from "./offer-rules";
 
 // Главная «Сейчас» (T05): всё, что важно студенту в эту минуту, одной функцией.
 // Все запросы — параллельно и только через репозитории с ctx (S1).
@@ -106,24 +106,27 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
       title: isDebt(g) ? `Пересдача: ${g.discipline.name}` : g.discipline.name,
       at: g.examDate!,
     }));
-  const dues: SoonItem[] = deadlines.map((d) => ({
-    id: d.id,
-    kind: "deadline",
-    title: d.title,
-    at: d.dueAt,
-  }));
+  const study = summarizeStudy(grades, now);
+  const subject = { study, course: reader.course };
+  const dues: SoonItem[] = deadlines
+    .filter((d) => deadlineRelevant(d.link, subject))
+    .map((d) => ({
+      id: d.id,
+      kind: "deadline",
+      title: d.title,
+      at: d.dueAt,
+    }));
   const soon = [...exams, ...dues].sort((a, b) => +a.at - +b.at).slice(0, SOON_LIMIT);
 
-  const study = summarizeStudy(grades);
   // «Вам положено» — по возможности, как объявления: сбой не должен прятать пару и заявки
-  const offers = study
-    ? await Promise.all([
-        takenTypeCodes(ctx, offerTypeCodes()),
-        dismissedOffers(ctx, study.semester),
-      ])
-        .then(([taken, dismissed]) => offersFor(study, taken, dismissed))
-        .catch(() => [])
-    : [];
+  // Семестр — по оценкам, а у первокурсника без оценок — по курсу и месяцу (для «Не сейчас»)
+  const semester = semesterOf(subject, now);
+  const offers =
+    semester !== null
+      ? await Promise.all([takenTypeCodes(ctx, offerTypeCodes()), dismissedOffers(ctx, semester)])
+          .then(([taken, dismissed]) => offersFor(subject, taken, dismissed))
+          .catch(() => [])
+      : [];
 
   // Не больше двух: свежее закреплённое и свежее обычное — остальное по ссылке «Все объявления (N)».
   // Раньше шли все закреплённые, и «Сейчас» на 360 вытягивался почти в четыре экрана (оценка «глазами жюри»)

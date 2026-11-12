@@ -172,7 +172,13 @@ const TEACHERS = [
   "Мельников Артём Владимирович",
   "Ковалёва Дарья Александровна",
   "Пестов Роман Ильич",
+  // T14+: у французского свой преподаватель (вёл историк — оценка «глазами жюри», 12.11) и преподаватель
+  // кафедры на замену без своих пар — замена не создаёт накладку
+  "Соловьёва Марина Львовна",
+  "Романов Илья Сергеевич",
 ] as const;
+/** Преподаватель кафедры на замену («Ведёт преподаватель кафедры»): своих пар нет. */
+const SUBSTITUTE_TEACHER = 14;
 const teacherId = (i: number) => `tch-${String(i + 1).padStart(2, "0")}`;
 
 /** Кто ведёт дисциплину (один преподаватель на дисциплину — для простоты демо). */
@@ -193,7 +199,7 @@ const DISCIPLINE_TEACHER: Record<DisciplineId, number> = {
   "dsc-polit": 10,
   "dsc-mgmt": 12,
   "dsc-en": 11,
-  "dsc-fr": 1,
+  "dsc-fr": 13,
 };
 
 interface GroupDef {
@@ -210,14 +216,16 @@ const GROUPS: GroupDef[] = [
     name: "2МО-3",
     course: 2,
     program: "prg-mo",
-    disciplines: ["dsc-tmo", "dsc-hist", "dsc-protocol", "dsc-intlaw", "dsc-philos"],
+    // Как в «Учёбе» Алисы за 3-й семестр (+ языки — в языковых группах). Философия — в 1-м семестре:
+    // в расписании её больше нет (оценка «глазами жюри», 12.11: «в расписании есть, в „Учёбе“ нет»)
+    disciplines: ["dsc-tmo", "dsc-hist", "dsc-protocol", "dsc-intlaw"],
   },
   {
     id: "grp-2mo1",
     name: "2МО-1",
     course: 2,
     program: "prg-mo",
-    disciplines: ["dsc-tmo", "dsc-hist", "dsc-protocol", "dsc-intlaw", "dsc-philos"],
+    disciplines: ["dsc-tmo", "dsc-hist", "dsc-protocol", "dsc-intlaw"],
   },
   {
     id: "grp-1mo2",
@@ -284,7 +292,8 @@ const LANGUAGE_GROUPS = [
     level: "B2",
     name: "Англ. B2-4",
     discipline: "dsc-en" as const,
-    days: [2, 4],
+    // Вторник и пятница: четверг Алисы — день в Одинцове (T14+)
+    days: [2, 5],
     slot: 3,
   },
   {
@@ -357,7 +366,9 @@ const REQUEST_TYPES = [
     fields: [
       {
         name: "addressee",
-        label: "Addressee (to whom it may concern)",
+        // Подпись по-русски, а не «Addressee (…)» посреди русского интерфейса (оценка «глазами жюри», 12.11)
+        label: "Кому адресована",
+        hint: "По-английски, например: Embassy of France. Если оставить пустым — «To whom it may concern»",
         type: "text",
         required: false,
         maxLength: 120,
@@ -777,7 +788,7 @@ export function buildSeed(now: Date): SeedData {
     {
       id: "ann-1",
       title: "Зимняя сессия: расписание экзаменов",
-      body: "Расписание экзаменов и зачётов опубликовано в разделе «Учёба». Проверьте даты и аудитории.",
+      body: "Расписание экзаменов и зачётов опубликовано в разделе «Учёба». Проверьте даты и время.",
       audience: audience({}),
       authorId: DEMO.irina.staffId,
       publishedAt: at(-1, "10:00"),
@@ -795,7 +806,8 @@ export function buildSeed(now: Date): SeedData {
     {
       id: "ann-3",
       title: "Неделя карьеры МЭО",
-      body: "Встречи с работодателями в актовом зале. Регистрация — по ссылке в объявлении.",
+      // Ссылки в объявлении нет — и обещания ссылки нет (оценка «глазами жюри», 12.11)
+      body: "Встречи с работодателями в актовом зале. Записаться можно в деканате МЭО до пятницы.",
       audience: audience({ facultyCodes: ["МЭО"] }),
       authorId: DEMO.irina.staffId,
       publishedAt: at(-2, "09:15"),
@@ -854,7 +866,9 @@ export function buildSeed(now: Date): SeedData {
       // В пятницу — как в объявлении «документы до пятницы» (раньше «+5 дней» расходилось с заголовком)
       dueAt: at(daysToFriday(today), "18:00"),
       audience: audience({ facultyCodes: ["ФМО", "МЭО"] }),
-      link: "/requests/new",
+      // Тип заявления в ссылке: «Скоро» показывает дедлайн только тем, кто под правило подходит
+      // (offer-rules → deadlineRelevant), — не Тимуру с долгом
+      link: "/requests/new?type=scholarship_up",
     },
     {
       id: "ddl-3",
@@ -942,9 +956,10 @@ function buildLessons({
   weekStart: Date;
 }): Prisma.LessonCreateManyInput[] {
   const lessons: Prisma.LessonCreateManyInput[] = [];
-  const room = () => String(rng.int(1, 5) * 1000 + rng.int(10, 60));
 
-  // Недельный шаблон: одинаковый каждую неделю, как настоящее расписание
+  // Недельный шаблон: одинаковый каждую неделю, как настоящее расписание.
+  // Правдоподобие (оценка «глазами жюри», 12.11): у преподавателя и аудитории нет двух пар в одно время;
+  // дисциплина — 2–3 раза в неделю и не больше двух пар в день; у каждой пары группы — постоянная аудитория.
   type Slot = {
     weekday: number;
     slot: number;
@@ -953,50 +968,85 @@ function buildLessons({
     building: string;
     room: string;
   };
-  const templates = new Map<string, Slot[]>();
+  const busyTeacher = new Set<string>();
+  const usedRooms = new Set<string>(["1001", "4012"]); // аудитория пересдачи Тимура и «смена аудитории»
+  const book = (discipline: DisciplineId, weekday: number, slot: number) =>
+    busyTeacher.add(`${DISCIPLINE_TEACHER[discipline]}@${weekday}-${slot}`);
+  const teacherFree = (discipline: DisciplineId, weekday: number, slot: number) =>
+    !busyTeacher.has(`${DISCIPLINE_TEACHER[discipline]}@${weekday}-${slot}`);
+
+  // Языковые группы — слоты 3–4 (у групп пар в это время нет, кроме четверга Алисы — языков в четверг нет)
+  for (const lg of LANGUAGE_GROUPS) for (const d of lg.days) book(lg.discipline, d, lg.slot);
+
+  // 2МО-3 (Алиса) — вручную: каждая дисциплина 2–3 раза в неделю, у лекций поточная 3045, у семинаров —
+  // своя аудитория. Четверг — утром две пары в Одинцове, после перерыва больше двух часов — главный корпус
+  // (переход между корпусами, T06; дорога около часа — T14). Суббота свободна.
+  const L = "LECTURE" as const;
+  const S = "SEMINAR" as const;
+  const alisaWeek: Slot[] = [
+    { weekday: 1, slot: 0, discipline: "dsc-tmo", kind: L, building: MAIN, room: "3045" },
+    { weekday: 1, slot: 1, discipline: "dsc-intlaw", kind: S, building: MAIN, room: "2204" },
+    { weekday: 2, slot: 0, discipline: "dsc-hist", kind: L, building: MAIN, room: "3045" },
+    { weekday: 2, slot: 1, discipline: "dsc-tmo", kind: S, building: MAIN, room: "2112" },
+    { weekday: 3, slot: 0, discipline: "dsc-intlaw", kind: L, building: MAIN, room: "3045" },
+    { weekday: 3, slot: 1, discipline: "dsc-hist", kind: S, building: MAIN, room: "2106" },
+    { weekday: 4, slot: 0, discipline: "dsc-protocol", kind: L, building: ODINTSOVO, room: "4044" },
+    { weekday: 4, slot: 1, discipline: "dsc-protocol", kind: S, building: ODINTSOVO, room: "4046" },
+    { weekday: 4, slot: 3, discipline: "dsc-hist", kind: S, building: MAIN, room: "2106" },
+    { weekday: 4, slot: 4, discipline: "dsc-tmo", kind: S, building: MAIN, room: "2112" },
+    { weekday: 5, slot: 0, discipline: "dsc-intlaw", kind: S, building: MAIN, room: "2204" },
+  ];
+  for (const s of alisaWeek) {
+    book(s.discipline, s.weekday, s.slot);
+    usedRooms.add(s.room);
+  }
+
+  // Остальные группы: лекция и семинар по каждой дисциплине (+ второй семинар от 4 кредитов), пн–пт,
+  // слоты 0–2. Порядок случайный, но пара ставится, только если преподаватель свободен и дисциплины
+  // в этот день ещё меньше двух; аудитория — своя у каждой пары «группа × дисциплина × вид»
+  const credits = (d: DisciplineId) => DISCIPLINES.find((x) => x.id === d)!.credits;
+  const roomOf = new Map<string, string>();
+  const roomFor = (key: string) => {
+    const known = roomOf.get(key);
+    if (known) return known;
+    let r: string;
+    do r = String(rng.int(1, 5) * 1000 + rng.int(10, 60));
+    while (usedRooms.has(r));
+    roomOf.set(key, r);
+    usedRooms.add(r);
+    return r;
+  };
+  const templates = new Map<string, Slot[]>([[ALISA_GROUP, alisaWeek]]);
   for (const g of GROUPS) {
+    if (g.id === ALISA_GROUP) continue;
+    const items = g.disciplines.flatMap((d) => [
+      { d, kind: L },
+      { d, kind: S },
+      ...(credits(d) >= 4 ? [{ d, kind: S }] : []),
+    ]);
+    // Перемешать детерминированно (Фишер — Йейтс на rng сида)
+    for (let i = items.length - 1; i > 0; i--) {
+      const j = rng.int(0, i);
+      [items[i], items[j]] = [items[j]!, items[i]!];
+    }
     const slots: Slot[] = [];
-    const isAlisa = g.id === ALISA_GROUP;
-    for (let weekday = 1; weekday <= 6; weekday++) {
-      // У 2МО-3 пары каждый учебный день (пн–сб) в слотах 0–2: языковые группы Алисы — в слотах 3–4
-      const count = isAlisa
-        ? weekday === 6
-          ? 2
-          : 3
-        : weekday === 6
-          ? rng.int(0, 1)
-          : rng.int(2, 3);
-      for (let i = 0; i < count; i++) {
-        let discipline = rng.pick(g.disciplines);
-        // Не больше двух пар одной дисциплины подряд (оценка «глазами жюри»: три «Статистики» подряд у одного
-        // преподавателя). Замена — следующая дисциплина группы, без нового случайного числа: остальной сид
-        // от этого не сдвигается
-        const prev = slots.filter((s) => s.weekday === weekday).slice(-2);
-        if (prev.length === 2 && prev.every((s) => s.discipline === discipline)) {
-          discipline =
-            g.disciplines[(g.disciplines.indexOf(discipline) + 1) % g.disciplines.length]!;
-        }
+    for (let slot = 0; slot <= 2; slot++) {
+      for (let weekday = 1; weekday <= 5; weekday++) {
+        const sameDay = (d: DisciplineId) =>
+          slots.filter((s) => s.weekday === weekday && s.discipline === d).length;
+        const k = items.findIndex((it) => teacherFree(it.d, weekday, slot) && sameDay(it.d) < 2);
+        if (k < 0) continue;
+        const [it] = items.splice(k, 1);
+        book(it!.d, weekday, slot);
         slots.push({
           weekday,
-          slot: i,
-          discipline,
-          kind: i === 0 ? "LECTURE" : "SEMINAR",
+          slot,
+          discipline: it!.d,
+          kind: it!.kind,
           building: MAIN,
-          room: room(),
+          room: roomFor(`${g.id}-${it!.d}-${it!.kind}`),
         });
       }
-    }
-    if (isAlisa) {
-      // Четверг: первая пара в Одинцове, следующая — в главном корпусе после «окна» (подсказка «переход между
-      // корпусами», T06). Раньше переход был в 20-минутный перерыв — это разные города, так не успеть
-      // (оценка «глазами жюри», T14): вторую пару дня убираем, дорога около часа укладывается в перерыв.
-      const thu = slots.find((s) => s.weekday === 4 && s.slot === 0);
-      if (thu) {
-        thu.building = ODINTSOVO;
-        thu.room = "4044";
-      }
-      const gap = slots.findIndex((s) => s.weekday === 4 && s.slot === 1);
-      if (gap >= 0) slots.splice(gap, 1);
     }
     templates.set(g.id, slots);
   }
@@ -1015,7 +1065,8 @@ function buildLessons({
       for (const g of GROUPS) {
         let daySlots = (templates.get(g.id) ?? []).filter((s) => s.weekday === weekday);
         // «Сегодня» у Алисы всегда учебный день — даже в воскресенье (иначе демо в выходной пустое)
-        if (isToday && g.id === ALISA_GROUP && daySlots.length < 2) {
+        // (суббота и воскресенье: в шаблоне пар нет). Аудитории — те же, что у этих пар в будни
+        if (isToday && g.id === ALISA_GROUP && daySlots.length === 0) {
           daySlots = [
             {
               weekday,
@@ -1028,10 +1079,10 @@ function buildLessons({
             {
               weekday,
               slot: 1,
-              discipline: "dsc-protocol",
+              discipline: "dsc-hist",
               kind: "SEMINAR",
               building: MAIN,
-              room: "2118",
+              room: "2106",
             },
             {
               weekday,
@@ -1092,15 +1143,18 @@ function buildLessons({
 
   // В день экзамена у 4МЭО-1 обычных пар нет: экзамен 10:00–13:00 иначе накладывался на пары
   // 09:00 и 10:40 (ux-reviewer, T06)
+  // Преподаватель принимает пересдачу — его пары у других групп в это время тоже снимаем (иначе накладка,
+  // оценка «глазами жюри», 12.11)
   const examKey = mskDateKey(examDay);
+  const exam = lessons.at(-1)!;
+  const overlapsExam = (l: Prisma.LessonCreateManyInput) =>
+    +new Date(l.startsAt) < +new Date(exam.endsAt) &&
+    +new Date(l.endsAt) > +new Date(exam.startsAt);
   for (let i = lessons.length - 1; i >= 0; i--) {
     const l = lessons[i]!;
-    if (
-      l.groupId === "grp-4meo1" &&
-      l.kind !== "EXAM" &&
-      mskDateKey(new Date(l.startsAt)) === examKey
-    )
-      lessons.splice(i, 1);
+    if (l.kind === "EXAM") continue;
+    const timurDay = l.groupId === "grp-4meo1" && mskDateKey(new Date(l.startsAt)) === examKey;
+    if (timurDay || (l.teacherId === exam.teacherId && overlapsExam(l))) lessons.splice(i, 1);
   }
 
   applyChanges({ lessons, today, todayWeekday, weekStart });
@@ -1139,24 +1193,42 @@ function applyChanges({
   // 1) Сегодня у Алисы: одна пара переносится на вечер — первая, но не та, что образует переход в Одинцово
   // (по четвергам: пара в главном корпусе → пара в Одинцове). Раньше всегда брали первую: в четверг переход
   // пропадал и в демо, и в тестах (найдено 12.11 — тесты расписания упали после полуночи среды)
+  // С T14+ в четверг: две пары в Одинцове, затем главный корпус — переход (последняя пара в Одинцове и
+  // следующая) не трогаем; переносим пару в главном корпусе, чтобы вечером не ехать обратно в Одинцово
   const todays = onDay(ALISA_GROUP, today);
-  const od = todays.findIndex((l) => l.building === ODINTSOVO);
-  const first = todays.find((_, i) => od < 0 || (i !== od && i !== od - 1)) ?? todays[0];
+  const odLast = todays.findLastIndex((l) => l.building === ODINTSOVO);
+  const candidates = todays.filter((_, i) => odLast < 0 || (i !== odLast && i !== odLast + 1));
+  const first = candidates.find((l) => l.building === MAIN) ?? candidates[0] ?? todays[0];
   if (!first) throw new Error("У 2МО-3 нет пар сегодня — нарушено правило «сегодня учебный день»");
   moveLater(first, "Преподаватель на конференции");
 
-  // 2) Ещё один перенос и одна отмена у Алисы на этой неделе — в другие дни (пн–сб, не сегодня)
-  const otherDays = [1, 2, 3, 4, 5, 6]
+  // 2) Ещё один перенос и одна отмена у Алисы на этой неделе — в другие дни (пн–пт, не сегодня и не
+  // четверг с переходом), и все три изменения — у разных дисциплин (оценка «глазами жюри», 12.11:
+  // «перенос, отмена, перенос подряд у ТМО»)
+  const used = new Set([first.disciplineId]);
+  const otherDays = [1, 2, 3, 5]
     .filter((d) => d !== todayWeekday)
     .map((d) => addDays(weekStart, d - 1));
-  const movedDay = otherDays[0]!;
-  const cancelledDay = otherDays[1]!;
-  const moved = onDay(ALISA_GROUP, movedDay)[0];
-  if (moved) moveLater(moved, "По просьбе кафедры");
-  const cancelled = onDay(ALISA_GROUP, cancelledDay).at(-1);
+  const pickOn = (days: Date[], last: boolean) => {
+    for (const day of days) {
+      const list = onDay(ALISA_GROUP, day).filter((l) => !used.has(l.disciplineId));
+      const l = last ? list.at(-1) : list[0];
+      if (l) return { l, day };
+    }
+    return null;
+  };
+  const moved = pickOn(otherDays, false);
+  if (moved) {
+    moveLater(moved.l, "По просьбе кафедры");
+    used.add(moved.l.disciplineId);
+  }
+  const cancelled = pickOn(
+    otherDays.filter((d) => d !== moved?.day),
+    true,
+  );
   if (cancelled) {
-    cancelled.change = "CANCELLED";
-    cancelled.changeNote = "Занятие отработаем на консультации";
+    cancelled.l.change = "CANCELLED";
+    cancelled.l.changeNote = "Занятие отработаем на консультации";
   }
 
   // 3) У других групп — смена аудитории и преподавателя (для разнообразия в T06)
@@ -1174,7 +1246,7 @@ function applyChanges({
   if (nextWeek) {
     nextWeek.change = "TEACHER_CHANGED";
     nextWeek.changeNote = "Ведёт преподаватель кафедры";
-    nextWeek.teacherId = teacherId(10);
+    nextWeek.teacherId = teacherId(SUBSTITUTE_TEACHER);
   }
 }
 
@@ -1237,6 +1309,36 @@ function buildGrades({ today }: { today: Date }): Prisma.GradeCreateManyInput[] 
   // Тимур, 4 курс: долг по эконометрике (6-й семестр), пересдача через 3 дня (не в воскресенье) — дата
   // пересдачи стоит у оценки с долгом; «Международные финансы» 54/100. Стипендии нет из-за долга.
   const t = DEMO.timur.studentId;
+  // Семестры 1–5 закрыты без долгов, на «хорошо» и «отлично» — график рейтинга по семестрам у 4-го курса
+  // не из двух столбцов (оценка «глазами жюри», 12.11). Стипендию снимает только долг 6-го семестра
+  const past = (semester: number, month: number, day: number) =>
+    new Date(Date.UTC(sessionYear - 4 + Math.ceil(semester / 2), month, day, 7));
+  add(t, "dsc-hist", 1, { kind: "EXAM", finalMark: 4, ratingPoints: 74, examDate: past(1, 0, 16) });
+  add(t, "dsc-philos", 1, { kind: "CREDIT", passed: true, ratingPoints: 70 });
+  add(t, "dsc-en", 1, { kind: "GRADED_CREDIT", finalMark: 5, ratingPoints: 88 });
+  add(t, "dsc-macro", 2, {
+    kind: "EXAM",
+    finalMark: 4,
+    ratingPoints: 72,
+    examDate: past(2, 5, 19),
+  });
+  add(t, "dsc-stat", 2, { kind: "GRADED_CREDIT", finalMark: 5, ratingPoints: 85 });
+  add(t, "dsc-mgmt", 3, { kind: "EXAM", finalMark: 4, ratingPoints: 76, examDate: past(3, 0, 18) });
+  add(t, "dsc-en", 3, { kind: "GRADED_CREDIT", finalMark: 5, ratingPoints: 90 });
+  add(t, "dsc-finance", 4, {
+    kind: "EXAM",
+    finalMark: 4,
+    ratingPoints: 69,
+    examDate: past(4, 5, 20),
+  });
+  add(t, "dsc-polit", 4, { kind: "CREDIT", passed: true, ratingPoints: 75 });
+  add(t, "dsc-worldec", 5, {
+    kind: "EXAM",
+    finalMark: 4,
+    ratingPoints: 73,
+    examDate: past(5, 0, 17),
+  });
+  add(t, "dsc-stat", 5, { kind: "GRADED_CREDIT", finalMark: 4, ratingPoints: 70 });
   add(t, "dsc-worldec", 6, {
     kind: "EXAM",
     finalMark: 4,
@@ -1254,6 +1356,8 @@ function buildGrades({ today }: { today: Date }): Prisma.GradeCreateManyInput[] 
   add(t, "dsc-finance", 7, { kind: "EXAM", ratingPoints: 54, examDate: sessionDay(20) });
   add(t, "dsc-ecmetr", 7, { kind: "GRADED_CREDIT", ratingPoints: 68 });
   add(t, "dsc-en", 7, { kind: "GRADED_CREDIT", ratingPoints: 80 });
+  // Внешняя политика России — в расписании 4МЭО-1 есть, в «Учёбе» не было (оценка «глазами жюри», 12.11)
+  add(t, "dsc-rufp", 7, { kind: "CREDIT", ratingPoints: 72 });
 
   // Вера, 1 курс: оценок нет — для пустых состояний.
   return grades;

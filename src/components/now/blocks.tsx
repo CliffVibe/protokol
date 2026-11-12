@@ -170,11 +170,13 @@ export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now:
       ) : (
         <EmptyState
           headingLevel={3}
-          title="Заявок пока нет"
+          // «Активных», а не «пока нет»: в «Заявках» могут быть выданные и отклонённые (оценка «глазами жюри»)
+          title="Активных заявок нет"
           description="Справку можно заказать онлайн — статус будет виден здесь."
           action={
             <Button asChild variant="outline">
-              <Link href="/requests">Заказать справку</Link>
+              {/* Сразу в мастер заказа — одно касание, а не два (ux-reviewer, T14+) */}
+              <Link href="/requests/new">Заказать справку</Link>
             </Button>
           }
         />

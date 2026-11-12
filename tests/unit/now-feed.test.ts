@@ -38,6 +38,7 @@ describe("summarizeStudy — вымышленное правило стипен�
       debts: 0,
       scholarship: { kept: true },
       excellentSessions: 0,
+      firstDebt: null,
     });
   });
 

@@ -61,7 +61,8 @@ test("Тимур: старый долг не исчезает от пятёро�
   await page.goto("/grades");
   const section = page.getByRole("region", { name: "Что если…" });
   // all() не ждёт: под нагрузкой потоковая часть страницы приходила позже, и цикл не щёлкал ничего
-  await expect(section.getByRole("group")).toHaveCount(4);
+  // 5 дисциплин 7-го семестра (с 12.11 — и «Внешняя политика России», как в расписании)
+  await expect(section.getByRole("group")).toHaveCount(5);
   for (const group of await section.getByRole("group").all()) {
     const five = group.getByRole("radio", { name: /^5/ });
     await option(group, (await five.count()) ? /^5/ : /^Зачтено$/).click();

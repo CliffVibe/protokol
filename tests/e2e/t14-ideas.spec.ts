@@ -30,6 +30,12 @@ async function eligibleStudent(browser: Browser, baseURL: string): Promise<TempS
          VALUES ($1, $2, $3, $4, 'EXAM', $5, $6)`,
         [`grd-e2e-${randomBytes(6).toString("hex")}`, s.studentId, disc, semester, mark, pts],
       );
+    // Временный студент — в группе Веры (1-й курс): справку первокурснику он «уже отложил», чтобы на
+    // карточке было одно предложение — стипендия (правило первокурсника проверяет тест Веры ниже)
+    await c.query(
+      `INSERT INTO "OfferDismissal" (id, "studentId", code, semester) VALUES ($1, $2, 'first_year_study', 3)`,
+      [`ofd-e2e-${randomBytes(6).toString("hex")}`, s.studentId],
+    );
   });
   return s;
 }
@@ -64,7 +70,7 @@ test.describe("J. «Вам положено»", () => {
       const offers = s.page.getByRole("region", { name: "Деканат предлагает" });
       await expect(offers).toContainText("Вы подходите на повышенную стипендию за успехи в учёбе");
       await expect(offers).toContainText("2 сессии подряд только на «отлично»");
-      await expect(offers).toContainText("Правило упрощено для демо");
+      await expect(offers).not.toContainText("Правило упрощено для демо");
       expect(await overflow(s.page)).toBeLessThanOrEqual(0);
       await offers.getByRole("button", { name: "Подать заявление" }).click();
       await expect(s.page).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
@@ -98,16 +104,138 @@ test.describe("J. «Вам положено»", () => {
     }
   });
 
-  test("Тимуру (долг, стипендия под угрозой) не предлагаем", async ({ browser }) => {
+  // Демо-аккаунты только смотрим, не нажимаем: «Подать» поменяло бы их для параллельных проектов
+  test("Тимуру (долг) — заявление на пересдачу, а не стипендия; дедлайна стипендии в «Скоро» нет", async ({
+    browser,
+  }) => {
     const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
     const page = await ctx.newPage();
     await page.goto("/login");
     await page.getByRole("button", { name: "Войти как Тимур" }).click();
     await expect(page).toHaveURL(/\/$/);
     await expect(page.getByRole("heading", { level: 1, name: /, Тимур$/ })).toBeVisible();
-    await expect(page.getByRole("region", { name: "Деканат предлагает" })).toHaveCount(0);
+    // Карточку пересдачи у Тимура проверяет тест временного студента ниже: requests.spec подаёт Тимуру
+    // настоящее заявление на пересдачу, и при параллельном прогоне карточка честно пропадает
+    await expect(page.getByRole("region", { name: "Деканат предлагает" })).not.toContainText(
+      "стипендию",
+    );
+    await expect(page.getByRole("region", { name: "Скоро" })).toBeVisible();
+    await expect(page.getByRole("region", { name: "Скоро" })).not.toContainText(
+      "повышенную стипендию",
+    );
+    expect(await overflow(page)).toBeLessThanOrEqual(0);
     await ctx.close();
   });
+
+  test("студент с долгом и назначенной пересдачей — заявление заполнено дисциплиной", async ({
+    browser,
+    baseURL,
+  }) => {
+    const s = await tempStudent(browser, baseURL!);
+    try {
+      await withDb(async (c) => {
+        // 1-й семестр — долг с будущей датой (пересдача), 2-й — текущий
+        await c.query(
+          `INSERT INTO "Grade" (id, "studentId", "disciplineId", semester, kind, "finalMark", "ratingPoints", "examDate")
+           VALUES ($1, $2, 'dsc-ecmetr', 1, 'EXAM', 2, 40, now() + interval '4 days'),
+                  ($3, $2, 'dsc-tmo', 2, 'EXAM', NULL, 75, NULL)`,
+          [
+            `grd-e2e-${randomBytes(6).toString("hex")}`,
+            s.studentId,
+            `grd-e2e-${randomBytes(6).toString("hex")}`,
+          ],
+        );
+        await c.query(
+          `INSERT INTO "OfferDismissal" (id, "studentId", code, semester) VALUES ($1, $2, 'first_year_study', 2)`,
+          [`ofd-e2e-${randomBytes(6).toString("hex")}`, s.studentId],
+        );
+      });
+      await s.page.goto("/");
+      const offers = s.page.getByRole("region", { name: "Деканат предлагает" });
+      await expect(offers).toContainText("Заявление на пересдачу: Эконометрика");
+      await expect(offers).toContainText("Пересдача назначена на");
+      await expect(offers).not.toContainText("стипендию");
+      expect(await overflow(s.page)).toBeLessThanOrEqual(0);
+      await offers.getByRole("button", { name: "Подать заявление" }).click();
+      await expect(s.page).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
+      await expect(
+        s.page.getByRole("heading", { level: 1, name: "Заявление на пересдачу" }),
+      ).toBeVisible();
+      await expect(s.page.getByRole("main")).toContainText("Эконометрика");
+      await expect(s.page.getByText("Заявку предложил деканат")).toBeVisible();
+    } finally {
+      await cleanup(s);
+    }
+  });
+
+  test("Вере (1-й курс, без оценок) — справка об обучении «по месту требования»", async ({
+    browser,
+  }) => {
+    const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const page = await ctx.newPage();
+    await page.goto("/login");
+    await page.getByRole("button", { name: "Войти как Вера" }).click();
+    await expect(page).toHaveURL(/\/$/);
+    const offers = page.getByRole("region", { name: "Деканат предлагает" });
+    await expect(offers).toContainText("Вам может пригодиться справка об обучении");
+    await expect(offers.getByRole("button", { name: "Заказать справку" })).toBeVisible();
+    await ctx.close();
+  });
+
+  test("первокурсник принимает справку — заявка «по месту требования» с пометкой", async ({
+    browser,
+    baseURL,
+  }) => {
+    const s = await tempStudent(browser, baseURL!);
+    try {
+      await s.page.goto("/");
+      const offers = s.page.getByRole("region", { name: "Деканат предлагает" });
+      await offers.getByRole("button", { name: "Заказать справку" }).click();
+      await expect(s.page).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
+      await expect(
+        s.page.getByRole("heading", { level: 1, name: "Справка об обучении" }),
+      ).toBeVisible();
+      await expect(s.page.getByText("По месту требования")).toBeVisible();
+      await expect(s.page.getByText("Заявку предложил деканат")).toBeVisible();
+    } finally {
+      await cleanup(s);
+    }
+  });
+});
+
+test("демо: сменить роль без выхода — Алиса → Тимур → Ирина → Алиса", async ({ browser }) => {
+  const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+  const page = await ctx.newPage();
+  await page.goto("/login");
+  await page.getByRole("button", { name: "Войти как Алиса" }).click();
+  await expect(page).toHaveURL(/\/$/);
+
+  const switcher = page.getByRole("region", { name: "Демо: другой аккаунт" });
+  await page.goto("/profile");
+  // Себя в списке нет — только остальные три; у кнопки глагол, под ней — кто это
+  await expect(switcher.getByRole("button")).toHaveText([
+    "Войти как Тимур",
+    "Войти как Вера",
+    "Войти как Ирина",
+  ]);
+  await expect(
+    switcher.getByRole("button", { name: "Войти как Тимур" }),
+  ).toHaveAccessibleDescription(/4 курс/);
+  expect(await overflow(page)).toBeLessThanOrEqual(0);
+  await switcher.getByRole("button", { name: "Войти как Тимур" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /, Тимур$/ })).toBeVisible();
+
+  await page.goto("/more");
+  await switcher.getByRole("button", { name: "Войти как Ирина" }).click();
+  await expect(page).toHaveURL(/\/staff$/);
+  await expect(switcher.getByRole("button")).toHaveText([
+    "Войти как Алиса",
+    "Войти как Тимур",
+    "Войти как Вера",
+  ]);
+  await switcher.getByRole("button", { name: "Войти как Алиса" }).click();
+  await expect(page.getByRole("heading", { level: 1, name: /, Алиса$/ })).toBeVisible();
+  await ctx.close();
 });
 
 test.describe("K. Оценка заявки и «Вы сказали — мы сделали»", () => {

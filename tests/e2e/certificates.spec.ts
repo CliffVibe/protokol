@@ -139,6 +139,13 @@ test.describe("PDF справки", () => {
     const [download] = await Promise.all([page.waitForEvent("download"), link.click()]);
     expect(download.suggestedFilename()).toMatch(/^spravka-S-\d{4}-\d{5}\.pdf$/);
 
+    // Проверку подлинности видно и с телефона — ссылкой под PDF, на /verify своей справки (оценка «глазами жюри»)
+    const verify = page.getByRole("link", { name: /Проверить подлинность/ });
+    await expect(verify).toHaveAttribute("href", `/verify/${doc.token}`);
+    await verify.click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Справка действительна");
+    await page.goBack();
+
     const own = await page.request.get(href!);
     expect(own.status()).toBe(200);
     expect(own.headers()["content-type"]).toBe("application/pdf");
@@ -173,6 +180,7 @@ test.describe("PDF справки", () => {
     // Положительный контроль: сама заявка Алисе открывается
     expect((await page.goto(requestUrl(notReady)))?.status()).toBe(200);
     await expect(page.getByRole("link", { name: "Скачать справку (PDF)" })).toHaveCount(0);
+    await expect(page.getByRole("link", { name: /Проверить подлинность/ })).toHaveCount(0);
     expect((await page.request.get(`${requestUrl(notReady)}/pdf`)).status()).toBe(404);
     expect((await page.request.get("/requests/garbage/pdf")).status()).toBe(404);
   });

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { DemoSwitch } from "@/components/demo-switch";
 import { SessionActions } from "@/components/logout-button";
 import { PageHeader } from "@/components/page-header";
 import { CalendarSubscription } from "@/components/profile/calendar-subscription";
@@ -60,6 +61,7 @@ export default async function ProfilePage() {
         published={origin.startsWith("https://")}
       />
 
+      <DemoSwitch current={p.firstName} className="max-w-xl border-t border-line pt-6" />
       <SessionActions className="max-w-xl" />
     </div>
   );

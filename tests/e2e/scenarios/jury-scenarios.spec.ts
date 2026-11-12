@@ -120,7 +120,7 @@ test("сценарии 3 → 4 → 5: справка для визы — мас�
   await forVisa.getByRole("link", { name: "Справка об обучении на английском" }).click();
 
   const marker = `e2e-visa-${randomUUID().slice(0, 6)}`;
-  await timur.getByLabel(/Addressee/).fill(marker);
+  await timur.getByLabel(/Кому адресована/).fill(marker);
   await noHorizontalScroll(timur, "форма справки на английском");
   await timur.getByRole("button", { name: "Отправить заявку" }).click();
   await expect(timur).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);

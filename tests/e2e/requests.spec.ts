@@ -64,7 +64,7 @@ test("приёмка: Алиса подала → Ирина приняла → 
   await expect(forVisa.getByRole("link").first()).toHaveText("Справка об обучении на английском");
   await forVisa.getByRole("link", { name: "Справка об обучении на английском" }).click();
   const marker = `e2e-embassy-${randomUUID().slice(0, 6)}`;
-  await page.getByLabel(/Addressee/).fill(marker);
+  await page.getByLabel(/Кому адресована/).fill(marker);
   await page.getByRole("button", { name: "Отправить заявку" }).click();
   await expect(page).toHaveURL(/\/requests\/%D0%A1-/);
   const number = numberFromUrl(page);

@@ -10,7 +10,7 @@ import { demoLogin } from "@/server/actions/auth";
 import { homeFor } from "@/server/auth/guards";
 import { getSession } from "@/server/auth/session";
 import { isDemoMode } from "@/server/services/auth";
-import { DemoSubmit } from "./demo-submit";
+import { DemoSubmit } from "@/components/demo-submit";
 import { LoginForm } from "./login-form";
 
 export const metadata: Metadata = { title: "Вход" };

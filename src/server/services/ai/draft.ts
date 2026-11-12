@@ -6,7 +6,7 @@ import { mskStartOfDay } from "@/lib/msk";
 import type { StaffCtx } from "@/server/auth/guards";
 import { reserveAiCall, type AiCallSlot } from "@/server/repos/assistant";
 import { staffRequestByNumber } from "@/server/repos/staff-requests";
-import { canTransition, dueDate, parseFields } from "@/server/services/request-rules";
+import { canTransition, dueDate } from "@/server/services/request-rules";
 import { defaultProvider } from "./assistant";
 import { GigaChatError } from "./gigachat";
 import type { AiProvider } from "./provider";
@@ -14,7 +14,9 @@ import type { AiProvider } from "./provider";
 // «Черновик ответа» сотруднику (T12, расширение 01-concept H). Модель ничего не меняет: черновик
 // попадает в поле комментария, сотрудник правит его и сам нажимает кнопку перехода (Server Action
 // setRequestStatusAction проверяет всё заново). Заявка — только своего факультета (фильтр в репозитории).
-// Во внешний сервис уходит минимум: тип справки, статусы, срок и ПОДПИСИ полей — без значений и без ФИО.
+// Во внешний сервис уходит минимум: тип справки, статусы и срок — без полей, значений и ФИО.
+// Подписи полей больше не отправляем (оценка «глазами жюри» 12.11): модель благодарила «за заполнение поля
+// „Кому“», которое студент не заполнял. Ответ с заглушкой или обращением по имени — в шаблон (looksBroken).
 
 export const MAX_DRAFT = 500;
 
@@ -51,14 +53,15 @@ export function draftPrompt(input: {
   slaDays: number;
   /** null — срок уже прошёл */
   due: string | null;
-  fieldLabels: string[];
 }) {
   return [
     {
       role: "system" as const,
       content:
         "Ты помогаешь сотруднику деканата написать комментарий студенту к смене статуса его заявки на справку. " +
-        "1–3 коротких предложения, по-русски, на «вы», вежливо и по делу. Не выдумывай фактов, имён, телефонов и адресов; " +
+        "1–3 коротких предложения, по-русски, на «вы», вежливо и по делу. Начни со слова «Здравствуйте!». " +
+        "Имени студента ты не знаешь: не обращайся по имени и не оставляй мест для подстановки. " +
+        "Не выдумывай фактов, имён, телефонов и адресов; не благодари за заполненные поля; " +
         "дату называй только ту, что дана. Ответ — только текст комментария, без кавычек и подписи.",
     },
     {
@@ -69,12 +72,18 @@ export function draftPrompt(input: {
         input.due
           ? `Срок по регламенту: ${input.slaDays} раб. дн., ожидаемая дата — ${input.due}.`
           : `Срок по регламенту (${input.slaDays} раб. дн.) уже прошёл: извинись за задержку, новой даты не называй.`,
-        input.fieldLabels.length ? `Студент заполнил поля: ${input.fieldLabels.join(", ")}.` : "",
-      ]
-        .filter(Boolean)
-        .join("\n"),
+      ].join("\n"),
     },
   ];
+}
+
+/**
+ * Брак модели, который нельзя отдавать сотруднику как готовый текст: место для подстановки
+ * («[Имя Студента]», «{name}», «<ФИО>»), обращение «Уважаемый/ая…» (имени модель не знает — выдумает
+ * или оставит заглушку), благодарность «за заполнение». Тогда — шаблон.
+ */
+export function looksBroken(text: string): boolean {
+  return /[[\]{}<>]|уважаем|заполнени|_{3,}|\.{4,}/iu.test(text);
 }
 
 export async function draftReply(
@@ -111,7 +120,6 @@ export async function draftReply(
     to,
     slaDays: r.type.slaDays,
     due,
-    fieldLabels: (parseFields(r.type.fields) ?? []).map((f) => f.label),
   });
   try {
     let text = "";
@@ -124,7 +132,16 @@ export async function draftReply(
       .replace(/^["«]|["»]$/g, "")
       .slice(0, MAX_DRAFT)
       .trim();
-    if (text) return { ok: true, text, mode: "ai" };
+    if (text && !looksBroken(text)) return { ok: true, text, mode: "ai" };
+    if (text) {
+      console.info(JSON.stringify({ event: "draft", mode: "ai_rejected" }));
+      return {
+        ok: true,
+        text: template,
+        mode: "template",
+        notice: "Черновик ИИ не подошёл (заглушка или обращение по имени). Подставили шаблон.",
+      };
+    }
   } catch (e) {
     const code = e instanceof GigaChatError ? e.code : "error";
     console.info(JSON.stringify({ event: "draft", mode: "ai_error", code }));

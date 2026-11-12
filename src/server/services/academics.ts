@@ -24,6 +24,8 @@ export type StudySummary = {
   scholarship: Scholarship;
   /** Сколько последних закрытых сессий подряд — только «отлично» и «зачтено» (правило «Деканат предлагает») */
   excellentSessions: number;
+  /** Самый старый долг и дата пересдачи, если назначена (правило «Деканат предлагает» → заявление на пересдачу) */
+  firstDebt: { discipline: string; retakeAt: Date | null } | null;
 };
 
 /** Сессия на «отлично»: есть хотя бы одна оценка, все оценки — 5, все зачёты — «зачтено». */
@@ -57,15 +59,26 @@ export function averageRating(rows: GradeRow[]): number | null {
   return Math.round(points.reduce((a, b) => a + b, 0) / points.length);
 }
 
-export function summarizeStudy(grades: GradeRow[]): StudySummary | null {
+export function summarizeStudy(grades: GradeRow[], now = new Date()): StudySummary | null {
   const semester = currentSemester(grades);
   if (semester === null) return null;
+  const debts = grades
+    .filter((g) => g.semester < semester && isDebt(g))
+    .sort((a, b) => a.semester - b.semester);
+  const first = debts[0];
   return {
     semester,
     averageRating: averageRating(grades.filter((g) => g.semester === semester)),
-    debts: grades.filter((g) => g.semester < semester && isDebt(g)).length,
+    debts: debts.length,
     scholarship: scholarshipAsOf(grades, semester),
     excellentSessions: excellentSessionsBefore(grades, semester),
+    // Будущая дата у оценки с долгом — это пересдача (как в now.ts); прошедшая — не назначена заново
+    firstDebt: first
+      ? {
+          discipline: first.discipline.name,
+          retakeAt: first.examDate && first.examDate > now ? first.examDate : null,
+        }
+      : null,
   };
 }
 

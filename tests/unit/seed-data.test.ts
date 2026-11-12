@@ -142,6 +142,46 @@ describe("buildSeed", () => {
         expect(thisWeekOdintsovo.length).toBeGreaterThan(0);
       });
 
+      // Оценка «глазами жюри», 12.11: «один преподаватель в пятницу 9:00 ведёт две пары у разных групп»
+      it("у преподавателя и аудитории нет двух пар в одно время (все группы, языки, экзамен, переносы)", () => {
+        const active = d.lessons.filter((l) => l.change !== "CANCELLED");
+        const clash = (key: (l: (typeof active)[number]) => string) => {
+          const by = new Map<string, (typeof active)[number][]>();
+          for (const l of active) by.set(key(l), [...(by.get(key(l)) ?? []), l]);
+          const out: string[] = [];
+          for (const [k, list] of by) {
+            const s = list
+              .map((l) => [+new Date(l.startsAt), +new Date(l.endsAt), l.id] as const)
+              .sort((a, b) => a[0] - b[0]);
+            for (let i = 1; i < s.length; i++)
+              if (s[i]![0] < s[i - 1]![1]) out.push(`${k}: ${s[i - 1]![2]} × ${s[i]![2]}`);
+          }
+          return out;
+        };
+        expect(clash((l) => l.teacherId)).toEqual([]);
+        expect(clash((l) => `${l.building} ${l.room}`)).toEqual([]);
+      });
+
+      it("у Алисы дисциплина — не больше 3 раз в неделю, у пары группы — постоянная аудитория", () => {
+        const week = d.lessons.filter(
+          (l) =>
+            l.groupId === "grp-2mo3" &&
+            +new Date(l.startsAt) >= +weekStart &&
+            +new Date(l.startsAt) < +weekEnd &&
+            !(sameDay(l.startsAt, today) && mskWeekday(today) >= 6), // запасные пары выходного «сегодня»
+        );
+        const count = new Map<string, number>();
+        for (const l of week) count.set(l.disciplineId, (count.get(l.disciplineId) ?? 0) + 1);
+        for (const [disc, n] of count) expect(n, disc).toBeLessThanOrEqual(3);
+        // Все группы: «группа × дисциплина × вид» в одном корпусе — одна аудитория (кроме смены аудитории)
+        const rooms = new Map<string, Set<string>>();
+        for (const l of d.lessons.filter((x) => x.groupId && x.change !== "ROOM_CHANGED")) {
+          const k = `${l.groupId}-${l.disciplineId}-${l.kind}-${l.building}`;
+          rooms.set(k, (rooms.get(k) ?? new Set()).add(l.room));
+        }
+        for (const [k, set] of rooms) expect(set.size, k).toBe(1);
+      });
+
       it("пары Тимура (группа и язык) не пересекаются, в том числе с экзаменом", () => {
         const timur = d.lessons
           .filter(
@@ -192,6 +232,35 @@ describe("buildSeed", () => {
       });
     });
   }
+
+  it("расписание и «Учёба» сходятся: дисциплины групп Алисы и Тимура — из оценок текущего семестра", () => {
+    const d = buildSeed(DATES.wednesday);
+    for (const [studentId, groupId, semester] of [
+      [DEMO.alisa.studentId, "grp-2mo3", 3],
+      [DEMO.timur.studentId, "grp-4meo1", 7],
+    ] as const) {
+      const graded = new Set(
+        d.grades
+          .filter((g) => g.studentId === studentId && g.semester === semester)
+          .map((g) => g.disciplineId),
+      );
+      const scheduled = new Set(
+        d.lessons
+          .filter((l) => l.groupId === groupId && l.kind !== "EXAM")
+          .map((l) => l.disciplineId),
+      );
+      for (const disc of scheduled) expect(graded.has(disc), `${groupId}: ${disc}`).toBe(true);
+    }
+  });
+
+  it("у Тимура в «Учёбе» семестры 1–7 — график рейтинга не из двух столбцов", () => {
+    const sems = new Set(
+      buildSeed(DATES.wednesday)
+        .grades.filter((g) => g.studentId === DEMO.timur.studentId)
+        .map((g) => g.semester),
+    );
+    expect([...sems].sort()).toEqual([1, 2, 3, 4, 5, 6, 7]);
+  });
 
   it("номера заявок — «С-ГГГГ-NNNNN» с кириллической С", () => {
     for (const r of buildSeed(DATES.wednesday).requests)

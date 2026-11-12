@@ -162,6 +162,7 @@ const ctxFixture = (over: Partial<StudentContext> = {}): StudentContext => ({
     debts: 0,
     scholarship: { kept: true },
     excellentSessions: 2,
+    firstDebt: null,
   },
   session: {
     from: msk("2026-12-28T10:00:00"),
@@ -291,7 +292,7 @@ describe("системный промпт", () => {
 });
 
 describe("черновик ответа сотруднику — промпт", () => {
-  it("срок прошёл → без даты и с извинением; во внешний сервис — только подписи полей", async () => {
+  it("срок прошёл → без даты и с извинением; полей во внешний сервис не шлём", async () => {
     const { draftPrompt } = await import("@/server/services/ai/draft");
     const late = draftPrompt({
       title: "Справка об обучении",
@@ -299,20 +300,39 @@ describe("черновик ответа сотруднику — промпт", 
       to: "ACCEPTED",
       slaDays: 2,
       due: null,
-      fieldLabels: ["Куда предъявить"],
     });
     const text = late.map((m) => m.content).join("\n");
     expect(text).toMatch(/уже прошёл: извинись/);
-    expect(text).toMatch(/Куда предъявить/);
+    expect(text).not.toMatch(/заполнил поля/);
+    expect(text).toMatch(/не обращайся по имени/);
     const onTime = draftPrompt({
       title: "Справка",
       from: "SUBMITTED",
       to: "ACCEPTED",
       slaDays: 2,
       due: "12 ноября",
-      fieldLabels: [],
     });
     expect(onTime.map((m) => m.content).join("\n")).toMatch(/ожидаемая дата — 12 ноября/);
+  });
+
+  it("брак модели (заглушка, «Уважаемый…», благодарность за поля) распознаётся; нормальный текст — нет", async () => {
+    const { looksBroken } = await import("@/server/services/ai/draft");
+    // Дословно с прода, оценка «глазами жюри» 12.11
+    expect(
+      looksBroken(
+        "Уважаемый [Имя Студента], Благодарим вас за заполнение поля «Кому» („Addressee“).",
+      ),
+    ).toBe(true);
+    expect(looksBroken("Здравствуйте, {name}! Заявку приняли.")).toBe(true);
+    expect(looksBroken("Уважаемая студентка, заявку приняли.")).toBe(true);
+    expect(looksBroken("Спасибо за заполнение заявки.")).toBe(true);
+    expect(looksBroken("Здравствуйте, ____! Заявку приняли.")).toBe(true);
+    expect(
+      looksBroken(
+        "Здравствуйте! Заявку приняли. Подготовим справку до 17 ноября — напишем здесь, если что-то понадобится уточнить.",
+      ),
+    ).toBe(false);
+    expect(looksBroken("Справка готова. Электронную версию можно скачать в заявке.")).toBe(false);
   });
 });
 

@@ -2,7 +2,12 @@
 // снято 11.11 — аудитории закрыты, ключи студентам не дают; осталось сотруднику при переносе пары). Чистые функции.
 import { describe, expect, it } from "vitest";
 import type { StudySummary } from "@/server/services/academics";
-import { offersFor, SCHOLARSHIP_UP_MIN_SESSIONS } from "@/server/services/offer-rules";
+import {
+  deadlineRelevant,
+  offersFor as offersForSubject,
+  semesterOf,
+  SCHOLARSHIP_UP_MIN_SESSIONS,
+} from "@/server/services/offer-rules";
 import {
   isRatable,
   ratingCommentSchema,
@@ -17,9 +22,13 @@ const study = (over: Partial<StudySummary> = {}): StudySummary => ({
   debts: 0,
   scholarship: { kept: true },
   excellentSessions: 2,
+  firstDebt: null,
   ...over,
 });
 const none = new Set<string>();
+// Студент 2-го курса (как Алиса); у правила первокурсника — свой тест ниже
+const offersFor = (s: StudySummary | null, taken: Set<string>, dismissed: Set<string>) =>
+  offersForSubject({ study: s, course: 2 }, taken, dismissed);
 
 describe("J. «Вам положено»: повышенная стипендия за учёбу — только «отлично» две сессии подряд", () => {
   it("подходит: две сессии на «отлично», долгов нет, стипендия сохраняется — с объяснением", () => {
@@ -54,6 +63,65 @@ describe("J. «Вам положено»: повышенная стипенди�
   it("не предлагаем повторно: заявление уже подано или «Не сейчас» в этом семестре", () => {
     expect(offersFor(study(), new Set(["scholarship_up"]), none)).toEqual([]);
     expect(offersFor(study(), none, new Set(["scholarship_up"]))).toEqual([]);
+  });
+});
+
+describe("J. «Деканат предлагает»: пересдача и справка первокурснику (оценка «глазами жюри», 12.11)", () => {
+  const debt = (retakeAt: Date | null) =>
+    study({
+      debts: 1,
+      scholarship: { kept: false, lost: true, reasons: ["долг"] },
+      excellentSessions: 0,
+      firstDebt: { discipline: "Эконометрика", retakeAt },
+    });
+
+  it("долг с назначенной пересдачей → заявление заполнено дисциплиной; стипендию не предлагаем", () => {
+    const offers = offersFor(debt(new Date("2026-11-16T07:00:00Z")), none, none);
+    expect(offers.map((o) => o.code)).toEqual(["retake"]);
+    expect(offers[0]).toMatchObject({
+      typeCode: "retake",
+      headline: "Заявление на пересдачу: Эконометрика",
+      payload: { discipline: "Эконометрика" },
+    });
+    expect(offers[0]?.why).toContain("Пересдача назначена на 16 ноября");
+  });
+
+  it("долг без даты — тоже предлагаем, но без обещания даты; заявление уже подано — нет", () => {
+    expect(offersFor(debt(null), none, none)[0]?.why).toContain("пока без даты");
+    expect(offersFor(debt(null), new Set(["retake"]), none)).toEqual([]);
+  });
+
+  it("первокурсник без оценок → справка «по месту требования»; второй курс и уже заказанная — нет", () => {
+    const [o] = offersForSubject({ study: null, course: 1 }, none, none);
+    expect(o).toMatchObject({
+      code: "first_year_study",
+      typeCode: "study_ru",
+      action: "Заказать справку",
+      payload: { addressee: "По месту требования" },
+    });
+    expect(offersForSubject({ study: null, course: 2 }, none, none)).toEqual([]);
+    expect(offersForSubject({ study: null, course: 1 }, new Set(["study_ru"]), none)).toEqual([]);
+    expect(
+      offersForSubject({ study: null, course: 1 }, none, new Set(["first_year_study"])),
+    ).toEqual([]);
+  });
+
+  it("семестр для «Не сейчас»: по оценкам, а без них — по курсу и месяцу", () => {
+    const nov = new Date("2026-11-12T12:00:00Z");
+    const mar = new Date("2027-03-01T12:00:00Z");
+    expect(semesterOf({ study: study({ semester: 3 }), course: 2 }, nov)).toBe(3);
+    expect(semesterOf({ study: null, course: 1 }, nov)).toBe(1);
+    expect(semesterOf({ study: null, course: 1 }, mar)).toBe(2);
+    expect(semesterOf({ study: null, course: null }, nov)).toBeNull();
+  });
+
+  it("дедлайн повышенной стипендии — только тем, кто подходит; дедлайн без правила — всем", () => {
+    const link = "/requests/new?type=scholarship_up";
+    expect(deadlineRelevant(link, { study: study(), course: 2 })).toBe(true);
+    expect(deadlineRelevant(link, { study: debt(null), course: 4 })).toBe(false);
+    expect(deadlineRelevant(link, { study: null, course: 1 })).toBe(false);
+    expect(deadlineRelevant(null, { study: debt(null), course: 4 })).toBe(true);
+    expect(deadlineRelevant("/requests/new", { study: debt(null), course: 4 })).toBe(true);
   });
 });
 

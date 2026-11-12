@@ -43,6 +43,22 @@ export async function demoLogin(formData: FormData): Promise<void> {
   redirect(homeFor(result.role));
 }
 
+/**
+ * Сменить демо-роль, не выходя (оценка «глазами жюри», 12.11: эксперт проходит сценарии под четырьмя
+ * аккаунтами). Только вошедшему; текущая сессия удаляется, дальше — тот же путь, что «Войти как…»:
+ * DEMO_MODE, фиксированный список логинов и лимит частоты проверяет authenticateDemo.
+ */
+export async function demoSwitch(formData: FormData): Promise<void> {
+  const user = await requireUser();
+  const ip = clientIpFrom((await headers()).get("x-forwarded-for"));
+  const result = await authenticateDemo({ login: formData.get("login") }, ip);
+  // Отказ (лимит, не демо-логин) — остаёмся в текущей роли: сессию трогаем только при успехе
+  if (!result.ok) redirect(homeFor(user.role));
+  await destroySession();
+  await createSession(result.userId);
+  redirect(homeFor(result.role));
+}
+
 /** Выход: сессия удаляется из БД. Без сессии — просто на /login. */
 export async function logout(): Promise<void> {
   await destroySession();

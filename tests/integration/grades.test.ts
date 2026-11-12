@@ -41,7 +41,8 @@ describe.skipIf(!url)("успеваемость в PostgreSQL", async () => {
         "Международные финансы: 54 из 100, нужно 60",
       ]),
     });
-    expect(o.semesters).toEqual([7, 6]);
+    // С 12.11 у 4-го курса — все семь семестров (график рейтинга, оценка «глазами жюри»)
+    expect(o.semesters).toEqual([7, 6, 5, 4, 3, 2, 1]);
   });
 
   it("Вера: оценок нет — сводки нет", async () => {
@@ -62,7 +63,7 @@ describe.skipIf(!url)("успеваемость в PostgreSQL", async () => {
     const alisa = (await getDisciplineDetails(await ctxOf(DEMO.alisa.userId), "dsc-en"))!;
     const timur = (await getDisciplineDetails(await ctxOf(DEMO.timur.userId), "dsc-en"))!;
     expect(alisa.rows.map((r) => r.ratingPoints)).toEqual([94, 93]);
-    expect(timur.rows.map((r) => r.ratingPoints)).toEqual([80]);
+    expect(timur.rows.map((r) => r.ratingPoints)).toEqual([80, 90, 88]); // 7-й, 3-й, 1-й семестры
     expect(timur.currentSemester).toBe(7);
     // Ни одной строки чужого студента: строки Тимура совпадают с его строками в базе
     const own = await prisma.grade.count({

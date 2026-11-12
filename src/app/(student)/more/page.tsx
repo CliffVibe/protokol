@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { ChevronRight } from "lucide-react";
+import { DemoSwitch } from "@/components/demo-switch";
 import { SessionActions } from "@/components/logout-button";
 import { MORE_ITEMS } from "@/components/nav/nav-items";
 import { UnreadBadge } from "@/components/nav/unread-badge";
@@ -9,6 +10,7 @@ import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getThemePreference } from "@/lib/theme-server";
 import { requireStudent } from "@/server/auth/guards";
 import { unreadCountOf } from "@/server/repos/notifications";
+import { readerOf } from "@/server/repos/profile";
 
 export const metadata: Metadata = { title: "Ещё" };
 
@@ -16,7 +18,11 @@ export const metadata: Metadata = { title: "Ещё" };
 // Доступ — requireStudent() первой строкой, до любых данных (CLAUDE.md → «Железные правила»).
 export default async function MorePage() {
   const ctx = await requireStudent();
-  const [theme, unreadCount] = await Promise.all([getThemePreference(), unreadCountOf(ctx)]);
+  const [theme, unreadCount, reader] = await Promise.all([
+    getThemePreference(),
+    unreadCountOf(ctx),
+    readerOf(ctx),
+  ]);
 
   return (
     <div className="flex flex-col gap-6">
@@ -42,6 +48,10 @@ export default async function MorePage() {
         <h2 className="sr-only">Настройки</h2>
         <ThemeSwitcher value={theme} />
       </section>
+      <DemoSwitch
+        current={reader?.firstName ?? null}
+        className="max-w-xl border-t border-line pt-6"
+      />
       <SessionActions className="max-w-xl" />
     </div>
   );

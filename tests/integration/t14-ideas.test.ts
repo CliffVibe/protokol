@@ -82,10 +82,11 @@ describe.skipIf(!url)("T14: предложения, оценки, аудитор
   });
 
   describe("J. «Вам положено»", () => {
-    it("Тимуру (долг) не положено: ни в ленте, ни подделкой формы", async () => {
+    it("Тимуру (долг) стипендию не предлагаем — ни в ленте, ни подделкой формы; предлагаем пересдачу", async () => {
       const timur = await student(DEMO.timur.userId);
       const feed = await now.getNowFeed(timur);
-      expect(feed!.offers).toEqual([]);
+      expect(feed!.offers.map((o) => o.code)).toEqual(["retake"]);
+      expect(feed!.offers[0]?.payload).toEqual({ discipline: "Эконометрика" });
       expect(await offers.acceptOffer(timur, "scholarship_up", randomUUID())).toEqual({
         ok: false,
       });
@@ -115,6 +116,39 @@ describe.skipIf(!url)("T14: предложения, оценки, аудитор
         select: { offered: true, status: true },
       });
       expect(r).toEqual({ offered: true, status: "SUBMITTED" });
+    });
+
+    it("Тимур подаёт пересдачу из предложения — заявление с дисциплиной долга, дальше не предлагаем", async () => {
+      const timur = await student(DEMO.timur.userId);
+      const accepted = await offers.acceptOffer(timur, "retake", randomUUID());
+      expect(accepted.ok).toBe(true);
+      const r = await prisma.request.findFirstOrThrow({
+        where: { studentId: DEMO.timur.studentId, type: { code: "retake" } },
+        select: { offered: true, payload: true },
+      });
+      expect(r).toEqual({ offered: true, payload: { discipline: "Эконометрика" } });
+      expect((await now.getNowFeed(timur))!.offers).toEqual([]);
+    });
+
+    it("Вера (1-й курс, оценок нет): справка «по месту требования»; «Не сейчас» работает и без оценок", async () => {
+      const vera = await student(DEMO.vera.userId);
+      expect((await now.getNowFeed(vera))!.offers.map((o) => o.code)).toEqual(["first_year_study"]);
+      await offers.dismissMyOffer(vera, "first_year_study");
+      expect((await now.getNowFeed(vera))!.offers).toEqual([]);
+      const accepted = await offers.acceptOffer(vera, "first_year_study", randomUUID());
+      expect(accepted.ok).toBe(true);
+      const r = await prisma.request.findFirstOrThrow({
+        where: { studentId: DEMO.vera.studentId },
+        select: { offered: true, payload: true, type: { select: { code: true } } },
+      });
+      expect(r).toEqual({
+        offered: true,
+        payload: { addressee: "По месту требования" },
+        type: { code: "study_ru" },
+      });
+      // Чужое правило подделкой формы — отказ: Вере стипендия и пересдача не положены
+      expect(await offers.acceptOffer(vera, "scholarship_up", randomUUID())).toEqual({ ok: false });
+      expect(await offers.acceptOffer(vera, "retake", randomUUID())).toEqual({ ok: false });
     });
   });
 

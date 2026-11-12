@@ -10,7 +10,9 @@ import type { Offer } from "@/server/services/offer-rules";
 // «Вам положено» (T14): деканат приходит к студенту сам. Язык статусов Б′ — черта слева, значок, текст.
 // Кнопки — outline и ghost: на «Сейчас» заливных нет (04-design: экран отвечает, а не просит).
 // «Вы подходите», а не «положено»: повышенную стипендию решает комиссия (ux-reviewer, T14).
-// Правило вымышленное — так и написано. На узкой ширине (текст 200 %) значок — над текстом.
+// Приписку «Правило упрощено для демо» убрали с карточки (оценка «глазами жюри», 12.11: на главной идее
+// она читалась как «понарошку»); что правила вымышленные — в отчёте и на плашке концепта.
+// На узкой ширине (текст 200 %) значок — над текстом.
 export function OffersBlock({ offers }: { offers: Offer[] }) {
   if (!offers.length) return null;
   return (
@@ -44,11 +46,11 @@ function OfferItem({ offer }: { offer: Offer }) {
       <div className="flex gap-3 @max-[18rem]:flex-col @max-[18rem]:gap-1.5">
         <BadgeCheck aria-hidden className="mt-0.5 size-6 shrink-0 text-brand" />
         <div className="flex min-w-0 flex-col gap-1.5 hyphens-auto [hyphenate-limit-chars:10_4_4]">
-          <p className="text-base font-bold break-words text-ink">Вы подходите на {offer.title}</p>
+          <p className="text-base font-bold break-words text-ink">{offer.headline}</p>
           <p className="text-base break-words text-ink">{offer.why}</p>
           <p className="text-sm break-words text-ink-muted">
-            Деканат заметил это сам — заявление уже заполнено. Отменить можно, пока его не приняли;
-            «Не сейчас» скроет предложение до следующего семестра. Правило упрощено для демо.
+            Деканат заметил это сам. Отменить можно, пока деканат не начал работу; «Не сейчас»
+            скроет предложение до следующего семестра.
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
             <form action={accept}>
@@ -62,7 +64,7 @@ function OfferItem({ offer }: { offer: Offer }) {
                 disabled={dismissing}
                 className="h-auto min-h-11 max-w-full py-2 whitespace-normal"
               >
-                Подать заявление
+                {offer.action}
               </Button>
             </form>
             <form action={dismiss}>

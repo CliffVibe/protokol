@@ -77,16 +77,19 @@ export function labeledPayload(
 export async function getMyRequest(ctx: StudentCtx, number: string) {
   const r = await requestByNumber(ctx, number);
   if (!r) return null;
+  const canDownload =
+    (r.status === "READY" || r.status === "ISSUED") && !!r.document && !r.document.revoked;
   return {
     ...r,
+    // Ссылка на публичную проверку — только когда есть действующая справка (как QR в PDF)
+    verifyHref: canDownload && r.document ? `/verify/${r.document.verifyToken}` : null,
     timeline: timelineOf({ ...r, slaDays: r.type.slaDays }),
     fields: labeledPayload(parseFields(r.type.fields), r.payload),
     canCancel: r.status === "SUBMITTED",
     // T14: оценить можно «Готова»/«Выдана», один раз
     canRate: isRatable(r.status) && r.rating === null,
     // PDF с QR (T10): готова или выдана и документ не отозван; то же условие — в documentForPdf
-    canDownload:
-      (r.status === "READY" || r.status === "ISSUED") && !!r.document && !r.document.revoked,
+    canDownload,
   };
 }
 
