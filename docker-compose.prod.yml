@@ -1,4 +1,5 @@
-# Прод на VPS: docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d
+# Прод на VPS: docker compose -f docker-compose.prod.yml --profile tools pull && … run --rm tools pnpm db:deploy && … up -d
+# --profile tools обязателен: без него `pull` пропускает сервис tools (profiles) и миграции остаются старыми (12.11)
 # Все значения — из .env рядом с этим файлом (шаблон — .env.example). Образ app собирает CI.
 services:
   app:

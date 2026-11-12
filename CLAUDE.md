@@ -59,7 +59,7 @@ pnpm format:check && pnpm lint && pnpm typecheck
 pnpm test                # Vitest (юнит); + интеграция с БД при TEST_DATABASE_URL (база пересеивается! локально — protokol_e2e, не демо)
 pnpm test:e2e            # Playwright: десктоп + мобильный 360px + проверки доступа + axe; своя база protokol_e2e (создаётся и пересеивается перед прогоном), порт 3100
 node --test .claude/hooks/guard.test.mjs   # тесты хука-охранника
-docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d   # прод (образ собирает CI → GHCR)
+docker compose -f docker-compose.prod.yml --profile tools pull && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy && docker compose -f docker-compose.prod.yml up -d   # прод (образы собирает CI → GHCR; --profile tools — иначе образ миграций не обновится)
 ```
 
 ## Структура

@@ -44,7 +44,7 @@ git clone --depth 1 https://github.com/CliffVibe/protokol.git /opt/protokol && c
 
 ## 4. Первый запуск
 ```bash
-cd /opt/protokol && docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:seed && docker compose -f docker-compose.prod.yml up -d
+cd /opt/protokol && docker compose -f docker-compose.prod.yml --profile tools pull && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:deploy && docker compose -f docker-compose.prod.yml run --rm tools pnpm db:seed && docker compose -f docker-compose.prod.yml up -d
 ```
 Проверка: `https://<DOMAIN>/login` открывается с плашкой концепта; `https://<DOMAIN>/api/health` снаружи — 404 (закрыт в Caddy, T13).
 

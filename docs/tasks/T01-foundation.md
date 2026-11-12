@@ -22,7 +22,7 @@
 - Купить/поднять VPS (российский провайдер), направить домен или использовать `<ip>.sslip.io`.
 - На VPS: Docker Engine, `registry-mirrors: ["https://mirror.gcr.io"]` в `/etc/docker/daemon.json`, swap 2 ГБ, проверка `docker pull postgres:16`.
 - Репозиторий **приватный** (решение человека 06.11), поэтому образ в GHCR тоже приватный: на VPS один раз `docker login ghcr.io` с токеном GitHub (fine-grained, только `read:packages`). Перед сдачей — открыть репозиторий или выдать доступ жюри (ТЗ: «репозиторий с доступом для жюри»).
-- Склонировать, положить `.env`, `docker compose -f docker-compose.prod.yml pull && docker compose -f docker-compose.prod.yml up -d`.
+- Склонировать, положить `.env`, `docker compose -f docker-compose.prod.yml --profile tools pull && docker compose -f docker-compose.prod.yml up -d` (`--profile tools` — иначе образ миграций не обновится, найдено 12.11).
 - Отправить ссылку друзьям в РФ (без VPN), собрать скриншоты → журнал.
 
 ## Приёмка
