@@ -47,14 +47,20 @@ export interface SeedOptions {
   only?: "schedule";
 }
 
+/**
+ * Пересев — одна транзакция. Prisma по умолчанию даёт ей 5 с: в CI 12.11 сид (выросший с T14+) уложился в
+ * 5,07 с и упал — интеграционные файлы идут параллельно на одной базе, TRUNCATE ждёт блокировку соседа.
+ */
+const SEED_TX = { maxWait: 15_000, timeout: 60_000 };
+
 export async function runSeed(prisma: PrismaClient, options: SeedOptions = {}) {
   const data = buildSeed(options.now ?? new Date());
 
   if (options.only === "schedule") {
-    await prisma.$transaction([
-      prisma.lesson.deleteMany(),
-      prisma.lesson.createMany({ data: data.lessons }),
-    ]);
+    await prisma.$transaction(
+      [prisma.lesson.deleteMany(), prisma.lesson.createMany({ data: data.lessons })],
+      SEED_TX,
+    );
     return { lessons: data.lessons.length };
   }
 
@@ -85,35 +91,38 @@ export async function runSeed(prisma: PrismaClient, options: SeedOptions = {}) {
   const students = data.students.map((s) => ({ ...s, calendarToken: token(32) }));
   const issuedDocuments = data.issuedDocuments.map((d) => ({ ...d, verifyToken: token(16) }));
 
-  await prisma.$transaction([
-    prisma.$executeRawUnsafe(
-      `TRUNCATE ${TABLES.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE`,
-    ),
-    prisma.faculty.createMany({ data: data.faculties }),
-    prisma.program.createMany({ data: data.programs }),
-    prisma.group.createMany({ data: data.groups }),
-    prisma.languageGroup.createMany({ data: data.languageGroups }),
-    prisma.user.createMany({ data: users }),
-    prisma.student.createMany({ data: students }),
-    prisma.studentLanguageGroup.createMany({ data: data.studentLanguageGroups }),
-    prisma.staff.createMany({ data: data.staff }),
-    prisma.teacher.createMany({ data: data.teachers }),
-    prisma.discipline.createMany({ data: data.disciplines }),
-    prisma.lesson.createMany({ data: data.lessons }),
-    prisma.grade.createMany({ data: data.grades }),
-    prisma.requestType.createMany({ data: data.requestTypes }),
-    prisma.request.createMany({ data: data.requests }),
-    prisma.requestEvent.createMany({ data: data.requestEvents }),
-    prisma.issuedDocument.createMany({ data: issuedDocuments }),
-    prisma.faqEntry.createMany({ data: data.faqEntries }),
-    prisma.announcement.createMany({ data: data.announcements }),
-    prisma.deadline.createMany({ data: data.deadlines }),
-    prisma.notification.createMany({ data: data.notifications }),
-    // seq выставлен явно — двигаем последовательность, чтобы новые заявки (T08) не столкнулись
-    prisma.$executeRawUnsafe(
-      `SELECT setval(pg_get_serial_sequence('"Request"', 'seq'), (SELECT COALESCE(MAX(seq), 1) FROM "Request"))`,
-    ),
-  ]);
+  await prisma.$transaction(
+    [
+      prisma.$executeRawUnsafe(
+        `TRUNCATE ${TABLES.map((t) => `"${t}"`).join(", ")} RESTART IDENTITY CASCADE`,
+      ),
+      prisma.faculty.createMany({ data: data.faculties }),
+      prisma.program.createMany({ data: data.programs }),
+      prisma.group.createMany({ data: data.groups }),
+      prisma.languageGroup.createMany({ data: data.languageGroups }),
+      prisma.user.createMany({ data: users }),
+      prisma.student.createMany({ data: students }),
+      prisma.studentLanguageGroup.createMany({ data: data.studentLanguageGroups }),
+      prisma.staff.createMany({ data: data.staff }),
+      prisma.teacher.createMany({ data: data.teachers }),
+      prisma.discipline.createMany({ data: data.disciplines }),
+      prisma.lesson.createMany({ data: data.lessons }),
+      prisma.grade.createMany({ data: data.grades }),
+      prisma.requestType.createMany({ data: data.requestTypes }),
+      prisma.request.createMany({ data: data.requests }),
+      prisma.requestEvent.createMany({ data: data.requestEvents }),
+      prisma.issuedDocument.createMany({ data: issuedDocuments }),
+      prisma.faqEntry.createMany({ data: data.faqEntries }),
+      prisma.announcement.createMany({ data: data.announcements }),
+      prisma.deadline.createMany({ data: data.deadlines }),
+      prisma.notification.createMany({ data: data.notifications }),
+      // seq выставлен явно — двигаем последовательность, чтобы новые заявки (T08) не столкнулись
+      prisma.$executeRawUnsafe(
+        `SELECT setval(pg_get_serial_sequence('"Request"', 'seq'), (SELECT COALESCE(MAX(seq), 1) FROM "Request"))`,
+      ),
+    ],
+    SEED_TX,
+  );
 
   return {
     users: users.length,
