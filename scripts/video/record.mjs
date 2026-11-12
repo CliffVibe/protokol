@@ -5,7 +5,7 @@
 //
 // Запуск: E2E_DATABASE_URL=… node scripts/video/record.mjs <папка вывода> [chrome-headless-shell.exe]
 // Сервер: PORT=3000 DEMO_MODE=1 ASSISTANT_PROVIDER=faq pnpm start (DATABASE_URL — база e2e).
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { createRequire } from "node:module";
 import path from "node:path";
 
@@ -23,8 +23,17 @@ mkdirSync(OUT, { recursive: true });
 // Запись Playwright снимает в CSS-пикселях: deviceScaleFactor 2 даёт картинку в четверти кадра — пишем 1:1
 const PHONE = { viewport: { width: 390, height: 844 }, scale: 1, mobile: true };
 const DESK = { viewport: { width: 1280, height: 800 }, scale: 1, mobile: false };
-const pause = (ms) => new Promise((r) => setTimeout(r, ms));
 const marks = {};
+
+// Темп сцены под длину голоса: VIDEO_PACE — JSON {"s02": 1.4, …}. Паузы сцены умножаются на коэффициент,
+// а сумма «базовых» пауз пишется в marks (pauseBase) — по ней pace.mjs считает коэффициенты следующего прохода
+const PACE = process.env.VIDEO_PACE ? JSON.parse(readFileSync(process.env.VIDEO_PACE, "utf8")) : {};
+let scene = "";
+const pauseBase = {};
+const pause = (ms) => {
+  pauseBase[scene] = (pauseBase[scene] ?? 0) + ms / 1000;
+  return new Promise((r) => setTimeout(r, ms * (PACE[scene] ?? 1)));
+};
 
 async function sql(text, params = []) {
   const c = new pg.Client({ connectionString: DB });
@@ -58,6 +67,7 @@ async function loginState(who, device) {
 
 /** Контекст сцены с записью видео; t0 — момент создания страницы (начало файла видео). */
 async function sceneContext(name, device, storageState, scheme = "light") {
+  scene = name.slice(0, 3);
   const size = {
     width: device.viewport.width * device.scale,
     height: device.viewport.height * device.scale,
@@ -88,7 +98,7 @@ async function finish(s) {
   await s.ctx.close();
   const file = path.join(OUT, `${s.name}.webm`);
   await video.saveAs(file);
-  marks[s.name] = { ...(marks[s.name] ?? {}), file };
+  marks[s.name] = { ...(marks[s.name] ?? {}), file, pauseBase: pauseBase[s.name.slice(0, 3)] ?? 0 };
   // После каждой сцены — на диск: сбой следующей не теряет отметки готовых
   writeFileSync(path.join(OUT, "marks.json"), JSON.stringify(marks, null, 2));
 }
