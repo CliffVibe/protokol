@@ -156,16 +156,31 @@ const alisa = await loginState("Алиса", PHONE);
 const timur = await loginState("Тимур", PHONE);
 const irina = await loginState("Ирина", DESK);
 
-// ── 1. Вход ──
+// ── 1. Вход — по форме (v3: оценка «глазами жюри» просила показать вход, а не только демо-кнопку) ──
+// Пароль — из окружения (.env, SEED_PASSWORD_ALISA): скрипт вводит его в поле-пароль (на видео — точки),
+// агент значение не видит. Нет переменной — входим демо-кнопкой, как в v2
 {
   const s = await sceneContext("s01-phone", PHONE, null);
   await s.page.goto(`${BASE}/login`);
   ready(s);
   await pause(4000);
-  await scrollBy(s.page, 500, 3500);
-  await scrollBy(s.page, -500, 2500);
-  await pause(3000);
-  await tap(s.page, s.page.getByRole("button", { name: "Войти как Алиса" }));
+  await scrollBy(s.page, 700, 3500);
+  await scrollBy(s.page, -700, 2500);
+  const password = process.env.SEED_PASSWORD_ALISA;
+  if (password) {
+    const login = s.page.getByLabel("Логин");
+    await tap(s.page, login);
+    await type(login, "student.alisa", 70);
+    await pause(600);
+    const pwd = s.page.getByLabel("Пароль", { exact: true });
+    await tap(s.page, pwd);
+    await pwd.fill(password);
+    await pause(900);
+    await tap(s.page, s.page.getByRole("button", { name: "Войти", exact: true }));
+  } else {
+    await pause(3000);
+    await tap(s.page, s.page.getByRole("button", { name: "Войти как Алиса" }));
+  }
   await s.page.waitForURL((u) => !u.pathname.startsWith("/login"));
   await pause(3000);
   await finish(s);
@@ -177,7 +192,13 @@ const irina = await loginState("Ирина", DESK);
   await s.page.goto(`${BASE}/`);
   ready(s);
   await pause(5000);
-  await glide(s.page, s.page.getByRole("region", { name: "Изменения", exact: true }), 5000);
+  // Вечером перенесённая пара и есть ближайшая — тогда «Изменений» нет, перенос в её плашке (T14)
+  const changes = s.page.getByRole("region", { name: "Изменения", exact: true });
+  await glide(
+    s.page,
+    (await changes.count()) ? changes : s.page.getByRole("article").first(),
+    5000,
+  );
   await glide(s.page, s.page.getByRole("region", { name: "Скоро" }), 3500);
   const offer = s.page.getByRole("region", { name: "Деканат предлагает" });
   await glide(s.page, offer, 6000);
@@ -185,6 +206,26 @@ const irina = await loginState("Ирина", DESK);
   await s.page.waitForURL(/\/requests\//);
   await pause(1200);
   await glide(s.page, s.page.getByText(/Заявку предложил деканат/), 4500);
+  // v3: расписание (день с дорогой между корпусами, неделя) и профиль — обязательное ядро ТЗ
+  const nav = s.page.getByRole("navigation", { name: /Разделы|Основная/ }).last();
+  await tap(s.page, nav.getByRole("link", { name: "Расписание" }));
+  await s.page.waitForURL(/\/schedule/);
+  await pause(2500);
+  const road = s.page.getByText(/дорога около/).first();
+  if (await road.count()) await glide(s.page, road, 3500);
+  await tap(s.page, s.page.getByRole("link", { name: "Неделя" }).first());
+  await pause(3500);
+  await tap(s.page, nav.getByRole("link", { name: "Ещё" }));
+  await pause(1500);
+  await tap(
+    s.page,
+    s.page
+      .getByRole("main")
+      .getByRole("link", { name: /Профиль/ })
+      .first(),
+  );
+  await s.page.waitForURL(/\/profile/);
+  await pause(4000);
   await finish(s);
 }
 
@@ -196,7 +237,8 @@ const irina = await loginState("Ирина", DESK);
   await pause(4500);
   await scrollBy(s.page, 420, 4000);
   await scrollBy(s.page, 420, 4000);
-  await scrollBy(s.page, 420, 4500);
+  // v3: график рейтинга по семестрам
+  await glide(s.page, s.page.getByRole("region", { name: "Средний рейтинг по семестрам" }), 4500);
   await finish(s);
 }
 

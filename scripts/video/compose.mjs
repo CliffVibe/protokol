@@ -10,6 +10,11 @@ import path from "node:path";
 
 const [TAKE, VOICE, OUTFILE] = process.argv.slice(2).map((p) => path.resolve(p));
 if (!TAKE || !VOICE || !OUTFILE) throw new Error("compose.mjs <дубль> <озвучка> <итог.mp4>");
+// Цифры титров — как в отчёте: прогон тестов и метрики процесса (запускать из корня репозитория)
+const RUN = JSON.parse(readFileSync("docs/report/test-run.json", "utf8"));
+const METRICS = JSON.parse(
+  execFileSync(process.execPath, ["scripts/ai-metrics.mjs", "--json"], { encoding: "utf8" }),
+);
 const BIN =
   process.env.FFMPEG_DIR ??
   "C:/Users/ivanl/AppData/Local/Microsoft/WinGet/Packages/Gyan.FFmpeg_Microsoft.Winget.Source_8wekyb3d8bbwe/ffmpeg-9.0.2-full_build/bin";
@@ -65,14 +70,14 @@ const SCENES = [
     layout: "phone",
     clips: ["s01-phone"],
     title: "Протокол —\nцифровой деканат",
-    sub: "Вход: демо-аккаунты для жюри",
+    sub: "Вход по логину и паролю; для жюри есть демо-вход",
   },
   {
     n: 2,
     layout: "phone",
     clips: ["s02-phone"],
     title: "Деканат\nприходит сам",
-    sub: "Алиса · «Сейчас» на телефоне",
+    sub: "Алиса: «Сейчас», расписание, профиль",
   },
   {
     n: 3,
@@ -109,10 +114,12 @@ const SCENES = [
     layout: "phone",
     clips: ["s10-phone"],
     title: "Безопасно, доступно,\nсделано с ИИ",
+    // v3: цифры — из тех же источников, что у отчёта (test-run.json, ai-metrics.mjs): в v2 титры разошлись
+    // с отчётом (оценка «глазами жюри»)
     facts: [
-      "753 проверки в браузере · 631 unit и интеграция",
-      "102 ошибки ИИ разобраны: 37 поймал сам ИИ",
-      "Lighthouse 100/100 · тёмная тема · текст 200 %",
+      `${RUN.e2e.passed} проверок в браузере · ${RUN.vitest.passed} unit и интеграция · 0 падений`,
+      `${METRICS.process.aiErrors} ошибок ИИ разобраны: ${METRICS.process.caughtBy["ИИ сам"]} поймал сам ИИ`,
+      "тёмная тема · текст 200 % · телефон от 360 px",
     ],
   },
   { n: 11, layout: "card" },
