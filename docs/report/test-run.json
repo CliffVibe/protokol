@@ -1,0 +1,14 @@
+{
+  "date": "2026-11-12T15:22:37.456Z",
+  "vitest": {
+    "passed": 640,
+    "failed": 0,
+    "skipped": 0
+  },
+  "e2e": {
+    "passed": 751,
+    "failed": 0,
+    "flaky": 0,
+    "skipped": 13
+  }
+}
