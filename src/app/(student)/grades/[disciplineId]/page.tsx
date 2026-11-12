@@ -117,9 +117,7 @@ function SemesterBlock({
           // Б′: красный статус — значок + текст + черта слева (ux-reviewer, T13)
           <div className="flex flex-col items-start gap-3 border-l-4 border-l-danger pl-3">
             <p className="text-base text-ink">
-              <span className="font-bold">
-                Из-за долга стипендия под угрозой, пока он не закрыт.
-              </span>{" "}
+              <span className="font-bold">Пока долг не закрыт, стипендию не назначат.</span>{" "}
               Пересдачу назначает деканат по заявлению — дисциплина в нём уже будет указана.
             </p>
             {/* T13: из долга — сразу к заявлению. В адресе только id; название подставит сервер,

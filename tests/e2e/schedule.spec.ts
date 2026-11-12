@@ -35,9 +35,12 @@ async function weekLoaded(page: Page) {
 
 const dayNav = (page: Page) => page.getByRole("navigation", { name: "Соседние дни" });
 
-/** Одна строка перехода в Одинцово и пара сразу после неё. */
+/**
+ * Одна строка перехода из Одинцова в главный корпус и пара сразу после неё. С T14 в Одинцове — первая пара
+ * четверга, а до следующей — «окно» больше часа: раньше 20 минут между городами (оценка «глазами жюри»).
+ */
 async function transitionToOdintsovo(page: Page) {
-  const row = lessonItems(page).filter({ hasText: /Переход между корпусами с .* в Одинцово/ });
+  const row = lessonItems(page).filter({ hasText: /Переход между корпусами с .*: из Одинцово в / });
   await expect(row).toHaveCount(1);
   const next = await row.evaluate((li) => li.nextElementSibling?.textContent ?? "");
   return { row, next };
@@ -79,11 +82,14 @@ test.describe("неделя Алисы", () => {
     page,
   }) => {
     const { row, next } = await transitionToOdintsovo(page);
-    await expect(row).toContainText(/Перерыв \d+\sмин — переход в другой корпус/);
+    await expect(row).toContainText(/Перерыв \d[^—]* — переход в другой корпус/);
     await expect(row).toContainText(/с \d{2}:\d{2} до \d{2}:\d{2}/);
-    await expect(row).toContainText(/Главный корпус .*→ Одинцово/);
+    await expect(row).toContainText(/Одинцово → Главный корпус/);
+    // Время в дороге из таблицы корпусов; перерыв длиннее — предупреждения «не успеть» нет
+    await expect(row).toContainText(/дорога около 1\sч/);
+    await expect(row).not.toContainText("не успеть");
     // Сразу за строкой перехода — пара, на которую идём
-    expect(next).toMatch(/ауд\.\s\S+, Одинцово/);
+    expect(next).toMatch(/ауд\.\s\S+, Главный корпус/);
     // У строки перехода нет листа: это не пара
     await expect(row.getByRole("button")).toHaveCount(0);
   });

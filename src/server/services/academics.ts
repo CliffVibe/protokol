@@ -22,7 +22,30 @@ export type StudySummary = {
   averageRating: number | null;
   debts: number;
   scholarship: Scholarship;
+  /** Сколько последних закрытых сессий подряд — только «отлично» и «зачтено» (правило «Деканат предлагает») */
+  excellentSessions: number;
 };
+
+/** Сессия на «отлично»: есть хотя бы одна оценка, все оценки — 5, все зачёты — «зачтено». */
+function isExcellentSession(rows: GradeRow[]): boolean {
+  const marks = rows.filter((g) => g.finalMark !== null);
+  return (
+    marks.length > 0 &&
+    marks.every((g) => g.finalMark === 5) &&
+    rows.every((g) => g.passed !== false && (g.finalMark !== null || g.passed !== null))
+  );
+}
+
+/** Подряд закрытые сессии на «отлично», считая от прошлой (текущая ещё не сдана). */
+export function excellentSessionsBefore(grades: GradeRow[], semester: number): number {
+  let n = 0;
+  for (let s = semester - 1; s >= 1; s--) {
+    const rows = grades.filter((g) => g.semester === s);
+    if (!rows.length || !isExcellentSession(rows)) break;
+    n += 1;
+  }
+  return n;
+}
 
 export function currentSemester(grades: GradeRow[]): number | null {
   return grades.length ? Math.max(...grades.map((g) => g.semester)) : null;
@@ -42,6 +65,7 @@ export function summarizeStudy(grades: GradeRow[]): StudySummary | null {
     averageRating: averageRating(grades.filter((g) => g.semester === semester)),
     debts: grades.filter((g) => g.semester < semester && isDebt(g)).length,
     scholarship: scholarshipAsOf(grades, semester),
+    excellentSessions: excellentSessionsBefore(grades, semester),
   };
 }
 

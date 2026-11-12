@@ -4,6 +4,7 @@ import { Pin, ShieldAlert, ShieldCheck } from "lucide-react";
 import { EmptyState } from "@/components/empty-state";
 import { StatusChip } from "@/components/status-chip";
 import { cn } from "@/lib/utils";
+import { scholarshipTitle } from "@/lib/scholarship";
 import { Button } from "@/components/ui/button";
 import { formatDayAndMonth, formatRelativeDay, formatTime, formatWas } from "@/lib/dates";
 import type { StudySummary } from "@/server/services/academics";
@@ -270,7 +271,7 @@ export function StudyBlock({
             )}
           >
             <ShieldAlert aria-hidden className="mt-0.5 size-6 shrink-0" />
-            <span className="min-w-0 break-words">Стипендия под угрозой</span>
+            <span className="min-w-0 break-words">{scholarshipTitle(study.scholarship)}</span>
           </p>
           {study.averageRating !== null ? (
             <div className="flex flex-col gap-0.5 text-ink">

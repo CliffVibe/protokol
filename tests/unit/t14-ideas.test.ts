@@ -2,7 +2,7 @@
 // снято 11.11 — аудитории закрыты, ключи студентам не дают; осталось сотруднику при переносе пары). Чистые функции.
 import { describe, expect, it } from "vitest";
 import type { StudySummary } from "@/server/services/academics";
-import { offersFor, SCHOLARSHIP_UP_MIN_AVERAGE } from "@/server/services/offer-rules";
+import { offersFor, SCHOLARSHIP_UP_MIN_SESSIONS } from "@/server/services/offer-rules";
 import {
   isRatable,
   ratingCommentSchema,
@@ -16,35 +16,39 @@ const study = (over: Partial<StudySummary> = {}): StudySummary => ({
   averageRating: 82,
   debts: 0,
   scholarship: { kept: true },
+  excellentSessions: 2,
   ...over,
 });
 const none = new Set<string>();
 
-describe("J. «Вам положено»: правило повышенной стипендии (вымышленное)", () => {
-  it("подходит: средний ≥ 80, долгов нет, стипендия сохраняется — с объяснением по данным", () => {
+describe("J. «Вам положено»: повышенная стипендия за учёбу — только «отлично» две сессии подряд", () => {
+  it("подходит: две сессии на «отлично», долгов нет, стипендия сохраняется — с объяснением", () => {
     const [o] = offersFor(study(), none, none);
     expect(o?.code).toBe("scholarship_up");
     expect(o?.typeCode).toBe("scholarship_up");
-    expect(o?.why).toContain("82 из 100");
-    expect(o?.why).toContain("3-й семестр");
+    expect(o?.why).toContain("2 сессии подряд только на «отлично»");
+    expect(o?.why).toContain("стипендиальная комиссия");
   });
 
-  it("не подходит: ниже порога, есть долг, стипендия под угрозой, нет оценок", () => {
-    expect(offersFor(study({ averageRating: SCHOLARSHIP_UP_MIN_AVERAGE - 1 }), none, none)).toEqual(
-      [],
-    );
+  it("не подходит: одна сессия на «отлично», есть долг, стипендия под угрозой, нет оценок", () => {
+    expect(
+      offersFor(study({ excellentSessions: SCHOLARSHIP_UP_MIN_SESSIONS - 1 }), none, none),
+    ).toEqual([]);
     expect(offersFor(study({ debts: 1 }), none, none)).toEqual([]);
     expect(
-      offersFor(study({ scholarship: { kept: false, reasons: ["Долг"] } }), none, none),
+      offersFor(
+        study({ scholarship: { kept: false, lost: false, reasons: ["рейтинг"] } }),
+        none,
+        none,
+      ),
     ).toEqual([]);
-    expect(offersFor(study({ averageRating: null }), none, none)).toEqual([]);
     expect(offersFor(null, none, none)).toEqual([]);
   });
 
-  it("ровно на пороге — подходит", () => {
-    expect(
-      offersFor(study({ averageRating: SCHOLARSHIP_UP_MIN_AVERAGE }), none, none),
-    ).toHaveLength(1);
+  it("три сессии подряд — тоже подходит, число в объяснении", () => {
+    expect(offersFor(study({ excellentSessions: 3 }), none, none)[0]?.why).toContain(
+      "3 сессии подряд",
+    );
   });
 
   it("не предлагаем повторно: заявление уже подано или «Не сейчас» в этом семестре", () => {

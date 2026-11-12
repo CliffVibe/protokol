@@ -5,8 +5,11 @@ import { gradeChip, resultLabel } from "@/components/grades/labels";
 import { missingText } from "@/components/grades/discipline-row";
 import { formatDayRange, formatInDays } from "@/lib/dates";
 import { disciplineIdSchema, parseSemesterParam } from "@/lib/grades-params";
+import { formatMinutes, travelMinutes } from "@/lib/buildings";
+import { scholarshipTitle } from "@/lib/scholarship";
 import {
   averageRating,
+  excellentSessionsBefore,
   gradeAttention,
   pointsToThreshold,
   semestersOf,
@@ -45,11 +48,61 @@ describe("averageRating", () => {
   });
 });
 
+describe("сессии на «отлично» подряд и три состояния стипендии (T14)", () => {
+  it("считаем от прошлой сессии назад, до первой с оценкой ниже 5 или незачётом", () => {
+    const five = (semester: number, name: string) => g({ semester, finalMark: 5, name });
+    const rows = [
+      g({ semester: 1, finalMark: 4 }),
+      five(2, "А"),
+      g({ semester: 2, kind: "CREDIT", passed: true, name: "Зачёт" }),
+      five(3, "Б"),
+      g({ semester: 4 }),
+    ];
+    expect(excellentSessionsBefore(rows, 4)).toBe(2);
+    expect(summarizeStudy(rows)?.excellentSessions).toBe(2);
+    // Незачёт рвёт серию; сессия из одних зачётов без оценок — не «отлично»
+    expect(
+      excellentSessionsBefore(
+        [five(2, "А"), g({ semester: 3, kind: "CREDIT", passed: false }), g({ semester: 4 })],
+        4,
+      ),
+    ).toBe(0);
+    expect(
+      excellentSessionsBefore(
+        [g({ semester: 1, kind: "CREDIT", passed: true }), g({ semester: 2 })],
+        2,
+      ),
+    ).toBe(0);
+  });
+
+  it("подпись: сохраняется / под угрозой (только рейтинг) / не назначена (долг или тройка)", () => {
+    expect(scholarshipTitle({ kept: true })).toBe("Стипендия сохраняется");
+    expect(scholarshipTitle({ kept: false, lost: false, reasons: [] })).toBe(
+      "Стипендия под угрозой",
+    );
+    expect(scholarshipTitle({ kept: false, lost: true, reasons: [] })).toBe(
+      "Стипендия не назначена",
+    );
+  });
+
+  it("время в дороге: Главный ↔ Одинцово известно в обе стороны, остальное — не выдумываем", () => {
+    const MAIN = "Главный корпус (пр-т Вернадского)";
+    expect(travelMinutes(MAIN, "Одинцово")).toBe(60);
+    expect(travelMinutes("Одинцово", MAIN)).toBe(60);
+    expect(travelMinutes(MAIN, "Корпус на Луне")).toBeNull();
+    expect(formatMinutes(140)).toBe("2 ч 20 мин");
+    expect(formatMinutes(60)).toBe("1 ч");
+    expect(formatMinutes(20)).toBe("20 мин");
+  });
+});
+
 describe("summarizeStudy — правило стипендии на границах", () => {
   it("ровно 60 — ещё сохраняется, 59 — уже под угрозой", () => {
     expect(summarizeStudy([g({ ratingPoints: 60 })])!.scholarship.kept).toBe(true);
+    // Только рейтинг — ещё можно исправить: «под угрозой», а не «не назначена»
     expect(summarizeStudy([g({ ratingPoints: 59, name: "Финансы" })])!.scholarship).toEqual({
       kept: false,
+      lost: false,
       reasons: ["Финансы: 59 из 100, нужно 60"],
     });
   });
@@ -60,7 +113,7 @@ describe("summarizeStudy — правило стипендии на границ
       g({ semester: 3 }),
     ])!;
     expect(s.debts).toBe(1);
-    expect(s.scholarship).toEqual({ kept: false, reasons: ["Долг: Философия"] });
+    expect(s.scholarship).toEqual({ kept: false, lost: true, reasons: ["Долг: Философия"] });
   });
 
   it("тройка позапрошлой сессии не снимает стипендию, прошлой — снимает", () => {
@@ -72,6 +125,7 @@ describe("summarizeStudy — правило стипендии на границ
     ])!;
     expect(last.scholarship).toEqual({
       kept: false,
+      lost: true,
       reasons: ["Оценка 3 в прошлой сессии: История"],
     });
   });

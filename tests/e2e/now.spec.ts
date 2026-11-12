@@ -126,7 +126,7 @@ test("изоляция: Тимур не видит номера заявок А�
   expect(await page.getByRole("main").innerText()).toContain("Изменение расписания группы 2МО-3");
   expect(timurText).not.toContain("Изменение расписания группы 2МО-3");
   // visible: блок «Учёба» в DOM дважды — колонка ≥ 1024 и лента < 1024 (Б′)
-  await expect(timur.getByText("Стипендия под угрозой").filter({ visible: true })).toBeVisible();
+  await expect(timur.getByText("Стипендия не назначена").filter({ visible: true })).toBeVisible();
   // T13: угроза — не тише «сохраняется»: рейтинг крупно, причины и шаг «что делать» (у Тимура — долг)
   const study = timur.getByRole("region", { name: "Учёба" }).filter({ visible: true });
   await expect(study.getByRole("list", { name: "Причины" })).toContainText("Эконометрика");

@@ -44,8 +44,13 @@ describe.skipIf(!url)("расписание в PostgreSQL", async () => {
 
     const thursday = week.days.find((d) => mskWeekday(d.start) === 4)!;
     const transitions = thursday.items.flatMap((i) => (i.transition ? [i.transition] : []));
-    expect(transitions).toContainEqual(expect.objectContaining({ to: "Одинцово" }));
+    expect(transitions).toContainEqual(expect.objectContaining({ from: "Одинцово" }));
     expect(transitions.every((t) => t.breakMinutes > 0)).toBe(true);
+    // Между городами — дорога около часа, и перерыв её вмещает (T14)
+    for (const t of transitions) {
+      expect(t.travelMinutes).toBe(60);
+      expect(t.breakMinutes).toBeGreaterThanOrEqual(60);
+    }
   });
 
   it("Алиса, сегодня: всегда учебный день, перенос на месте", async () => {
@@ -59,7 +64,7 @@ describe.skipIf(!url)("расписание в PostgreSQL", async () => {
   it("Алиса, четверг отдельно: переход с временем перерыва — от конца пары до начала следующей", async () => {
     const thursday = await getDaySchedule(await ctxOf(DEMO.alisa.userId), addDays(thisWeek, 3));
     const items = thursday.day.items;
-    const i = items.findIndex((x) => x.transition?.to === "Одинцово");
+    const i = items.findIndex((x) => x.transition?.from === "Одинцово");
     expect(i).toBeGreaterThan(0);
     const t = items[i]!.transition!;
     expect(+t.endsAt).toBe(+items[i]!.lesson.startsAt);

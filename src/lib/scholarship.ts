@@ -22,7 +22,22 @@ export type GradeRow = {
   discipline: { id: string; name: string };
 };
 
-export type Scholarship = { kept: true } | { kept: false; reasons: string[] };
+/**
+ * kept — сохраняется. Иначе две разные ситуации (T14, оценка «глазами жюри»: «с долгом стипендию уже не
+ * платят, а у вас „под угрозой“»):
+ *  - lost — нарушены пункты 1–2 (долг, оценка ниже 4 в прошлой сессии): это уже факт, стипендия не назначена;
+ *  - иначе — только рейтинг текущего семестра ниже порога: ещё можно исправить, «под угрозой».
+ */
+export type Scholarship = { kept: true } | { kept: false; lost: boolean; reasons: string[] };
+
+/** Заголовок статуса — один на «Сейчас», «Учёбу» и помощника. */
+export function scholarshipTitle(s: Scholarship): string {
+  if (s.kept) return "Стипендия сохраняется";
+  return s.lost ? "Стипендия не назначена" : "Стипендия под угрозой";
+}
+
+/** Причина «долг» — чтобы экран, где долги уже перечислены, не называл их второй раз. */
+export const DEBT_REASON_PREFIX = "Долг: ";
 
 export const isDebt = (g: Pick<GradeRow, "finalMark" | "passed">) =>
   g.finalMark === 2 || g.passed === false;
@@ -60,7 +75,7 @@ function issuesAsOf(grades: GradeRow[], semester: number): Issue[] {
 function issueText(i: Issue, projection: boolean): string {
   switch (i.kind) {
     case "debt":
-      return `Долг: ${i.name}`;
+      return `${DEBT_REASON_PREFIX}${i.name}`;
     case "mark":
       return projection
         ? `Оценка ${i.mark}: ${i.name}`
@@ -72,7 +87,11 @@ function issueText(i: Issue, projection: boolean): string {
 
 function toScholarship(issues: Issue[], projection: boolean): Scholarship {
   return issues.length
-    ? { kept: false, reasons: issues.map((i) => issueText(i, projection)) }
+    ? {
+        kept: false,
+        lost: issues.some((i) => i.kind !== "rating"),
+        reasons: issues.map((i) => issueText(i, projection)),
+      }
     : { kept: true };
 }
 

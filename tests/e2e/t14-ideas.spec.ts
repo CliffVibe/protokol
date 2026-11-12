@@ -12,18 +12,23 @@ import { tempStudent, type TempStudent } from "./helpers/temp-student";
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
-/** Временный студент: оценки текущего семестра (средний 88, долгов нет) — проходит правило «Вам положено» */
+/**
+ * Временный студент: две закрытые сессии только на «отлично», текущий 3-й семестр без долгов — проходит
+ * правило «Вам положено» (повышенная стипендия за учёбу, T14)
+ */
 async function eligibleStudent(browser: Browser, baseURL: string): Promise<TempStudent> {
   const s = await tempStudent(browser, baseURL);
   await withDb(async (c) => {
-    for (const [disc, pts] of [
-      ["dsc-tmo", 90],
-      ["dsc-hist", 86],
+    for (const [disc, semester, mark, pts] of [
+      ["dsc-tmo", 1, 5, 92],
+      ["dsc-hist", 2, 5, 90],
+      ["dsc-tmo", 3, null, 90],
+      ["dsc-hist", 3, null, 86],
     ] as const)
       await c.query(
-        `INSERT INTO "Grade" (id, "studentId", "disciplineId", semester, kind, "ratingPoints")
-         VALUES ($1, $2, $3, 1, 'EXAM', $4)`,
-        [`grd-e2e-${randomBytes(6).toString("hex")}`, s.studentId, disc, pts],
+        `INSERT INTO "Grade" (id, "studentId", "disciplineId", semester, kind, "finalMark", "ratingPoints")
+         VALUES ($1, $2, $3, $4, 'EXAM', $5, $6)`,
+        [`grd-e2e-${randomBytes(6).toString("hex")}`, s.studentId, disc, semester, mark, pts],
       );
   });
   return s;
@@ -57,9 +62,9 @@ test.describe("J. «Вам положено»", () => {
     try {
       await s.page.goto("/");
       const offers = s.page.getByRole("region", { name: "Деканат предлагает" });
-      await expect(offers).toContainText("Вы подходите на повышенную академическую стипендию");
-      await expect(offers).toContainText("88 из 100");
-      await expect(offers).toContainText("Правило вымышленное");
+      await expect(offers).toContainText("Вы подходите на повышенную стипендию за успехи в учёбе");
+      await expect(offers).toContainText("2 сессии подряд только на «отлично»");
+      await expect(offers).toContainText("Правило упрощено для демо");
       expect(await overflow(s.page)).toBeLessThanOrEqual(0);
       await offers.getByRole("button", { name: "Подать заявление" }).click();
       await expect(s.page).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);

@@ -37,19 +37,24 @@ async function horizontalOverflow(page: Page) {
   );
 }
 
-test("приёмка: у Тимура виден долг и «Стипендия под угрозой» с причиной", async ({ browser }) => {
+test("приёмка: у Тимура виден долг и «Стипендия не назначена» с причинами — долг назван один раз", async ({
+  browser,
+}) => {
   const page = await as(browser, "Тимур");
   await page.goto("/grades");
   await gradesLoaded(page);
   const s = summary(page);
   await expect(s).toContainText("1 долг");
   await expect(s.getByRole("link", { name: "Долг: Эконометрика" })).toBeVisible();
-  await expect(s).toContainText("Стипендия под угрозой");
+  // С долгом стипендию уже не назначают — не «под угрозой» (T14)
+  await expect(s).toContainText("Стипендия не назначена");
   const reasons = s.getByRole("list", { name: "Причины" });
   await expect(reasons).toContainText("Международные финансы: 54 из 100, нужно 60");
-  await expect(reasons).toContainText("Долг: Эконометрика");
-  // Ближайший экзамен — через 3 дня (сид: экзамен Тимура через 3 дня)
-  await expect(s).toContainText(/Ближайшее — экзамен «Мировая экономика», через 3\sдня/);
+  // Долг уже назван выше ссылкой — в причинах без повтора названия
+  await expect(reasons).toContainText("Есть долг — стипендию назначат после пересдачи");
+  await expect(reasons).not.toContainText("Эконометрика");
+  // Сессия текущего семестра — в январе: ближайший экзамен «Мировая экономика»
+  await expect(s).toContainText(/Ближайшее — экзамен «Мировая экономика»/);
 });
 
 test("Тимур: сначала проблемные — «Международные финансы» первой, «Ниже 60» и сколько не хватает", async ({
@@ -122,7 +127,7 @@ test("детали: из долга — экзаменатор, дата, ито
   const closed = page.getByRole("region", { name: /6-й семестр/ });
   await expect(closed).toContainText("Неудовлетворительно (2)");
   await expect(closed).toBeInViewport();
-  await expect(closed).toContainText("Из-за долга стипендия под угрозой");
+  await expect(closed).toContainText("Пока долг не закрыт, стипендию не назначат");
   await expect(closed).toContainText("Преподаватель");
   await expect(page.getByRole("region", { name: /7-й семестр, текущий/ })).toBeVisible();
   await page.getByRole("link", { name: "Учёба" }).first().click();

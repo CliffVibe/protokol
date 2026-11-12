@@ -144,7 +144,7 @@ describe.skipIf(!url)("ИИ-помощник в PostgreSQL", async () => {
     const t = contextToText((await buildStudentContext(await studentCtx(DEMO.timur.userId), now))!);
     const a = contextToText((await buildStudentContext(await studentCtx(DEMO.alisa.userId), now))!);
     expect(t).toMatch(/Собеседник: Тимур/);
-    expect(t).toMatch(/Стипендия под угрозой/);
+    expect(t).toMatch(/Стипендия не назначена/);
     expect(a).toMatch(/Стипендия на следующий семестр: сохраняется/);
   });
 

@@ -40,7 +40,11 @@ describe("projectSession", () => {
 
   it("экзамен на 3 → под угрозой, причина — эта оценка", () => {
     const p = projectSession(alisa, 3, { "dsc-Микроэкономика": { mark: 3 } });
-    expect(p.scholarship).toEqual({ kept: false, reasons: ["Оценка 3: Микроэкономика"] });
+    expect(p.scholarship).toEqual({
+      kept: false,
+      lost: true,
+      reasons: ["Оценка 3: Микроэкономика"],
+    });
     expect(p.unpicked).toBe(3);
     expect(p.average).toBe(3);
   });
@@ -75,7 +79,7 @@ describe("projectSession", () => {
       g({ semester: 7, name: "Финансы", ratingPoints: 54 }),
     ];
     const p = projectSession(timur, 7, { "dsc-Финансы": { mark: 5 } });
-    expect(p.scholarship).toEqual({ kept: false, reasons: ["Долг: Эконометрика"] });
+    expect(p.scholarship).toEqual({ kept: false, lost: true, reasons: ["Долг: Эконометрика"] });
   });
 
   it("рейтинг ниже 60 сейчас не мешает прогнозу: итог его заменяет", () => {
@@ -87,7 +91,7 @@ describe("projectSession", () => {
   it("известные итоги текущей сессии тоже считаются, выбор для них игнорируется", () => {
     const rows = [...alisa, g({ name: "Логика", finalMark: 3 })];
     const p = projectSession(rows, 3, { "dsc-Логика": { mark: 5 } });
-    expect(p.scholarship).toEqual({ kept: false, reasons: ["Оценка 3: Логика"] });
+    expect(p.scholarship).toEqual({ kept: false, lost: true, reasons: ["Оценка 3: Логика"] });
   });
 
   it("серверная сводка и общее правило совпадают", () => {

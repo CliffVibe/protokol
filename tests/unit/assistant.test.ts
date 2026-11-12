@@ -156,7 +156,13 @@ const ctxFixture = (over: Partial<StudentContext> = {}): StudentContext => ({
       discipline: { name: "Микроэкономика" },
     }),
   ],
-  study: { semester: 3, averageRating: 82, debts: 0, scholarship: { kept: true } },
+  study: {
+    semester: 3,
+    averageRating: 82,
+    debts: 0,
+    scholarship: { kept: true },
+    excellentSessions: 2,
+  },
   session: {
     from: msk("2026-12-28T10:00:00"),
     to: msk("2027-01-20T10:00:00"),

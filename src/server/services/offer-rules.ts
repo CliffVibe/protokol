@@ -1,14 +1,19 @@
+import { plural } from "@/lib/dates";
 import type { StudySummary } from "./academics";
 
 // «Вам положено» (T14): деканат сам предлагает услугу, когда студент проходит правило по своим данным,
 // — как беззаявительные услуги Госуслуг и проактивные гранты Georgia State (docs/process/research-ideas-T14.md).
-// Правила ВЫМЫШЛЕННЫЕ (не МГИМО) — на экране это сказано. Чистые функции: данные приходят снаружи (из repos с ctx).
+// Правила условные для демо — на экране это сказано. Чистые функции: данные приходят снаружи (из repos с ctx).
 
 export const OFFER_CODES = ["scholarship_up"] as const;
 export type OfferCode = (typeof OFFER_CODES)[number];
 
-/** Порог повышенной стипендии в прототипе: средний рейтинг текущего семестра. */
-export const SCHOLARSHIP_UP_MIN_AVERAGE = 80;
+/**
+ * Повышенная стипендия за успехи в учёбе: только «отлично» не меньше двух сессий подряд — так этот
+ * критерий и устроен в вузах. Раньше было «средний рейтинг от 80» — оценка «глазами жюри» (T14) заметила,
+ * что за рейтинг её не дают. Решение всё равно за стипендиальной комиссией: деканат лишь подсказывает.
+ */
+export const SCHOLARSHIP_UP_MIN_SESSIONS = 2;
 
 export type Offer = {
   code: OfferCode;
@@ -30,13 +35,10 @@ const RULES: Rule[] = [
   {
     code: "scholarship_up",
     typeCode: "scholarship_up",
-    title: "повышенную академическую стипендию",
+    title: "повышенную стипендию за успехи в учёбе",
     check: (s) =>
-      s.averageRating !== null &&
-      s.averageRating >= SCHOLARSHIP_UP_MIN_AVERAGE &&
-      s.debts === 0 &&
-      s.scholarship.kept
-        ? `Средний рейтинг за ${s.semester}-й семестр — ${s.averageRating} из 100, долгов нет.`
+      s.excellentSessions >= SCHOLARSHIP_UP_MIN_SESSIONS && s.debts === 0 && s.scholarship.kept
+        ? `${s.excellentSessions} ${plural(s.excellentSessions, ["сессия", "сессии", "сессий"])} подряд только на «отлично», долгов нет. Решает стипендиальная комиссия.`
         : null,
   },
 ];

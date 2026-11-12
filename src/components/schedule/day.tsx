@@ -1,6 +1,14 @@
 // День расписания: заголовок и пары под тонкими линиями — графы бланка, без карточек (как лента «Сейчас»).
 import { Fragment } from "react";
-import { CircleCheck, Clock, Footprints, GraduationCap, Languages } from "lucide-react";
+import {
+  CircleCheck,
+  Clock,
+  Footprints,
+  GraduationCap,
+  Languages,
+  TriangleAlert,
+} from "lucide-react";
+import { formatMinutes } from "@/lib/buildings";
 import { formatLongDay, formatTime } from "@/lib/dates";
 import { cn } from "@/lib/utils";
 import type { ScheduleDay, Transition } from "@/server/services/schedule";
@@ -159,18 +167,24 @@ export function LessonRow({ lesson }: { lesson: LessonView }) {
 
 /**
  * Переход между корпусами — своя строка между двумя парами, той же сеткой: слева — когда
- * (перерыв от конца одной пары до начала другой), справа — откуда и куда. Время в дороге не выдумываем.
+ * (перерыв от конца одной пары до начала другой), справа — откуда и куда. Время в дороге — только
+ * из таблицы корпусов (lib/buildings.ts), не выдумываем; если перерыв короче дороги — предупреждаем.
  * Раньше подсказка стояла внутри следующей пары, и было непонятно, между какими парами переход
  * (человек на проверке с телефона, T06).
  */
 function TransitionRow({ transition }: { transition: Transition }) {
   const from = formatTime(transition.startsAt);
   const to = formatTime(transition.endsAt);
+  const pause = formatMinutes(transition.breakMinutes);
+  const travel = transition.travelMinutes;
+  const late = travel !== null && transition.breakMinutes < travel;
+  const road = travel === null ? null : `дорога около ${formatMinutes(travel)}`;
   return (
     <li className="flex flex-wrap gap-x-4 gap-y-1 py-2.5 text-sm">
       <p className="sr-only">
-        Переход между корпусами с {from} до {to}, перерыв {transition.breakMinutes} мин: из{" "}
-        {transition.from} в {transition.to}
+        Переход между корпусами с {from} до {to}, перерыв {pause}
+        {road ? `, ${road}` : ""}
+        {late ? ", без опоздания не успеть" : ""}: из {transition.from} в {transition.to}
       </p>
       {/* Время перерыва — тихим цветом, как конец пары: brand только у заголовка, строка — не ссылка */}
       <p aria-hidden className="flex w-[4.5rem] shrink-0 flex-col text-ink-muted tabular">
@@ -182,11 +196,18 @@ function TransitionRow({ transition }: { transition: Transition }) {
         {/* Б′: текст чернилами (синий — только ссылки), ультрамарин — у значка (ux-reviewer, T13) */}
         <span className="flex items-start gap-1.5 font-bold text-ink">
           <Footprints className="mt-0.5 size-4 shrink-0 text-brand" />
-          Перерыв {transition.breakMinutes}&nbsp;мин — переход в другой корпус
+          Перерыв {pause} — переход в другой корпус
         </span>
         <span className="text-ink">
           {transition.from} → {transition.to}
+          {road ? `, ${road}` : ""}
         </span>
+        {late ? (
+          <span className="flex items-start gap-1.5 font-bold text-ink">
+            <TriangleAlert className="mt-0.5 size-4 shrink-0 text-warn" />
+            Без опоздания не успеть — предупредите преподавателя
+          </span>
+        ) : null}
       </div>
     </li>
   );

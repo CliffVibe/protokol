@@ -48,7 +48,7 @@ function OfferItem({ offer }: { offer: Offer }) {
           <p className="text-base break-words text-ink">{offer.why}</p>
           <p className="text-sm break-words text-ink-muted">
             Деканат заметил это сам — заявление уже заполнено. Отменить можно, пока его не приняли;
-            «Не сейчас» скроет предложение до следующего семестра. Правило вымышленное — для демо.
+            «Не сейчас» скроет предложение до следующего семестра. Правило упрощено для демо.
           </p>
           <div className="mt-1 flex flex-wrap gap-2">
             <form action={accept}>

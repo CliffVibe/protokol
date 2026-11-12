@@ -68,7 +68,7 @@ describe("groupByDay", () => {
 });
 
 describe("buildTransitions — «Переход между корпусами»", () => {
-  it("как четверг у 2МО-3: туда и обратно, перерыв 20 мин", () => {
+  it("туда и обратно: перерыв 20 мин при дороге около часа — так не успеть (данные для предупреждения)", () => {
     const a = lesson("2026-11-12T09:00:00", "2026-11-12T10:20:00");
     const b = lesson("2026-11-12T10:40:00", "2026-11-12T12:00:00", { building: ODI });
     const c = lesson("2026-11-12T12:40:00", "2026-11-12T14:00:00");
@@ -79,6 +79,7 @@ describe("buildTransitions — «Переход между корпусами»"
       startsAt: a.endsAt,
       endsAt: b.startsAt,
       breakMinutes: 20,
+      travelMinutes: 60,
     });
     expect(t.get(c.id)).toMatchObject({ from: ODI, to: MAIN, breakMinutes: 40 });
     expect(t.has(a.id)).toBe(false);

@@ -87,7 +87,7 @@ test("сценарий 2 «Как дела с учёбой»: Тимур → «�
 
   const summary = page.getByRole("region", { name: "Как у меня дела" });
   await expect(summary).toContainText(/Средний рейтинг за \d+-й семестр: \d+(,\d+)?\sиз 100/);
-  await expect(summary).toContainText("Стипендия под угрозой");
+  await expect(summary).toContainText("Стипендия не назначена");
   await expect(summary).toContainText(/Экзамены и зачёты/);
 
   // Светофор: у проблемной дисциплины — чип с тоном (не зелёный), у спокойной — тихая подпись со значком

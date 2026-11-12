@@ -3,6 +3,7 @@ import { ASSESSMENT_KIND } from "@/components/grades/labels";
 import { CHANGE, LESSON_KIND, REQUEST_STATUS } from "@/components/now/labels";
 import { formatDayMonth, formatRelativeDay, formatTime } from "@/lib/dates";
 import { addDays, mskStartOfDay } from "@/lib/msk";
+import { scholarshipTitle } from "@/lib/scholarship";
 import type { StudentCtx } from "@/server/auth/guards";
 import { gradesOf } from "@/server/repos/grades";
 import { readerOf } from "@/server/repos/profile";
@@ -105,7 +106,7 @@ export function contextToText(c: StudentContext): string {
       `Учёба, семестр ${s.semester}: средний рейтинг ${s.averageRating ?? "—"}; долгов за прошлые семестры: ${s.debts}.`,
       s.scholarship.kept
         ? "Стипендия на следующий семестр: сохраняется."
-        : `Стипендия под угрозой: ${s.scholarship.reasons.join("; ")}.`,
+        : `${scholarshipTitle(s.scholarship)}: ${s.scholarship.reasons.join("; ")}.`,
       "Дисциплины текущего семестра:",
       ...c.current.map((g) => `- ${gradeLine(g)}`),
     );

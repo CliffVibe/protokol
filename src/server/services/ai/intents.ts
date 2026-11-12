@@ -3,6 +3,7 @@ import { ASSESSMENT_KIND } from "@/components/grades/labels";
 import { toActions, type AssistantAction } from "@/lib/assistant-actions";
 import { formatDayMonth, formatInDays } from "@/lib/dates";
 import { mskStartOfDay } from "@/lib/msk";
+import { scholarshipTitle } from "@/lib/scholarship";
 import { lessonLine, requestLine, type StudentContext } from "./context";
 import { normalize, stems } from "./faq";
 
@@ -122,7 +123,9 @@ export function answerFromData(question: string, c: StudentContext): RuleAnswer 
       : "Долгов за прошлые семестры нет.";
     const scholarship = s.scholarship.kept
       ? "Стипендия на следующий семестр сохраняется."
-      : ["Стипендия под угрозой:", ...s.scholarship.reasons.map((r) => `- ${r}`)].join("\n");
+      : [`${scholarshipTitle(s.scholarship)}:`, ...s.scholarship.reasons.map((r) => `- ${r}`)].join(
+          "\n",
+        );
     return { text: `${debts}\n\n${scholarship}`, actions: toActions(["grades", "what_if"]) };
   }
 

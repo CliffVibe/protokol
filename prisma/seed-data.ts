@@ -165,7 +165,7 @@ const TEACHERS = [
   "Захарова Ирина Дмитриевна",
   "Лебедев Михаил Юрьевич",
   "Фролова Анна Константиновна",
-  "Гусев Дмитрий Алексеевич",
+  "Голубев Константин Ефимович",
   "Комарова Ольга Игоревна",
   "Тихонов Сергей Николаевич",
   "Орлова Наталья Петровна",
@@ -520,6 +520,23 @@ const REQUEST_TYPES = [
 ] as const;
 const requestTypeId = (code: string) => `rqt-${code}`;
 
+/**
+ * Пересдача долга Тимура («Эконометрика», 6-й семестр) — через 3 дня, но не в воскресенье.
+ * Раньше «через 3 дня» стоял экзамен текущего семестра — выпадал на воскресенье и шёл до лекций по тому же
+ * предмету (оценка «глазами жюри», T14). Пересдача в течение семестра — так и бывает.
+ */
+export function timurRetakeDay(today: Date): Date {
+  const day = addDays(today, 3);
+  return mskWeekday(day) === 7 ? addDays(day, 1) : day;
+}
+
+/** Дней до пятницы, не меньше двух: срок стипендиальной комиссии («документы до пятницы»). */
+export function daysToFriday(today: Date): number {
+  let n = 2;
+  while (mskWeekday(addDays(today, n)) !== 5) n += 1;
+  return n;
+}
+
 // ── Построение ───────────────────────────────────────────────────────────
 
 export function buildSeed(now: Date): SeedData {
@@ -720,7 +737,7 @@ export function buildSeed(now: Date): SeedData {
   const lessons = buildLessons({ rng, today, todayWeekday, weekStart });
 
   // ── Оценки ──
-  const grades = buildGrades({ today, at });
+  const grades = buildGrades({ today });
 
   // ── Заявки ──
   const requestTypes = REQUEST_TYPES.map((t) => ({
@@ -835,7 +852,8 @@ export function buildSeed(now: Date): SeedData {
     {
       id: "ddl-2",
       title: "Заявление на повышенную стипендию",
-      dueAt: at(5, "18:00"),
+      // В пятницу — как в объявлении «документы до пятницы» (раньше «+5 дней» расходилось с заголовком)
+      dueAt: at(daysToFriday(today), "18:00"),
       audience: audience({ facultyCodes: ["ФМО", "МЭО"] }),
       link: "/requests/new",
     },
@@ -854,7 +872,25 @@ export function buildSeed(now: Date): SeedData {
       link: null,
     },
   ];
-  const notifications = buildNotifications({ at });
+  // Текст уведомления о переносе — из настоящей перенесённой пары: «первая пара» была неправдой по четвергам,
+  // когда переносится третья (оценка «глазами жюри», T14)
+  const moved = lessons.find(
+    (l) =>
+      l.groupId === ALISA_GROUP &&
+      l.change === "MOVED" &&
+      l.originalStartsAt &&
+      mskDateKey(new Date(l.startsAt)) === mskDateKey(today),
+  );
+  const hhmm = (d: Date | string) =>
+    new Date(d).toLocaleTimeString("ru-RU", {
+      hour: "2-digit",
+      minute: "2-digit",
+      timeZone: "Europe/Moscow",
+    });
+  const movedText = moved
+    ? `Пара ${hhmm(moved.originalStartsAt!)} перенесена на ${hhmm(moved.startsAt)}.`
+    : "Пара перенесена.";
+  const notifications = buildNotifications({ at, movedText });
 
   // Ничего «из будущего»: сид может запуститься ночью (cron в 04:00), а объявления датированы утром
   const notLater = (d: Date | string) => (new Date(d) > now ? now : new Date(d));
@@ -932,7 +968,15 @@ function buildLessons({
           ? rng.int(0, 1)
           : rng.int(2, 3);
       for (let i = 0; i < count; i++) {
-        const discipline = rng.pick(g.disciplines);
+        let discipline = rng.pick(g.disciplines);
+        // Не больше двух пар одной дисциплины подряд (оценка «глазами жюри»: три «Статистики» подряд у одного
+        // преподавателя). Замена — следующая дисциплина группы, без нового случайного числа: остальной сид
+        // от этого не сдвигается
+        const prev = slots.filter((s) => s.weekday === weekday).slice(-2);
+        if (prev.length === 2 && prev.every((s) => s.discipline === discipline)) {
+          discipline =
+            g.disciplines[(g.disciplines.indexOf(discipline) + 1) % g.disciplines.length]!;
+        }
         slots.push({
           weekday,
           slot: i,
@@ -944,9 +988,16 @@ function buildLessons({
       }
     }
     if (isAlisa) {
-      // Четверг: вторая пара в Одинцове — для подсказки «переход между корпусами» (T06)
-      const thu = slots.find((s) => s.weekday === 4 && s.slot === 1);
-      if (thu) thu.building = ODINTSOVO;
+      // Четверг: первая пара в Одинцове, следующая — в главном корпусе после «окна» (подсказка «переход между
+      // корпусами», T06). Раньше переход был в 20-минутный перерыв — это разные города, так не успеть
+      // (оценка «глазами жюри», T14): вторую пару дня убираем, дорога около часа укладывается в перерыв.
+      const thu = slots.find((s) => s.weekday === 4 && s.slot === 0);
+      if (thu) {
+        thu.building = ODINTSOVO;
+        thu.room = "4044";
+      }
+      const gap = slots.findIndex((s) => s.weekday === 4 && s.slot === 1);
+      if (gap >= 0) slots.splice(gap, 1);
     }
     templates.set(g.id, slots);
   }
@@ -1026,12 +1077,12 @@ function buildLessons({
     }
   }
 
-  // Экзамен у Тимура через 3 дня (06-seed-data: «экзамен через 3 дня»)
-  const examDay = addDays(today, 3);
+  // Пересдача долга у Тимура через 3 дня, не в воскресенье (06-seed-data)
+  const examDay = timurRetakeDay(today);
   push({
     idKey: `grp-4meo1-exam-${mskDateKey(examDay)}`,
-    disciplineId: "dsc-worldec",
-    teacherId: teacherId(DISCIPLINE_TEACHER["dsc-worldec"]),
+    disciplineId: "dsc-ecmetr",
+    teacherId: teacherId(DISCIPLINE_TEACHER["dsc-ecmetr"]),
     kind: "EXAM",
     startsAt: mskAt(examDay, "10:00"),
     endsAt: mskAt(examDay, "13:00"),
@@ -1130,13 +1181,7 @@ function applyChanges({
 
 // ── Оценки ───────────────────────────────────────────────────────────────
 
-function buildGrades({
-  today,
-  at,
-}: {
-  today: Date;
-  at: (d: number, t: string) => Date;
-}): Prisma.GradeCreateManyInput[] {
+function buildGrades({ today }: { today: Date }): Prisma.GradeCreateManyInput[] {
   const grades: Prisma.GradeCreateManyInput[] = [];
   const add = (
     studentId: string,
@@ -1159,7 +1204,7 @@ function buildGrades({
   const sessionYear = mskYear(today) + (mskMonth >= 9 ? 1 : 0);
   const sessionDay = (day: number) => new Date(Date.UTC(sessionYear, 0, day, 7, 0));
 
-  // Алиса, 2 курс: семестры 1–2 закрыты на 4–5, текущий 3-й — рейтинг в процессе. Стипендия сохраняется.
+  // Алиса, 2 курс: семестры 1–2 закрыты на «отлично», текущий 3-й — рейтинг в процессе. Стипендия сохраняется.
   const a = DEMO.alisa.studentId;
   add(a, "dsc-hist", 1, {
     kind: "EXAM",
@@ -1169,10 +1214,11 @@ function buildGrades({
   });
   add(a, "dsc-philos", 1, { kind: "CREDIT", passed: true, ratingPoints: 84 });
   add(a, "dsc-en", 1, { kind: "GRADED_CREDIT", finalMark: 5, ratingPoints: 93 });
+  // Две сессии подряд только «отлично» — под правило «Деканат предлагает» повышенную стипендию (T14)
   add(a, "dsc-tmo", 2, {
     kind: "EXAM",
-    finalMark: 4,
-    ratingPoints: 78,
+    finalMark: 5,
+    ratingPoints: 90,
     examDate: new Date(Date.UTC(sessionYear - 1, 5, 18, 7)),
   });
   add(a, "dsc-intlaw", 2, {
@@ -1189,8 +1235,8 @@ function buildGrades({
   add(a, "dsc-en", 3, { kind: "GRADED_CREDIT", ratingPoints: 94 });
   add(a, "dsc-fr", 3, { kind: "CREDIT", ratingPoints: 79 });
 
-  // Тимур, 4 курс: долг по эконометрике (6-й семестр), экзамен по мировой экономике через 3 дня,
-  // «Международные финансы» 54/100 — стипендия под угрозой.
+  // Тимур, 4 курс: долг по эконометрике (6-й семестр), пересдача через 3 дня (не в воскресенье) — дата
+  // пересдачи стоит у оценки с долгом; «Международные финансы» 54/100. Стипендии нет из-за долга.
   const t = DEMO.timur.studentId;
   add(t, "dsc-worldec", 6, {
     kind: "EXAM",
@@ -1202,10 +1248,10 @@ function buildGrades({
     kind: "EXAM",
     finalMark: 2,
     ratingPoints: 38,
-    examDate: new Date(Date.UTC(sessionYear - 1, 5, 20, 7)),
+    examDate: mskAt(timurRetakeDay(today), "10:00"),
   });
   add(t, "dsc-rufp", 6, { kind: "CREDIT", passed: true, ratingPoints: 66 });
-  add(t, "dsc-worldec", 7, { kind: "EXAM", ratingPoints: 61, examDate: at(3, "10:00") });
+  add(t, "dsc-worldec", 7, { kind: "EXAM", ratingPoints: 61, examDate: sessionDay(13) });
   add(t, "dsc-finance", 7, { kind: "EXAM", ratingPoints: 54, examDate: sessionDay(20) });
   add(t, "dsc-ecmetr", 7, { kind: "GRADED_CREDIT", ratingPoints: 68 });
   add(t, "dsc-en", 7, { kind: "GRADED_CREDIT", ratingPoints: 80 });
@@ -1537,8 +1583,11 @@ function buildRequests({
 
 function buildNotifications({
   at,
+  movedText,
 }: {
   at: (d: number, t: string) => Date;
+  /** «Пара 12:40 перенесена на 17:40.» — из сегодняшнего переноса у Алисы */
+  movedText: string;
 }): Prisma.NotificationCreateManyInput[] {
   const a = DEMO.alisa.studentId;
   const t = DEMO.timur.studentId;
@@ -1550,7 +1599,7 @@ function buildNotifications({
       studentId: a,
       kind: "SCHEDULE_CHANGE",
       title: "Перенос пары сегодня",
-      body: "Первая пара перенесена на 17:40. Подробности — в расписании.",
+      body: `${movedText} Подробности — в расписании.`,
       link: "/schedule",
       createdAt: at(0, "07:30"),
     },
@@ -1615,8 +1664,9 @@ function buildNotifications({
       id: "ntf-t2",
       studentId: t,
       kind: "DEADLINE",
-      title: "Через 3 дня — экзамен",
-      body: "Мировая экономика, аудитория 1001, начало в 10:00.",
+      // Без «через 3 дня»: если третий день — воскресенье, пересдача на день позже
+      title: "Скоро пересдача долга",
+      body: "Эконометрика (долг за 6-й семестр), аудитория 1001, начало в 10:00.",
       link: "/grades",
       createdAt: at(0, "08:00"),
     },

@@ -1,4 +1,5 @@
 import "server-only";
+import { travelMinutes } from "@/lib/buildings";
 import { addDays, mskDateKey, mskStartOfWeek, mskWeekday } from "@/lib/msk";
 import type { StaffCtx, StudentCtx } from "@/server/auth/guards";
 import { roomUsage } from "@/server/repos/rooms";
@@ -20,6 +21,8 @@ export type Transition = {
   /** Начало пары, на которую идём */
   endsAt: Date;
   breakMinutes: number;
+  /** Время в дороге между корпусами, если известно (lib/buildings.ts); иначе null — не выдумываем */
+  travelMinutes: number | null;
 };
 
 export type ScheduleItem = {
@@ -66,6 +69,7 @@ export function buildTransitions(dayLessons: LessonRow[]): Map<string, Transitio
       startsAt: prev.endsAt,
       endsAt: cur.startsAt,
       breakMinutes: Math.max(0, Math.round((+cur.startsAt - +prev.endsAt) / 60_000)),
+      travelMinutes: travelMinutes(prev.building, cur.building),
     });
   }
   return result;

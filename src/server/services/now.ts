@@ -1,6 +1,7 @@
 import "server-only";
 import type { RequestStatus } from "@/generated/prisma/client";
 import { addBusinessDays, addDays, mskStartOfDay } from "@/lib/msk";
+import { isDebt } from "@/lib/scholarship";
 import type { StudentCtx } from "@/server/auth/guards";
 import { announcementsFor, deadlinesFor } from "@/server/repos/announcements";
 import { gradesOf } from "@/server/repos/grades";
@@ -99,7 +100,8 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
     .map((g) => ({
       id: `exam-${g.discipline.id}-${g.semester}`,
       kind: "exam",
-      title: g.discipline.name,
+      // Будущая дата у оценки с долгом — это пересдача (сид: Тимур, T14)
+      title: isDebt(g) ? `Пересдача: ${g.discipline.name}` : g.discipline.name,
       at: g.examDate!,
     }));
   const dues: SoonItem[] = deadlines.map((d) => ({

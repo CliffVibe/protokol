@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { buildSeed, DEMO } from "../../prisma/seed-data";
-import { addDays, mskDateKey, mskStartOfDay, mskStartOfWeek } from "@/lib/msk";
+import { buildSeed, DEMO, timurRetakeDay } from "../../prisma/seed-data";
+import { addDays, mskDateKey, mskStartOfDay, mskStartOfWeek, mskWeekday } from "@/lib/msk";
 import { relativeLinkSchema } from "@/lib/links";
 
 // Среда, суббота и воскресенье — сид должен давать живое демо в любой день (06-seed-data.md)
@@ -99,12 +99,28 @@ describe("buildSeed", () => {
         expect(new Set(byStart).size).toBe(byStart.length);
       });
 
-      it("у Тимура долг, экзамен через 3 дня и отклонённая заявка", () => {
+      it("у Тимура долг, пересдача через 3 дня (не в воскресенье) и отклонённая заявка", () => {
         const g = d.grades.filter((x) => x.studentId === DEMO.timur.studentId);
-        expect(g.some((x) => x.finalMark === 2)).toBe(true);
+        const retake = timurRetakeDay(today);
+        // Через 3 дня, а если это воскресенье — на день позже
+        const shift = mskWeekday(addDays(today, 3)) === 7 ? 4 : 3;
+        expect(sameDay(retake, addDays(today, shift))).toBe(true);
+        expect(mskWeekday(retake)).not.toBe(7);
         const exam = d.lessons.find((l) => l.groupId === "grp-4meo1" && l.kind === "EXAM");
-        expect(exam && sameDay(exam.startsAt, addDays(today, 3))).toBe(true);
-        expect(g.some((x) => x.examDate && sameDay(x.examDate, addDays(today, 3)))).toBe(true);
+        expect(exam?.disciplineId).toBe("dsc-ecmetr");
+        expect(exam && sameDay(exam.startsAt, retake)).toBe(true);
+        // Дата пересдачи — у самой оценки с долгом
+        const debt = g.find((x) => x.finalMark === 2);
+        expect(debt?.examDate && sameDay(debt.examDate, retake)).toBe(true);
+        // Экзаменов текущего семестра в ноябре нет — сессия в январе
+        expect(
+          g
+            .filter((x) => x.semester === 7 && x.examDate)
+            .every((x) => {
+              const m = new Date(x.examDate!).getUTCMonth();
+              return m === 0;
+            }),
+        ).toBe(true);
         const r = d.requests.filter((x) => x.studentId === DEMO.timur.studentId);
         expect(r.map((x) => x.status)).toContain("REJECTED");
       });

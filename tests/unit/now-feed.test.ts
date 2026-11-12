@@ -31,10 +31,17 @@ describe("summarizeStudy — вымышленное правило стипен�
       g(3, "ТМО", { ratingPoints: 82 }),
       g(3, "Протокол", { kind: "CREDIT", ratingPoints: 90 }),
     ]);
-    expect(s).toEqual({ semester: 3, averageRating: 86, debts: 0, scholarship: { kept: true } });
+    // Прошлая сессия с четвёркой — сессий на «отлично» подряд 0 (правило «Деканат предлагает»)
+    expect(s).toEqual({
+      semester: 3,
+      averageRating: 86,
+      debts: 0,
+      scholarship: { kept: true },
+      excellentSessions: 0,
+    });
   });
 
-  it("как у Тимура: долг в прошлой сессии и 54/100 сейчас → под угрозой с причинами", () => {
+  it("как у Тимура: долг в прошлой сессии и 54/100 сейчас → не назначена, с причинами", () => {
     const s = summarizeStudy([
       g(6, "Эконометрика", { finalMark: 2, ratingPoints: 38 }),
       g(6, "Мировая экономика", { finalMark: 4, ratingPoints: 71 }),
@@ -44,6 +51,7 @@ describe("summarizeStudy — вымышленное правило стипен�
     expect(s?.debts).toBe(1);
     expect(s?.scholarship).toEqual({
       kept: false,
+      lost: true,
       reasons: ["Долг: Эконометрика", "Финансы: 54 из 100, нужно 60"],
     });
   });
@@ -61,6 +69,7 @@ describe("summarizeStudy — вымышленное правило стипен�
     ]);
     expect(s?.scholarship).toEqual({
       kept: false,
+      lost: true,
       reasons: ["Долг: Физкультура", "Оценка 3 в прошлой сессии: Логика"],
     });
   });

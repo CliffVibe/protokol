@@ -80,7 +80,7 @@ export function GradesSummary({
         )}
 
         <div className="flex flex-col gap-1">
-          <ScholarshipBadge scholarship={summary.scholarship} />
+          <ScholarshipBadge scholarship={summary.scholarship} debtsShownAbove={debts.length > 0} />
           {whatIf ? (
             // С закрытого семестра — тоже: симулятор есть только у текущего
             <Link
