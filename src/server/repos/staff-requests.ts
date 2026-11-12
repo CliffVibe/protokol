@@ -35,6 +35,8 @@ export type QueueFilters = {
   /** Уже проверено: один из ctx.facultyIds */
   facultyId: string | null;
   typeCode: string | null;
+  /** T14+: только справки, которые кабинет выдал сам (вкладка «Выдал кабинет») */
+  autoIssued?: boolean;
 };
 
 /**
@@ -55,8 +57,10 @@ export async function queueFor(ctx: StaffCtx, f: QueueFilters) {
       student: { group: { program: { facultyId: { in: allowed } } } },
       status: { in: f.statuses },
       ...(f.typeCode ? { type: { code: f.typeCode } } : {}),
+      ...(f.autoIssued ? { autoIssued: true } : {}),
     },
-    orderBy: { createdAt: "asc" },
+    // Выданные кабинетом — свежие сверху: сотрудник проверяет, что выдано сегодня
+    orderBy: { createdAt: f.autoIssued ? "desc" : "asc" },
     take: 200,
     select: {
       number: true,
@@ -64,6 +68,7 @@ export async function queueFor(ctx: StaffCtx, f: QueueFilters) {
       createdAt: true,
       updatedAt: true,
       offered: true,
+      autoIssued: true,
       type: { select: { title: true, code: true, slaDays: true } },
       student: { select: STUDENT_SELECT },
     },
@@ -72,6 +77,17 @@ export async function queueFor(ctx: StaffCtx, f: QueueFilters) {
 }
 
 export type QueueRow = Awaited<ReturnType<typeof queueFor>>[number];
+
+/** Сколько справок кабинет выдал сам студентам своих факультетов с момента since (брифинг, T14+). */
+export function autoIssuedCount(ctx: StaffCtx, since: Date) {
+  return db.request.count({
+    where: {
+      student: { group: { program: { facultyId: { in: ctx.facultyIds } } } },
+      autoIssued: true,
+      createdAt: { gte: since },
+    },
+  });
+}
 
 /** Факультеты сотрудника и типы — для фильтров очереди. */
 export async function queueOptions(ctx: StaffCtx) {
@@ -98,6 +114,7 @@ export async function staffRequestByNumber(ctx: StaffCtx, number: string) {
       createdAt: true,
       updatedAt: true,
       offered: true,
+      autoIssued: true,
       type: { select: { title: true, slaDays: true, fields: true } },
       student: { select: STUDENT_SELECT },
       // Справка (T10): срок, ссылка проверки и отзыв

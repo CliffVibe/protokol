@@ -50,8 +50,10 @@ describe("утренний брифинг", () => {
       ],
       2,
       NOW,
+      5,
     );
-    expect(b).toEqual({ urgent: 2, overdue: 1, ready: 2, fresh: 1, drafts: 2 });
+    // autoIssued — «Кабинет сам выдал…» (T14+): число из репозитория, сводка его только передаёт
+    expect(b).toEqual({ urgent: 2, overdue: 1, ready: 2, fresh: 1, drafts: 2, autoIssued: 5 });
   });
 
   it("пусто — все нули", () => {
@@ -61,6 +63,7 @@ describe("утренний брифинг", () => {
       ready: 0,
       fresh: 0,
       drafts: 0,
+      autoIssued: 0,
     });
   });
 

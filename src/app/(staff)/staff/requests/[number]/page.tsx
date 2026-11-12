@@ -5,7 +5,7 @@ import Link from "next/link";
 import type { Route } from "next";
 import { AlarmClock, BookOpenCheck, ShieldX } from "lucide-react";
 import { PageHeader } from "@/components/page-header";
-import { OfferedMark } from "@/components/staff/offered-mark";
+import { AutoIssuedMark, OfferedMark } from "@/components/staff/offered-mark";
 import { requestStatus } from "@/components/now/labels";
 import { STAFF_READY_LABEL } from "@/components/staff/labels";
 import { RequestTimeline } from "@/components/requests/timeline";
@@ -51,9 +51,14 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
   const status = r.status === "READY" ? { ...base, label: STAFF_READY_LABEL } : base;
   const s = r.student;
   const overdue = overdueDays({ ...r, slaDays: r.type.slaDays }, now);
-  // Кто сделал шаг: сотрудник — по ФИО, студент — «студент»
+  // Кто сделал шаг: сотрудник — по ФИО, студент — «студент»; шаги выдачи без очереди (T14+) — «автоматически»
+  // (событие записано от имени студента: действовал кабинет по его нажатию, ux-reviewer)
   const actors = Object.fromEntries(
-    r.events.map((e) => [e.status, e.actor.staff?.fullName ?? "студент"]),
+    r.events.map((e) => [
+      e.status,
+      e.actor.staff?.fullName ??
+        (r.autoIssued && e.status !== "SUBMITTED" ? "автоматически" : "студент"),
+    ]),
   );
   // T14+: ответ сотрудника студенту по существу (не причина отказа — она про конкретного студента)
   const staffAnswered = r.events.some(
@@ -71,6 +76,7 @@ export default async function StaffRequestPage({ params }: PageProps<"/staff/req
               №&nbsp;{r.number}, подана {formatRelativeDay(r.createdAt, now)}
             </span>
             {r.offered ? <OfferedMark /> : null}
+            {r.autoIssued ? <AutoIssuedMark /> : null}
           </span>
         }
       />

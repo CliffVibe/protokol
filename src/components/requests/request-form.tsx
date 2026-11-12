@@ -6,6 +6,7 @@
 import { useActionState, useEffect, useRef } from "react";
 import Link from "next/link";
 import type { Route } from "next";
+import { Zap } from "lucide-react";
 import { FormAlert } from "@/components/form-alert";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
@@ -23,6 +24,7 @@ export function RequestForm({
   changeLanguageHref,
   defaults,
   clientKey,
+  autoHint,
 }: {
   code: string;
   fields: FieldSpec[];
@@ -32,6 +34,8 @@ export function RequestForm({
   /** Начальные значения полей (дисциплина пересдачи из «Учёбы», T13); после ошибки — введённое. */
   defaults?: Record<string, string>;
   clientKey: string;
+  /** T14+, «Справка за 10 секунд»: когда кабинет выдаст справку сразу (auto-issue-rules) */
+  autoHint?: string | null;
 }) {
   const [state, action, pending] = useActionState<SubmitState, FormData>(submitRequestAction, {});
   const formRef = useRef<HTMLFormElement>(null);
@@ -139,6 +143,13 @@ export function RequestForm({
           }
         </FormField>
       ))}
+
+      {autoHint ? (
+        <p className="flex items-start gap-2 text-sm text-ink">
+          <Zap aria-hidden className="mt-0.5 size-4 shrink-0 text-brand" />
+          <span className="min-w-0 break-words">{autoHint}</span>
+        </p>
+      ) : null}
 
       <Button type="submit" size="lg" loading={pending} className="w-full sm:w-auto sm:self-start">
         Отправить заявку

@@ -7,7 +7,7 @@ import { formatRelativeDay, plural } from "@/lib/dates";
 import { requestStatus } from "@/components/now/labels";
 import { STAFF_READY_LABEL } from "./labels";
 import { StatusChip } from "@/components/status-chip";
-import { OfferedMark } from "./offered-mark";
+import { AutoIssuedMark, OfferedMark } from "./offered-mark";
 import { cn } from "@/lib/utils";
 import { isDueToday, staffRequestHref } from "@/server/services/request-rules";
 import type { QueueItem } from "@/server/services/requests";
@@ -83,6 +83,7 @@ export function QueueRow({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <StatusChip tone={status.tone}>{status.label}</StatusChip>
         {r.offered ? <OfferedMark /> : null}
+        {r.autoIssued ? <AutoIssuedMark /> : null}
         {r.overdue > 0 ? (
           <StatusChip tone="danger" icon={AlarmClock}>
             Просрочена на {r.overdue} {plural(r.overdue, ["день", "дня", "дней"])}

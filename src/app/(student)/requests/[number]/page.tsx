@@ -93,25 +93,35 @@ export default async function RequestPage({ params }: PageProps<"/requests/[numb
         <h2 id="state-title" className="sr-only">
           Статус
         </h2>
-        {r.status === "READY" && !r.document?.revoked ? (
+        {(r.status === "READY" || (r.status === "ISSUED" && r.autoIssued)) &&
+        !r.document?.revoked ? (
           // «Готова» — главный хороший момент заявки: мятный блок (Б′, 10.11), в нём единственная
-          // заливная кнопка экрана. Фокус — обводкой цвета текста: ультрамарин на мяте в тёмной теме не виден
+          // заливная кнопка экрана. Фокус — обводкой цвета текста: ультрамарин на мяте в тёмной теме не виден.
+          // T14+, «Справка за 10 секунд»: справку, которую кабинет выдал сам, показываем тем же мятным блоком
           <div className="relative flex flex-col gap-3 overflow-hidden rounded-[1.75rem] bg-mint p-5 text-on-mint">
             <StampRings className="text-on-mint" />
             {/* min-w-0 + переносы: при тексте 200% «заберите» обрезалось краем блока (ux-reviewer, T13) */}
             <p className="relative flex items-start gap-2.5 font-heading text-lg font-semibold">
               <CircleCheck aria-hidden className="mt-0.5 size-6 shrink-0" />
               <span className="min-w-0 break-words hyphens-auto [hyphenate-limit-chars:10_4_4]">
-                {status.label}
+                {r.autoIssued ? "Справка готова — сразу, без очереди" : status.label}
               </span>
             </p>
-            <p className="relative text-base">
-              Заберите справку в деканате своего факультета ({PICKUP_HOURS}) — с паспортом или
-              студенческим билетом.
-              {r.canDownload
-                ? " Электронную копию с QR-кодом проверки можно скачать уже сейчас."
-                : null}
-            </p>
+            {r.autoIssued ? (
+              <p className="relative text-base">
+                Все данные — из базы деканата, поэтому справку выдали автоматически. По QR-коду в
+                PDF получатель проверит подлинность. Если нужен бумажный оригинал с печатью —
+                попросите в деканате ({PICKUP_HOURS}), с паспортом или студенческим билетом.
+              </p>
+            ) : (
+              <p className="relative text-base">
+                Заберите справку в деканате своего факультета ({PICKUP_HOURS}) — с паспортом или
+                студенческим билетом.
+                {r.canDownload
+                  ? " Электронную копию с QR-кодом проверки можно скачать уже сейчас."
+                  : null}
+              </p>
+            )}
             {r.canDownload ? (
               // Обычная ссылка, не <Link>: PDF отдаёт route handler, предзагрузка ему не нужна
               <Button

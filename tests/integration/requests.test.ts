@@ -71,15 +71,16 @@ describe.skipIf(!url)("заявки в PostgreSQL", async () => {
   it("неверные поля — ошибки у полей, заявка не создана", async () => {
     const alisa = await student(DEMO.alisa.userId);
     const before = await prisma.request.count();
+    // Соцзащита: «Отделение» обязательно (у справки об обучении адресат с T14+ необязателен — «Справка за 10 секунд»)
     const r = await svc.submitRequest(alisa, {
-      code: "study_ru",
+      code: "social",
       language: "en",
-      payload: { addressee: "   " },
+      payload: { office: "   " },
       clientKey: randomUUID(),
     });
     expect(r).toEqual({
       ok: false,
-      fieldErrors: { language: "Выберите язык справки", addressee: "Заполните поле" },
+      fieldErrors: { language: "Выберите язык справки", office: "Заполните поле" },
     });
     expect(await prisma.request.count()).toBe(before);
   });

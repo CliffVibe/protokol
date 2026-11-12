@@ -6,11 +6,13 @@ import {
   cancelRequest,
   createRequest,
   rateRequest,
+  recentAutoIssuedCount,
   requestByNumber,
   requestsOf,
   requestTypes,
 } from "@/server/repos/requests";
 import {
+  autoIssuedCount,
   batchMetaFor,
   changeStatus,
   queueFor,
@@ -23,6 +25,16 @@ import {
   type RevokeResult,
 } from "@/server/repos/staff-requests";
 import { countFaqDrafts } from "@/server/repos/faq-entries";
+import { gradesOf } from "@/server/repos/grades";
+import { addDays, mskStartOfDay } from "@/lib/msk";
+import { summarizeStudy } from "./academics";
+import {
+  AUTO_EVENT_COMMENT,
+  AUTO_ISSUE_TYPES,
+  AUTO_ISSUE_WINDOW_DAYS,
+  autoIssueDecision,
+  exceptionComment,
+} from "./auto-issue-rules";
 import {
   REPLY_TEMPLATES,
   renderTemplate,
@@ -137,12 +149,37 @@ export async function submitRequest(
     }
     return { ok: false, fieldErrors };
   }
+  // «Справка за 10 секунд» (T14+): типовую справку кабинет выдаёт сам; решение — по данным из repos (S1),
+  // не по форме. Повтор той же формы (clientKey) не выдаёт вторую: createRequest вернёт уже созданную
+  const decision = (AUTO_ISSUE_TYPES as readonly string[]).includes(type.code)
+    ? autoIssueDecision({
+        typeCode: type.code,
+        payload: parsed.data.payload,
+        debts: summarizeStudy(await gradesOf(ctx))?.debts ?? 0,
+        recentAuto: await recentAutoIssuedCount(
+          ctx,
+          type.id,
+          addDays(new Date(), -AUTO_ISSUE_WINDOW_DAYS),
+        ),
+      })
+    : ({ auto: false, reason: null } as const);
   const number = await createRequest(ctx, {
     typeId: type.id,
     language: parsed.data.language,
-    payload: parsed.data.payload,
+    payload: decision.auto ? decision.payload : parsed.data.payload,
     clientKey: input.clientKey,
     offered: input.offered,
+    autoIssue: decision.auto
+      ? {
+          acceptedComment: AUTO_EVENT_COMMENT.ACCEPTED,
+          issuedComment: AUTO_EVENT_COMMENT.ISSUED,
+          notice: {
+            title: "Справка готова",
+            body: `${type.title} выдана автоматически, без очереди. PDF с QR-кодом — в заявке.`,
+          },
+        }
+      : undefined,
+    submittedComment: !decision.auto && decision.reason ? exceptionComment(decision.reason) : null,
   });
   return { ok: true, number };
 }
@@ -179,15 +216,17 @@ export type QueueItem = Awaited<ReturnType<typeof getQueue>>["items"][number];
 
 /** Утренний брифинг (T14+): вся очередь своих факультетов «ждут действия» и «готовы» + черновики ответов. */
 export async function getBriefing(ctx: StaffCtx, now: Date) {
-  const [{ items }, drafts] = await Promise.all([
+  const [{ items }, drafts, autoIssued] = await Promise.all([
     getQueue(
       ctx,
       { statuses: [...PENDING_STATUSES, "READY"], facultyId: null, typeCode: null },
       now,
     ),
     countFaqDrafts(ctx),
+    // «За неделю»: сегодня и шесть дней до него
+    autoIssuedCount(ctx, addDays(mskStartOfDay(now), -6)),
   ]);
-  return summarizeBriefing(items, drafts, now);
+  return summarizeBriefing(items, drafts, now, autoIssued);
 }
 
 /** «Что говорят студенты» (T14): оценки заявок своих факультетов, без имён. */

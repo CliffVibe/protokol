@@ -1,4 +1,4 @@
-import { BadgeCheck } from "lucide-react";
+import { BadgeCheck, Zap } from "lucide-react";
 
 /** «Предложено деканатом» (T14, «Вам положено»): заявку деканат предложил сам, студент подтвердил. */
 export function OfferedMark() {
@@ -6,6 +6,19 @@ export function OfferedMark() {
     <span className="inline-flex items-center gap-1 text-sm font-bold text-ink">
       <BadgeCheck aria-hidden className="size-4 shrink-0 text-brand" />
       Предложено деканатом
+    </span>
+  );
+}
+
+/**
+ * «Выдана автоматически» (T14+, «Справка за 10 секунд»): типовую справку выдали без очереди. Не «кабинет»:
+ * у сотрудника «Кабинет деканата» — это его собственное приложение (ux-reviewer).
+ */
+export function AutoIssuedMark() {
+  return (
+    <span className="inline-flex items-center gap-1 text-sm font-bold text-ink">
+      <Zap aria-hidden className="size-4 shrink-0 text-brand" />
+      Выдана автоматически
     </span>
   );
 }

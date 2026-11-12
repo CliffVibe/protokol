@@ -72,10 +72,15 @@ export async function restoreDemoScenarios(userId: string, now = new Date()): Pr
     const student = await tx.student.findUnique({ where: { userId }, select: { id: true } });
     if (!student) return;
 
-    // Заявки, поданные из «Деканат предлагает»: удаляем вместе с уведомлениями о них.
-    // У выданной справки IssuedDocument держит заявку (onDelete: Restrict) — его первым.
+    // Заявки, поданные из «Деканат предлагает», и справки, которые кабинет выдал сам (T14+, иначе у демо-
+    // студента копились бы десятки справок и срабатывал лимит автовыдачи): удаляем вместе с уведомлениями.
+    // У демо-студентов в сиде таких нет. У выданной справки IssuedDocument держит заявку (Restrict) — его первым.
     const offered = await tx.request.findMany({
-      where: { studentId: student.id, offered: true, createdAt: { lt: before } },
+      where: {
+        studentId: student.id,
+        OR: [{ offered: true }, { autoIssued: true }],
+        createdAt: { lt: before },
+      },
       select: { id: true, number: true },
     });
     if (offered.length > 0) {

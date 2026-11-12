@@ -30,6 +30,8 @@ export const metadata: Metadata = { title: "Кабинет деканата" };
 const GROUPS = {
   pending: { label: "Ждут действия", statuses: ["SUBMITTED", "ACCEPTED", "IN_PROGRESS"] },
   ready: { label: "Готовы к выдаче", statuses: ["READY"] },
+  // T14+, «Справка за 10 секунд»: что кабинет выдал сам — проверить и при необходимости отозвать
+  auto: { label: "Выдано автоматически", statuses: ["ISSUED"] },
   closed: { label: "Закрытые", statuses: ["ISSUED", "REJECTED", "CANCELLED"] },
   all: {
     label: "Все",
@@ -86,7 +88,12 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
   const [{ items: all, faculties, types }, ratings, briefing, who] = await Promise.all([
     getQueue(
       ctx,
-      { statuses: [...GROUPS[status].statuses], facultyId: faculty, typeCode: type },
+      {
+        statuses: [...GROUPS[status].statuses],
+        facultyId: faculty,
+        typeCode: type,
+        autoIssued: status === "auto",
+      },
       now,
     ),
     // Сводка второстепенна: сбой — строка «не загрузилась», а не ошибка всей очереди (ux-reviewer, T14)
@@ -242,14 +249,18 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
                 ? "Горящих заявок нет"
                 : status === "pending"
                   ? "Новых заявок нет"
-                  : "Здесь пусто"
+                  : status === "auto"
+                    ? "Автоматически пока ничего не выдано"
+                    : "Здесь пусто"
           }
           description={
             urgent
               ? "Просроченных и со сроком сегодня нет — можно заняться остальными."
               : status === "pending"
                 ? "Когда студент закажет справку, она появится здесь — с ожидаемым сроком."
-                : "По этим фильтрам заявок нет. Попробуйте другой статус или «Все мои»."
+                : status === "auto"
+                  ? "Справку об обучении без своего адресата студент получает сразу — она появится здесь, её можно проверить и отозвать."
+                  : "По этим фильтрам заявок нет. Попробуйте другой статус или «Все мои»."
           }
         />
       )}

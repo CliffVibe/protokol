@@ -17,6 +17,7 @@ import {
   wizardHref,
 } from "@/lib/request-wizard";
 import { requireStudent } from "@/server/auth/guards";
+import { autoIssueHint } from "@/server/services/auto-issue-rules";
 import { LANGUAGE_LABEL } from "@/server/services/request-rules";
 import { getDisciplineDetails } from "@/server/services/grades";
 import { getCatalog, type CatalogType } from "@/server/services/requests";
@@ -81,7 +82,11 @@ export default async function NewRequestPage({ searchParams }: PageProps<"/reque
         <PageHeader
           title={type.title}
           back={back}
-          description={`${type.description} Срок — ${sla(type.slaDays)}.`}
+          description={
+            autoIssueHint(type.code)
+              ? `${type.description} С типовым адресатом — обычно сразу, со своим — ${sla(type.slaDays)}.`
+              : `${type.description} Срок — ${sla(type.slaDays)}.`
+          }
         />
         {/* Ключ — на каждый показ формы: повтор той же отправки сервер узнает (двойной клик) */}
         <RequestForm
@@ -91,6 +96,7 @@ export default async function NewRequestPage({ searchParams }: PageProps<"/reque
           changeLanguageHref={choosable ? back.href : undefined}
           defaults={defaults}
           clientKey={randomUUID()}
+          autoHint={autoIssueHint(type.code)}
         />
       </div>
     );

@@ -374,12 +374,15 @@ export type Briefing = {
   fresh: number;
   /** Черновики ответов помощника своих факультетов — ждут проверки */
   drafts: number;
+  /** T14+, «Справка за 10 секунд»: сколько справок кабинет выдал сам за неделю — сотруднику остались исключения */
+  autoIssued: number;
 };
 
 export function summarizeBriefing(
   items: { status: RequestStatus; overdue: number; dueAt: Date; createdAt: Date }[],
   drafts: number,
   now: Date,
+  autoIssued = 0,
 ): Briefing {
   const since = addDays(mskStartOfDay(now), -1);
   return {
@@ -388,6 +391,7 @@ export function summarizeBriefing(
     ready: items.filter((i) => i.status === "READY").length,
     fresh: items.filter((i) => i.status === "SUBMITTED" && i.createdAt >= since).length,
     drafts,
+    autoIssued,
   };
 }
 

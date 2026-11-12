@@ -10,6 +10,7 @@ import {
   CircleCheck,
   Inbox,
   PackageCheck,
+  Zap,
   type LucideIcon,
 } from "lucide-react";
 import { greetingFor, plural } from "@/lib/dates";
@@ -77,6 +78,17 @@ export function BriefingBlock({
       text: `${n(b.drafts, ["ответ помощника ждёт", "ответа помощника ждут", "ответов помощника ждут"])} проверки`,
     },
   ].filter((i) => i.count > 0);
+  // «Всё спокойно» — по делам, а не по автовыдачам: они не требуют действия (ux-reviewer)
+  const calm = items.length === 0;
+  // T14+, «Справка за 10 секунд»: последней строкой — сколько рутины снято, срочное остаётся наверху
+  if (b.autoIssued > 0)
+    items.push({
+      href: "/staff?status=auto" as Route,
+      icon: Zap,
+      tone: "text-brand",
+      count: b.autoIssued,
+      text: `Автоматически выдано ${n(b.autoIssued, ["справка", "справки", "справок"])} за неделю — вам остались исключения`,
+    });
   const name = fullName ? nameAndPatronymic(fullName) : "";
 
   return (
@@ -91,6 +103,12 @@ export function BriefingBlock({
           {name ? `, ${name}` : ""}. Ваши факультеты — по одному касанию.
         </p>
       </div>
+      {calm ? (
+        <p className="flex items-start gap-2.5 border-y border-line py-2.5 text-base text-ink">
+          <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-ok" />
+          Всё спокойно: просрочек нет, к выдаче ничего, ответы проверены.
+        </p>
+      ) : null}
       {items.length ? (
         <ul className="flex flex-col divide-y divide-line border-y border-line">
           {items.map((i) => (
@@ -106,12 +124,7 @@ export function BriefingBlock({
             </li>
           ))}
         </ul>
-      ) : (
-        <p className="flex items-start gap-2.5 border-y border-line py-2.5 text-base text-ink">
-          <CircleCheck aria-hidden className="mt-0.5 size-5 shrink-0 text-ok" />
-          Всё спокойно: просрочек нет, к выдаче ничего, ответы проверены.
-        </p>
-      )}
+      ) : null}
       <Link
         href={"/staff/answers" as Route}
         className="inline-flex min-h-11 items-center gap-2 self-start text-base font-bold text-brand underline-offset-4 hover:underline md:hidden"

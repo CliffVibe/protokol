@@ -55,7 +55,14 @@ async function readyRequest(s: TempStudent): Promise<string> {
 
 /** Уборка: сначала заявки (события ссылаются на пользователя), потом студент целиком */
 async function cleanup(s: TempStudent) {
-  await withDb((c) => c.query(`DELETE FROM "Request" WHERE "studentId" = $1`, [s.studentId]));
+  // Справку, выданную кабинетом сразу (T14+), держит IssuedDocument (onDelete: Restrict) — её первой
+  await withDb(async (c) => {
+    await c.query(
+      `DELETE FROM "IssuedDocument" WHERE "requestId" IN (SELECT id FROM "Request" WHERE "studentId" = $1)`,
+      [s.studentId],
+    );
+    await c.query(`DELETE FROM "Request" WHERE "studentId" = $1`, [s.studentId]);
+  });
   await s.remove();
 }
 
@@ -200,6 +207,78 @@ test.describe("J. «Вам положено»", () => {
     } finally {
       await cleanup(s);
     }
+  });
+});
+
+test.describe("«Справка за 10 секунд»: типовую справку кабинет выдаёт сам", () => {
+  test("студент без долгов, адресат пустой → «Готова — сразу», PDF и проверка подлинности", async ({
+    browser,
+    baseURL,
+  }) => {
+    const s = await tempStudent(browser, baseURL!);
+    try {
+      await s.page.goto("/requests/new?type=study_ru");
+      await expect(s.page.getByText(/обычно выдаём сразу, без очереди/)).toBeVisible();
+      await s.page.getByRole("button", { name: "Отправить заявку" }).click();
+      await expect(s.page).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
+      await expect(s.page.getByText("Справка готова — сразу, без очереди")).toBeVisible();
+      await expect(s.page.getByText(/Принята автоматически/)).toBeVisible();
+      await expect(s.page.getByText("По месту требования")).toBeVisible();
+      await expect(s.page.getByRole("link", { name: "Скачать справку (PDF)" })).toBeVisible();
+      expect(await overflow(s.page)).toBeLessThanOrEqual(0);
+      const { violations } = await new AxeBuilder({ page: s.page }).analyze();
+      expect(
+        violations
+          .filter((v) => v.impact === "serious" || v.impact === "critical")
+          .map((v) => v.id),
+      ).toEqual([]);
+      await s.page.getByRole("link", { name: /Проверить подлинность/ }).click();
+      await expect(s.page.getByRole("heading", { level: 1 })).toHaveText("Справка действительна");
+      const saved = await withDb((c) =>
+        c.query(`SELECT status, "autoIssued" FROM "Request" WHERE "studentId" = $1`, [s.studentId]),
+      );
+      expect(saved.rows).toEqual([{ status: "ISSUED", autoIssued: true }]);
+    } finally {
+      await cleanup(s);
+    }
+  });
+
+  test("свой адресат → обычная заявка к сотруднику, причина видна в истории", async ({
+    browser,
+    baseURL,
+  }) => {
+    const s = await tempStudent(browser, baseURL!);
+    try {
+      await s.page.goto("/requests/new?type=study_ru");
+      await s.page.getByLabel(/Куда предоставляется/).fill("В банк");
+      await s.page.getByRole("button", { name: "Отправить заявку" }).click();
+      await expect(s.page).toHaveURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
+      await expect(s.page.getByText(/Посмотрит сотрудник: свой адресат попадёт/)).toBeVisible();
+      await expect(s.page.getByText("Справка готова — сразу, без очереди")).toHaveCount(0);
+    } finally {
+      await cleanup(s);
+    }
+  });
+
+  test("Ирина: «Автоматически выдано…» → вкладка «Выдано автоматически» — только свои факультеты", async ({
+    browser,
+  }) => {
+    const ctx = await browser.newContext({ storageState: { cookies: [], origins: [] } });
+    const page = await ctx.newPage();
+    await page.goto("/login");
+    await page.getByRole("button", { name: "Войти как Ирина" }).click();
+    await expect(page).toHaveURL(/\/staff$/);
+    const line = page
+      .getByRole("region", { name: "Главное на сегодня" })
+      .getByRole("link", { name: /Автоматически выдано/ });
+    await expect(line).toBeVisible();
+    await line.click();
+    await expect(page).toHaveURL(/status=auto/);
+    const rows = page.getByRole("list", { name: "Заявки в очереди" }).getByRole("listitem");
+    await expect(rows.first()).toContainText("Выдана автоматически");
+    // Справка Демидова (МЖ) — не факультет Ирины
+    await expect(page.getByRole("main")).not.toContainText("Демидов");
+    await ctx.close();
   });
 });
 

@@ -1,8 +1,14 @@
 import "server-only";
+import { randomBytes } from "node:crypto";
 import { Prisma } from "@/generated/prisma/client";
-import { mskYear } from "@/lib/msk";
+import { assertLink } from "@/lib/links";
+import { addDays, mskYear } from "@/lib/msk";
 import { db } from "@/server/db";
-import { formatRequestNumber, RATABLE_STATUSES } from "@/server/services/request-rules";
+import {
+  formatRequestNumber,
+  RATABLE_STATUSES,
+  requestHref,
+} from "@/server/services/request-rules";
 import type { StudentCtx } from "./auth";
 
 // Заявки студента — всегда WHERE studentId = ctx.studentId (S1). Номер из адреса ищется только вместе
@@ -56,6 +62,7 @@ export async function requestByNumber(ctx: StudentCtx, number: string) {
       updatedAt: true,
       // T14: «Вам положено» и оценка студента
       offered: true,
+      autoIssued: true,
       rating: true,
       ratingComment: true,
       type: { select: { code: true, title: true, slaDays: true, fields: true } },
@@ -91,6 +98,17 @@ export async function createRequest(
     clientKey: string;
     /** T14: заявку предложил деканат («Вам положено»), студент подтвердил */
     offered?: boolean;
+    /**
+     * T14+, «Справка за 10 секунд»: решение принял сервис (auto-issue-rules) по данным из repos. Тогда в той же
+     * транзакции — шаги «Принята → Готова → Выдана», документ с токеном 128 бит (S7) и уведомление
+     */
+    autoIssue?: {
+      acceptedComment: string;
+      issuedComment: string;
+      notice: { title: string; body: string };
+    };
+    /** Комментарий к «Подана» — почему кабинет не выдал сам (видят студент и сотрудник) */
+    submittedComment?: string | null;
   },
 ): Promise<string> {
   try {
@@ -99,22 +117,63 @@ export async function createRequest(
       const [row] = await tx.$queryRaw<{ seq: bigint }[]>`
         SELECT nextval(pg_get_serial_sequence('"Request"', 'seq')) AS seq`;
       const seq = Number(row!.seq);
+      const now = new Date();
+      const auto = input.autoIssue;
       const created = await tx.request.create({
         data: {
           seq,
-          number: formatRequestNumber(mskYear(new Date()), seq),
+          number: formatRequestNumber(mskYear(now), seq),
           studentId: ctx.studentId,
           typeId: input.typeId,
           language: input.language,
           payload: input.payload,
           clientKey: input.clientKey,
           offered: input.offered ?? false,
+          ...(auto ? { status: "ISSUED" as const, autoIssued: true } : {}),
         },
         select: { id: true, number: true },
       });
-      await tx.requestEvent.create({
-        data: { requestId: created.id, status: "SUBMITTED", actorUserId: ctx.userId },
+      // Шаги — с разницей в миллисекунду: таймлайн сортирует по времени, порядок не должен зависеть от БД
+      const at = (i: number) => new Date(+now + i);
+      await tx.requestEvent.createMany({
+        data: [
+          {
+            requestId: created.id,
+            status: "SUBMITTED",
+            comment: input.submittedComment ?? null,
+            actorUserId: ctx.userId,
+            createdAt: at(0),
+          },
+          ...(auto
+            ? [
+                // Все шаги пути — с временем: в таймлайне нет «пройденного» шага без даты (ux-reviewer)
+                { status: "ACCEPTED" as const, comment: auto.acceptedComment, createdAt: at(1) },
+                { status: "IN_PROGRESS" as const, comment: null, createdAt: at(2) },
+                { status: "READY" as const, comment: null, createdAt: at(3) },
+                { status: "ISSUED" as const, comment: auto.issuedComment, createdAt: at(4) },
+              ].map((e) => ({ ...e, requestId: created.id, actorUserId: ctx.userId }))
+            : []),
+        ],
       });
+      if (auto) {
+        await tx.issuedDocument.create({
+          data: {
+            requestId: created.id,
+            verifyToken: randomBytes(16).toString("base64url"),
+            issuedAt: now,
+            validUntil: addDays(now, 90),
+          },
+        });
+        await tx.notification.create({
+          data: {
+            studentId: ctx.studentId,
+            kind: "REQUEST_STATUS",
+            title: auto.notice.title,
+            body: auto.notice.body,
+            link: assertLink(requestHref(created.number)),
+          },
+        });
+      }
       return created.number;
     });
   } catch (e) {
@@ -126,6 +185,13 @@ export async function createRequest(
     if (!existing) throw e;
     return existing.number;
   }
+}
+
+/** Сколько справок этого типа кабинет выдал студенту сам с момента since (лимит автовыдачи, T14+). */
+export function recentAutoIssuedCount(ctx: StudentCtx, typeId: string, since: Date) {
+  return db.request.count({
+    where: { studentId: ctx.studentId, typeId, autoIssued: true, createdAt: { gte: since } },
+  });
 }
 
 /** Своя заявка, уже созданная с этим ключом формы (повтор отправки) — её номер или null. */

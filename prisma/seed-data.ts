@@ -23,6 +23,17 @@ export type SeedUser = Omit<Prisma.UserCreateManyInput, "passwordHash"> & {
 export type SeedStudent = Omit<Prisma.StudentCreateManyInput, "calendarToken">;
 export type SeedIssuedDocument = Omit<Prisma.IssuedDocumentCreateManyInput, "verifyToken">;
 
+/**
+ * Комментарии шагов автовыдачи — те же, что пишет сервис (src/server/services/auto-issue-rules.ts →
+ * AUTO_EVENT_COMMENT); совпадение держит tests/unit/auto-issue.test.ts. Строками здесь: сид импортируется и
+ * без алиасов «@/» (prisma/seed.ts, скрипты видео).
+ */
+export const SEED_AUTO_COMMENT = {
+  ACCEPTED: "Принята автоматически: все данные — из базы деканата",
+  ISSUED:
+    "Выдана электронно: PDF с QR-кодом проверки. Бумажный оригинал с печатью — по просьбе в деканате",
+} as const;
+
 export interface SeedData {
   faculties: Prisma.FacultyCreateManyInput[];
   programs: Prisma.ProgramCreateManyInput[];
@@ -350,8 +361,10 @@ const REQUEST_TYPES = [
       {
         name: "addressee",
         label: "Куда предоставляется",
+        // T14+, «Справка за 10 секунд»: пусто — «По месту требования», и кабинет выдаёт справку сразу
+        hint: "Можно не заполнять — будет «По месту требования». Свой адресат, например «в банк», проверит сотрудник",
         type: "text",
-        required: true,
+        required: false,
         maxLength: 120,
       },
     ],
@@ -1670,6 +1683,56 @@ function buildRequests({
       { status: "ISSUED", dayOffset: -9, time: "10:05" },
     ],
   });
+
+  // T14+, «Справка за 10 секунд»: типовые справки, выданные автоматически, — для строки Ирины «Автоматически
+  // выдано…» и вкладки «Выдано автоматически». Все шаги — в одну минуту, от имени студента (действовал
+  // кабинет по его нажатию); demidov (МЖ) — чужой факультет: Ирина его справку не видит
+  const autoIssued = [
+    {
+      studentKey: "koroleva",
+      type: "study_ru",
+      lang: "ru",
+      addressee: "По месту требования",
+      day: -1,
+    },
+    {
+      studentKey: "ershova",
+      type: "study_en",
+      lang: "en",
+      addressee: "To whom it may concern",
+      day: -2,
+    },
+    {
+      studentKey: "demidov",
+      type: "study_ru",
+      lang: "ru",
+      addressee: "По месту требования",
+      day: -1,
+    },
+  ] as const;
+  for (const a of autoIssued) {
+    const id = add({
+      key: `${a.studentKey}-auto`,
+      studentKey: a.studentKey,
+      type: a.type,
+      language: a.lang,
+      payload: { addressee: a.addressee },
+      steps: [
+        { status: "SUBMITTED", dayOffset: a.day, time: "20:14" },
+        {
+          status: "ACCEPTED",
+          dayOffset: a.day,
+          time: "20:14",
+          comment: SEED_AUTO_COMMENT.ACCEPTED,
+        },
+        { status: "IN_PROGRESS", dayOffset: a.day, time: "20:14" },
+        { status: "READY", dayOffset: a.day, time: "20:14" },
+        { status: "ISSUED", dayOffset: a.day, time: "20:14", comment: SEED_AUTO_COMMENT.ISSUED },
+      ],
+    });
+    requests.find((r) => r.id === id)!.autoIssued = true;
+    for (const e of requestEvents) if (e.requestId === id) e.actorUserId = `usr-${a.studentKey}`;
+  }
 
   // Все моменты — не позже «сейчас»: иначе демо показывало бы события из будущего
   for (const e of requestEvents) if (new Date(e.createdAt!) > now) e.createdAt = now;
