@@ -11,6 +11,8 @@ import {
   pruneThrottles,
   reserveAttempt,
 } from "@/server/repos/auth";
+import { restoreDemoScenarios } from "@/server/repos/demo";
+import { createThrottle } from "@/server/services/ai/throttle";
 
 // Проверка логина и пароля (docs/05-security.md → S2).
 //
@@ -116,13 +118,28 @@ export function isDemoMode(): boolean {
   return process.env.DEMO_MODE === "1";
 }
 
-/** Вход без пароля для фиксированного списка демо-логинов и только при DEMO_MODE=1. */
+/**
+ * Демо-входов в минуту с одного IP: каждый создаёт сессию в БД, а жюри столько не нажмёт.
+ * Переменная окружения — только для e2e (все воркеры с одного адреса, playwright.config.ts).
+ */
+export const DEMO_LOGINS_PER_MINUTE = Number(process.env.DEMO_LOGINS_PER_MINUTE) || 20;
+const allowDemoLogin = createThrottle(DEMO_LOGINS_PER_MINUTE, 60_000);
+
+/**
+ * Вход без пароля для фиксированного списка демо-логинов и только при DEMO_MODE=1.
+ * Студенту заодно возвращаются одноразовые сценарии, которые прошлый эксперт уже прошёл (repos/demo.ts).
+ */
 export async function authenticateDemo(
   input: unknown,
-): Promise<{ ok: true; userId: string; role: Role } | { ok: false }> {
-  if (!isDemoMode()) return { ok: false };
+  ip = "unknown",
+  now = new Date(),
+): Promise<{ ok: true; userId: string; role: Role } | { ok: false; reason: "invalid" | "wait" }> {
+  if (!isDemoMode()) return { ok: false, reason: "invalid" };
   const parsed = demoLoginSchema.safeParse(input);
-  if (!parsed.success) return { ok: false };
+  if (!parsed.success) return { ok: false, reason: "invalid" };
+  if (!allowDemoLogin(ip, now.getTime())) return { ok: false, reason: "wait" };
   const user = await findUserByLogin(parsed.data.login);
-  return user ? { ok: true, userId: user.id, role: user.role } : { ok: false };
+  if (!user) return { ok: false, reason: "invalid" };
+  if (user.role === "STUDENT") await restoreDemoScenarios(user.id, now);
+  return { ok: true, userId: user.id, role: user.role };
 }

@@ -58,6 +58,15 @@ test.describe("05-security: обязательные тесты", () => {
     await expect(timur.getByRole("main")).not.toContainText(number);
     expect(await timur.content()).not.toContain(given);
     expect(await timur.title()).not.toContain(number);
+
+    // Номер, набранный руками с латинской C (T14): своя заявка открывается, чужая — тот же 404.
+    // Иначе 404 на свою заявку выдал бы проверку изоляции за «404 показывают всегда»
+    const latin = `/requests/${encodeURIComponent(number.replace(/^С/u, "C"))}`;
+    expect(latin).not.toBe(href);
+    expect((await page.goto(latin))?.status()).toBe(200);
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    expect((await timur.goto(latin))?.status()).toBe(404);
+    await expect(timur.getByRole("main")).not.toContainText(number);
   });
 
   test("2. Студент Б вызывает Server Action отмены заявки А → ошибка, заявка не изменилась", async ({

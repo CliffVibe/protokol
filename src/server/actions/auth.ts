@@ -35,8 +35,9 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 
 /** «Войти как…» — только при DEMO_MODE=1 и только для фиксированного списка демо-логинов. */
 export async function demoLogin(formData: FormData): Promise<void> {
-  const result = await authenticateDemo({ login: formData.get("login") });
-  if (!result.ok) redirect("/login");
+  const ip = clientIpFrom((await headers()).get("x-forwarded-for"));
+  const result = await authenticateDemo({ login: formData.get("login") }, ip);
+  if (!result.ok) redirect(result.reason === "wait" ? "/login?demo=wait" : "/login");
   await createSession(result.userId);
   redirect(homeFor(result.role));
 }

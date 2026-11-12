@@ -4,29 +4,25 @@ import { BrandMark } from "@/components/brand-mark";
 import { LogoutButton } from "@/components/logout-button";
 import { SiteFooter } from "@/components/site-footer";
 import { SkipLink } from "@/components/skip-link";
-import { ResetDemo } from "@/components/staff/reset-demo";
 import { StaffIdentity } from "@/components/staff/staff-identity";
 import { StaffNav } from "@/components/staff/staff-nav";
 import { ThemeSwitcher } from "@/components/theme-switcher";
 import { getThemePreference } from "@/lib/theme-server";
 import { optionalStaff } from "@/server/auth/guards";
 import { staffIdentity } from "@/server/repos/staff-profile";
-import { isDemoMode } from "@/server/services/auth";
 
 export default async function StaffLayout({ children }: { children: React.ReactNode }) {
   // Кто вошёл — для шапки и «Профиля» (T13). optionalStaff() не проверка доступа и не редиректит:
   // страницу защищает requireStaff() в каждой page
   const [theme, ctx] = await Promise.all([getThemePreference(), optionalStaff()]);
   const who = ctx ? await staffIdentity(ctx) : null;
-  // «Сбросить демо» — только при DEMO_MODE=1; действие само проверяет роль и режим
-  const demo = isDemoMode();
   return (
     <div className="flex min-h-dvh flex-col">
       <SkipLink />
       <header className="border-b border-line bg-bg">
         <div className="mx-auto flex w-full max-w-[1120px] flex-wrap items-center gap-x-6 gap-y-1 px-4 py-2 md:px-6">
           {/* На телефоне две строки: логотип и «Выйти»; разделы (без значков). На ≥ 768 — одна строка:
-              знак, разделы, кто вошёл (≥ 1024) и «Выйти». Тема и «Сбросить демо» — на всех ширинах в блоке
+              знак, разделы, кто вошёл (≥ 1024) и «Выйти». Тема — на всех ширинах в блоке
               «Профиль» внизу страницы, над плашкой концепта: их трогают редко, а с ФИО в шапке (T13, «нигде не
               написано, что это аккаунт Ирины») шапка десктопа разъезжалась в две строки.
               Второй «Выйти» в DOM — display:none, скринридер его не видит. */}
@@ -58,8 +54,10 @@ export default async function StaffLayout({ children }: { children: React.ReactN
           Профиль
         </h2>
         {who ? <StaffIdentity who={who} /> : null}
+        {/* «Сбросить демо» убрали (T14, оценка «глазами жюри»): стенд общий, и сброс выкидывал из системы
+            всех экспертов. Демо возвращается к исходному ночным пересевом, одноразовые сценарии студента —
+            при его демо-входе (repos/demo.ts) */}
         <ThemeSwitcher value={theme} className="w-full max-w-80" />
-        {demo ? <ResetDemo variant="outline" /> : null}
       </section>
       <SiteFooter />
     </div>

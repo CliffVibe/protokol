@@ -73,6 +73,9 @@ export default defineConfig({
           DATABASE_URL: process.env.DATABASE_URL ?? "",
           DEMO_MODE: "1",
           ASSISTANT_PROVIDER: "faq",
+          // Все воркеры e2e входят с одного адреса — лимит демо-входа (20 в минуту) им не по размеру;
+          // сам лимит проверяет tests/unit/auth-service.test.ts
+          DEMO_LOGINS_PER_MINUTE: "1000",
         },
         url: `${baseURL}/api/health`,
         reuseExistingServer: !process.env.CI,

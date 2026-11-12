@@ -173,10 +173,12 @@ test.describe("навигация студента", () => {
                 after.content !== "none" && after.position === "absolute" && after.inset === "0px";
               const area = stretched ? ((el as HTMLElement).offsetParent ?? el) : el;
               const r = area.getBoundingClientRect();
+              // До сотых: дробная вёрстка давала 43.99994 при min-h 44px (12.11, флак на /more)
+              const px = (v: number) => Math.round(v * 100) / 100;
               return {
                 text: (el.textContent ?? "").trim() || el.getAttribute("title"),
-                w: r.width,
-                h: r.height,
+                w: px(r.width),
+                h: px(r.height),
               };
             }),
         );
@@ -455,13 +457,12 @@ test.describe("клавиатура: фокус виден на каждом ш�
   }
 
   test.describe("диалог", () => {
-    useSessionFor("/staff");
     test("DialogForm: открывается с клавиатуры, Esc закрывает, фокус — на кнопке", async ({
       page,
     }) => {
-      await page.goto("/staff");
-      // «Сбросить демо» — в блоке «Профиль» внизу страницы (T13), одна на всех ширинах
-      const trigger = page.getByRole("button", { name: "Сбросить демо" });
+      // Раньше проверяли на «Сбросить демо» у сотрудника — кнопку убрали (T14); Esc ничего не перевыпускает
+      await page.goto("/profile");
+      const trigger = page.getByRole("button", { name: "Перевыпустить ссылку" });
       await trigger.focus();
       await page.keyboard.press("Enter");
       const dialog = page.getByRole("dialog");

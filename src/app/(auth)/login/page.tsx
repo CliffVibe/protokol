@@ -14,10 +14,16 @@ import { LoginForm } from "./login-form";
 export const metadata: Metadata = { title: "Вход" };
 
 // Экран входа. Уже вошли — сразу в свой кабинет. Демо-блок — только при DEMO_MODE=1 (решает сервер).
-export default async function LoginPage() {
+// ?demo=wait — демо-вход упёрся в лимит частоты (services/auth.ts → DEMO_LOGINS_PER_MINUTE).
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const session = await getSession();
   if (session) redirect(homeFor(session.role));
   const demo = isDemoMode();
+  const demoWait = demo && (await searchParams).demo === "wait";
 
   return (
     <div className="flex flex-col gap-10 lg:flex-row lg:items-start lg:gap-16">
@@ -59,12 +65,12 @@ export default async function LoginPage() {
         </p>
       </section>
 
-      {demo ? <DemoPanel /> : null}
+      {demo ? <DemoPanel wait={demoWait} /> : null}
     </div>
   );
 }
 
-function DemoPanel() {
+function DemoPanel({ wait }: { wait: boolean }) {
   return (
     <section
       aria-labelledby="demo-title"
@@ -75,9 +81,15 @@ function DemoPanel() {
           Демо-режим
         </h2>
         <p className="text-base text-ink-muted">
-          Для жюри: вход без пароля. Все данные вымышленные и каждую ночь возвращаются к исходным.
+          Для жюри: вход без пароля. Все данные вымышленные и каждую ночь возвращаются к исходным, а
+          предложение деканата и оценка заявки возвращаются через 15 минут после прошлого эксперта.
         </p>
       </div>
+      {wait ? (
+        <p role="alert" className="border-l-2 border-warn py-1 pl-3 text-base text-ink">
+          Слишком много входов подряд с этого адреса — подождите минуту и попробуйте снова.
+        </p>
+      ) : null}
 
       <ul className="flex flex-col gap-3">
         {DEMO_ACCOUNTS.map((a) => (

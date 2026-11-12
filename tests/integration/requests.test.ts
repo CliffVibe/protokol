@@ -4,7 +4,7 @@ import { randomBytes, randomUUID } from "node:crypto";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { PrismaClient } from "@/generated/prisma/client";
-import { buildSeed, DEMO, SEED_PASSWORD_ENVS } from "../../prisma/seed-data";
+import { DEMO, SEED_PASSWORD_ENVS } from "../../prisma/seed-data";
 import { runSeed } from "../../prisma/seed";
 
 const url = process.env.TEST_DATABASE_URL;
@@ -257,16 +257,4 @@ describe.skipIf(!url)("заявки в PostgreSQL", async () => {
     );
     expect(items).toEqual([]);
   });
-
-  // Последним: пересевает базу (security-reviewer, T08 — сброс не чаще раза в 5 минут)
-  it("«Сбросить демо»: второй сброс сразу после первого — отказ с временем ожидания", async () => {
-    const { resetDemoData, RESET_COOLDOWN_MS } = await import("@/server/repos/demo");
-    const staff = await irina();
-    const t0 = Date.now();
-    expect(await resetDemoData(staff, t0)).toEqual({ ok: true });
-    expect(await resetDemoData(staff, t0 + 60_000)).toEqual({ ok: false, retryInMinutes: 4 });
-    expect(RESET_COOLDOWN_MS).toBe(5 * 60 * 1000);
-    // Сброс действительно вернул сид: заявок ровно столько, сколько в сиде (число — из самого сида, T14)
-    expect(await prisma.request.count()).toBe(buildSeed(new Date()).requests.length);
-  }, 60_000);
 });

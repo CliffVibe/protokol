@@ -269,7 +269,8 @@ test.describe("изоляция", () => {
     ).toBeVisible();
   });
 
-  for (const bad of ["abc", "C-2026-00001" /* латинская C */, "С-2026-1"]) {
+  // Латинская C теперь та же «С» (T14, проверяет security.spec) — здесь только мусор и чужая буква
+  for (const bad of ["abc", "X-2026-00001", "С-2026-1"]) {
     test(`/requests/${bad} — 404`, async ({ page }) => {
       const res = await page.goto(`/requests/${encodeURIComponent(bad)}`);
       expect(res?.status()).toBe(404);
@@ -302,15 +303,14 @@ test.describe("кабинет сотрудника", () => {
     });
   }
 
-  test("«Сбросить демо» — с подтверждением; «Не сейчас» ничего не делает", async ({ browser }) => {
+  test("«Сбросить демо» убрали: стенд общий, сброс выкидывал всех экспертов (T14)", async ({
+    browser,
+  }) => {
     const irina = await asIrina(browser);
-    await irina.goto("/staff");
-    await irina.getByRole("button", { name: "Сбросить демо" }).click();
-    const dialog = irina.getByRole("dialog");
-    await expect(dialog).toContainText("выйдут из неё");
-    await dialog.getByRole("button", { name: "Не сейчас" }).click();
-    await expect(dialog).toBeHidden();
-    await expect(irina).toHaveURL(/\/staff$/);
+    for (const route of ["/staff", "/staff/announcements", "/staff/answers"]) {
+      await irina.goto(route);
+      await expect(irina.getByRole("button", { name: "Сбросить демо" })).toHaveCount(0);
+    }
   });
 
   test("студенту кнопки «Сбросить демо» нет нигде", async ({ page }) => {

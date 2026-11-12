@@ -20,7 +20,7 @@ const MASK = "…";
 
 /** Шаблоны без привязки к человеку: номера, контакты, ссылки. Порядок важен — длинное раньше короткого. */
 const PATTERNS: [RemovedKind, RegExp][] = [
-  ["number", /С-\d{4}-\d{5,9}/gu],
+  ["number", /(?<!\p{L})[СCсc]-\d{4}-\d{5,9}/gu],
   ["recordBook", /\d{2}-\p{Lu}{1,5}-\d{3,5}/gu],
   ["email", /[\p{L}\d._%+-]+@[\p{L}\d.-]+\.\p{L}{2,}/gu],
   ["link", /(?:https?:\/\/|www\.)\S+/giu],
@@ -29,17 +29,27 @@ const PATTERNS: [RemovedKind, RegExp][] = [
   ["digits", /\d{6,}/gu],
 ];
 
+/** Падежные окончания коротких имён на гласную: «Вера» → Веры, Вере, Веру, Верой; «Илья» → Ильи, Ильёй. */
+const VOWEL_ENDINGS = "(?:а|я|ы|и|е|у|ю|ой|ей|ёй|ою|ею|ёю)?";
+
 /**
  * Основа имени для поиска в падежах: «Игорь» → «Игор» (Игоря, Игорю, Игорем), «Савельев» → «Савель».
- * Короткие (до 4 букв) — целиком, окончание не длиннее 2 букв: иначе «Ян» задел бы «январь».
+ * Короткие (до 4 букв) на согласную — целиком, окончание не длиннее 2 букв: иначе «Ян» задел бы «январь».
+ * Короткие на гласную — без неё и только с падежным окончанием: «Вер» + «а/ы/ой…», но не «верный».
+ * «е» и «ё» — одна буква (T14, оценка «глазами жюри»: «Королева» проходила мимо «Королёва»).
  */
 function nameRegex(word: string): RegExp | null {
   const w = word.trim();
   if (w.length < 2) return null;
-  const stem = w.length <= 4 ? w : w.slice(0, Math.max(4, w.length - 2));
-  const tail = w.length <= 4 ? 2 : 4;
-  const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-  return new RegExp(`(?<!\\p{L})${escaped}\\p{L}{0,${tail}}(?!\\p{L})`, "giu");
+  const shortVowel = w.length <= 4 && w.length >= 3 && /[аяеёиоуыэюь]$/iu.test(w);
+  const stem = shortVowel
+    ? w.slice(0, -1)
+    : w.length <= 4
+      ? w
+      : w.slice(0, Math.max(4, w.length - 2));
+  const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace(/[её]/giu, "[её]");
+  const tail = shortVowel ? VOWEL_ENDINGS : `\\p{L}{0,${w.length <= 4 ? 2 : 4}}`;
+  return new RegExp(`(?<!\\p{L})${escaped}${tail}(?!\\p{L})`, "giu");
 }
 
 export type Redaction = { text: string; removed: RemovedKind[] };

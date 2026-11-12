@@ -1,26 +1,49 @@
 import "server-only";
 import { db } from "@/server/db";
-import { runSeed } from "../../../prisma/run-seed";
-import type { StaffCtx } from "./auth";
+import { requestHref } from "@/server/services/request-rules";
 
-// «Сбросить демо» (T08): та же логика, что у `pnpm db:reset-demo` и ночного cron, — полный пересев
-// вымышленных данных от текущей даты. Пароли демо-аккаунтов — из process.env на сервере (S2, S4).
-// Вызывается только из resetDemoAction: сотрудник + DEMO_MODE=1 проверены там.
+// Демо-стенд общий для всех экспертов жюри (T14, оценка «глазами жюри»). Одноразовые сценарии —
+// «Деканат предлагает» и оценка заявки — после первого эксперта пропадали до ночного пересева.
+// Поэтому при демо-входе студента они возвращаются: всё, что сделал прошлый посетитель больше
+// RESTORE_AFTER_MS назад, откатывается. Свежее не трогаем — эксперт, который сам только что подал
+// предложение, увидит свою заявку.
+//
+// Исключение из правила «каждая функция репозитория принимает ctx» (как repos/auth.ts): ctx ещё нет,
+// функцию вызывает только services/auth.ts → authenticateDemo() при DEMO_MODE=1, после проверки
+// логина по фиксированному списку DEMO_LOGINS. userId — из БД по этому логину, не из формы.
 
-/**
- * Не чаще раза в 5 минут (security-reviewer, T08): при DEMO_MODE=1 «Войти как Ирина» не требует пароля,
- * а сброс выкидывает из системы всех, включая жюри, и считает ~10 хешей argon2. Счётчик — в памяти
- * процесса: на проде один контейнер приложения; после перезапуска пауза начинается заново.
- */
-export const RESET_COOLDOWN_MS = 5 * 60 * 1000;
-let lastResetAt = 0;
+export const RESTORE_AFTER_MS = 15 * 60 * 1000;
 
-export type ResetResult = { ok: true } | { ok: false; retryInMinutes: number };
+export async function restoreDemoScenarios(userId: string, now = new Date()): Promise<void> {
+  const before = new Date(now.getTime() - RESTORE_AFTER_MS);
+  await db.$transaction(async (tx) => {
+    const student = await tx.student.findUnique({ where: { userId }, select: { id: true } });
+    if (!student) return;
 
-export async function resetDemoData(ctx: StaffCtx, now = Date.now()): Promise<ResetResult> {
-  const wait = lastResetAt + RESET_COOLDOWN_MS - now;
-  if (wait > 0) return { ok: false, retryInMinutes: Math.ceil(wait / 60_000) };
-  lastResetAt = now;
-  await runSeed(db, { now: new Date(now) });
-  return { ok: true };
+    // Заявки, поданные из «Деканат предлагает»: удаляем вместе с уведомлениями о них.
+    // У выданной справки IssuedDocument держит заявку (onDelete: Restrict) — его первым.
+    const offered = await tx.request.findMany({
+      where: { studentId: student.id, offered: true, createdAt: { lt: before } },
+      select: { id: true, number: true },
+    });
+    if (offered.length > 0) {
+      const ids = offered.map((r) => r.id);
+      await tx.issuedDocument.deleteMany({ where: { requestId: { in: ids } } });
+      await tx.notification.deleteMany({
+        where: { studentId: student.id, link: { in: offered.map((r) => requestHref(r.number)) } },
+      });
+      await tx.request.deleteMany({ where: { id: { in: ids } } });
+    }
+
+    // «Не сейчас» по предложению — тоже назад
+    await tx.offerDismissal.deleteMany({
+      where: { studentId: student.id, createdAt: { lt: before } },
+    });
+
+    // Оценка заявки снова доступна
+    await tx.request.updateMany({
+      where: { studentId: student.id, ratedAt: { lt: before } },
+      data: { rating: null, ratingComment: null, ratedAt: null },
+    });
+  });
 }

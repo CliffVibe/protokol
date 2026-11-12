@@ -109,13 +109,11 @@ describe("номер заявки", () => {
     expect(n).toBe("С-2026-00042");
     expect(n.charCodeAt(0)).toBe(0x421);
     expect(requestNumberSchema.safeParse(n).success).toBe(true);
-    for (const bad of [
-      "C-2026-00042" /* латинская C */,
-      "С-2026-42",
-      "С-2026-00042x",
-      "../x",
-      "",
-    ]) {
+    // Набранная руками латинская C или строчная «с» — та же заявка (T14)
+    for (const typed of ["C-2026-00042", "c-2026-00042", "с-2026-00042", " С-2026-00042 "]) {
+      expect(requestNumberSchema.parse(typed), typed).toBe(n);
+    }
+    for (const bad of ["X-2026-00042", "СС-2026-00042", "С-2026-42", "С-2026-00042x", "../x", ""]) {
       expect(requestNumberSchema.safeParse(bad).success, bad).toBe(false);
     }
     expect(requestHref(n)).toBe(`/requests/${encodeURIComponent(n)}`);

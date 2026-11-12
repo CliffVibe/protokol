@@ -36,6 +36,12 @@ vi.mock("@/server/repos/auth", () => ({
   pruneThrottles: vi.fn(async () => {}),
 }));
 
+// Возврат одноразовых сценариев демо (repos/demo.ts) проверяет интеграционный тест; здесь — кому он вызывается
+const restoreSpy = vi.hoisted(() => ({ calls: [] as string[] }));
+vi.mock("@/server/repos/demo", () => ({
+  restoreDemoScenarios: vi.fn(async (userId: string) => void restoreSpy.calls.push(userId)),
+}));
+
 const verifySpy = vi.hoisted(() => ({ calls: [] as string[] }));
 vi.mock("@/server/auth/password", async (importOriginal) => {
   const orig = await importOriginal<typeof import("@/server/auth/password")>();
@@ -48,8 +54,14 @@ vi.mock("@/server/auth/password", async (importOriginal) => {
   };
 });
 
-const { authenticate, authenticateDemo, LOCK_MS, MAX_FAILURES, throttleKey } =
-  await import("@/server/services/auth");
+const {
+  authenticate,
+  authenticateDemo,
+  DEMO_LOGINS_PER_MINUTE,
+  LOCK_MS,
+  MAX_FAILURES,
+  throttleKey,
+} = await import("@/server/services/auth");
 
 const PASS = "correct-horse-battery-test";
 const IP = "203.0.113.7";
@@ -190,21 +202,43 @@ describe("блокировка по «логин + IP»", () => {
 
 describe("демо-вход", () => {
   it("без DEMO_MODE=1 — отказ даже для демо-логина", async () => {
+    const invalid = { ok: false, reason: "invalid" };
     vi.stubEnv("DEMO_MODE", "");
-    expect(await authenticateDemo({ login: "student.alisa" })).toEqual({ ok: false });
+    expect(await authenticateDemo({ login: "student.alisa" })).toEqual(invalid);
     vi.stubEnv("DEMO_MODE", "true");
-    expect(await authenticateDemo({ login: "student.alisa" })).toEqual({ ok: false });
+    expect(await authenticateDemo({ login: "student.alisa" })).toEqual(invalid);
   });
 
-  it("при DEMO_MODE=1 — только логины из фиксированного списка", async () => {
+  it("при DEMO_MODE=1 — только логины из фиксированного списка; студенту возвращаются сценарии", async () => {
     vi.stubEnv("DEMO_MODE", "1");
-    expect(await authenticateDemo({ login: "student.alisa" })).toEqual({
+    restoreSpy.calls.length = 0;
+    expect(await authenticateDemo({ login: "student.alisa" }, "198.51.100.1")).toEqual({
       ok: true,
       userId: "u-alisa",
       role: "STUDENT",
     });
+    expect(restoreSpy.calls).toEqual(["u-alisa"]);
     store.users.set("student.bg1", { id: "u-bg", role: "STUDENT", passwordHash: "x" });
-    expect(await authenticateDemo({ login: "student.bg1" })).toEqual({ ok: false });
-    expect(await authenticateDemo({ login: null })).toEqual({ ok: false });
+    const invalid = { ok: false, reason: "invalid" };
+    expect(await authenticateDemo({ login: "student.bg1" }, "198.51.100.1")).toEqual(invalid);
+    expect(await authenticateDemo({ login: null }, "198.51.100.1")).toEqual(invalid);
+    expect(restoreSpy.calls).toEqual(["u-alisa"]);
+  });
+
+  it("не больше DEMO_LOGINS_PER_MINUTE входов в минуту с одного IP, потом — «подождите»", async () => {
+    vi.stubEnv("DEMO_MODE", "1");
+    const t0 = new Date("2026-11-12T10:00:00Z");
+    const ip = "198.51.100.77";
+    for (let i = 0; i < DEMO_LOGINS_PER_MINUTE; i++) {
+      expect((await authenticateDemo({ login: "student.alisa" }, ip, t0)).ok).toBe(true);
+    }
+    expect(await authenticateDemo({ login: "student.alisa" }, ip, t0)).toEqual({
+      ok: false,
+      reason: "wait",
+    });
+    // Другой IP не задет, а через минуту — снова можно
+    expect((await authenticateDemo({ login: "student.alisa" }, "198.51.100.78", t0)).ok).toBe(true);
+    const later = new Date(t0.getTime() + 61_000);
+    expect((await authenticateDemo({ login: "student.alisa" }, ip, later)).ok).toBe(true);
   });
 });

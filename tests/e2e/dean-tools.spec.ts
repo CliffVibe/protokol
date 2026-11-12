@@ -24,10 +24,13 @@ const asIrina = async (browser: Browser) =>
 const overflow = (page: Page) =>
   page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
 
-const seriousAxe = async (page: Page) =>
-  (await new AxeBuilder({ page }).analyze()).violations.filter(
+const seriousAxe = async (page: Page) => {
+  // <title> приходит потоком вместе с метаданными: без ожидания axe изредка успевал раньше (12.11, флак)
+  await expect(page).toHaveTitle(/\S/);
+  return (await new AxeBuilder({ page }).analyze()).violations.filter(
     (v) => v.impact === "serious" || v.impact === "critical",
   );
+};
 
 /** Алиса подаёт «Справку об обучении» с уникальным «Куда предоставляется» → номер. */
 async function submitStudy(page: Page) {

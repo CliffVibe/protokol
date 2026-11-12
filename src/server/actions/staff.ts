@@ -1,9 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { requireStaff } from "@/server/auth/guards";
-import { resetDemoData } from "@/server/repos/demo";
 import { plural } from "@/lib/dates";
 import { batchDone } from "@/lib/reply-templates";
 import {
@@ -121,23 +120,6 @@ export async function revokeDocumentAction(
 
   revalidatePath(staffRequestHref(number.data));
   return { ok: true };
-}
-
-export type ResetState = { error?: string };
-
-/**
- * «Сбросить демо» — только сотрудник и только при DEMO_MODE=1. Пересев очищает и сессии,
- * поэтому дальше — на вход.
- */
-export async function resetDemoAction(): Promise<ResetState> {
-  const ctx = await requireStaff();
-  if (process.env.DEMO_MODE !== "1") notFound();
-  const result = await resetDemoData(ctx);
-  if (!result.ok)
-    return {
-      error: `Демо сбросили совсем недавно — повторить можно через ${result.retryInMinutes} мин.`,
-    };
-  redirect("/login");
 }
 
 export type DraftState = { text?: string; notice?: string; error?: string };

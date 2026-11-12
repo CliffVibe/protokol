@@ -95,8 +95,20 @@ export function formatRequestNumber(year: number, seq: number): string {
   return `С-${year}-${String(seq).padStart(5, "0")}`;
 }
 
+/**
+ * Буква номера, какой её наберут руками: латинская C или строчная «с» — та же кириллическая «С»
+ * (T14, оценка «глазами жюри»: номер с латинской C давал 404 на собственную заявку, и проверка изоляции
+ * подстановкой номера выглядела бы так, будто 404 показывают всегда).
+ */
+export function normalizeRequestNumber(value: string): string {
+  return value.replace(/^[СCсc](?=-)/u, "С");
+}
+
 /** Номер из адреса: только формат (чей — решает репозиторий, S1). */
-export const requestNumberSchema = z.string().regex(/^С-\d{4}-\d{5,9}$/);
+export const requestNumberSchema = z.preprocess(
+  (v) => (typeof v === "string" ? normalizeRequestNumber(v.trim()) : v),
+  z.string().regex(/^С-\d{4}-\d{5,9}$/),
+);
 
 // ── Статусы ──
 
@@ -232,10 +244,10 @@ export function overdueDays(
 export const BATCH_MAX = 50;
 const batchPickSchema = z
   .string()
-  .regex(/^С-\d{4}-\d{5,9}\|(SUBMITTED|ACCEPTED|IN_PROGRESS|READY)$/)
+  .regex(/^[СCсc]-\d{4}-\d{5,9}\|(SUBMITTED|ACCEPTED|IN_PROGRESS|READY)$/u)
   .transform((s) => {
     const [number, from] = s.split("|") as [string, RequestStatus];
-    return { number, from };
+    return { number: normalizeRequestNumber(number), from };
   });
 
 export const batchFormSchema = z
