@@ -207,8 +207,9 @@ export async function getQueue(ctx: StaffCtx, filters: QueueFilters, now: Date) 
       dueAt: dueDate(r.createdAt, r.type.slaDays),
       overdue: overdueDays({ ...r, slaDays: r.type.slaDays }, now),
     }))
-    // Просроченные первыми, дальше — по сроку
-    .sort((a, b) => b.overdue - a.overdue || +a.dueAt - +b.dueAt);
+    // Просроченные первыми, дальше — по сроку. «Выдано автоматически» (T14+) — как отдал репозиторий:
+    // свежие сверху, срок у выданных не важен
+    .sort((a, b) => (filters.autoIssued ? 0 : b.overdue - a.overdue || +a.dueAt - +b.dueAt));
   return { items, ...options };
 }
 

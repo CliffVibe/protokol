@@ -131,6 +131,10 @@ describe.skipIf(!url)("автовыдача справки в PostgreSQL", async
       now,
     );
     expect(items.every((i) => i.autoIssued)).toBe(true);
+    // Свежие сверху: справки Алисы из тестов выше — новее справок сида
+    expect(items[0]!.student.lastName).toBe("Петрова");
+    const created = items.map((i) => +i.createdAt);
+    expect(created).toEqual([...created].sort((x, y) => y - x));
     expect(items.map((i) => i.student.lastName)).not.toContain("Демидов");
     expect(b.autoIssued).toBe(items.length);
     // Положительный контроль: справка Демидова (МЖ) в базе есть — Ирина её просто не видит

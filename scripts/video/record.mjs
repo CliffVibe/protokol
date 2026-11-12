@@ -263,7 +263,8 @@ let visaNumber;
       .getByRole("link", { name: "Справка об обучении на английском" }),
   );
   await pause(1000);
-  await type(a.page.getByLabel(/Addressee/), "Embassy of France");
+  // Свой адресат — справку проверит сотрудник (с T14+ типовую справку выдают сразу — это сцена 12)
+  await type(a.page.getByLabel(/Кому адресована/), "Embassy of France");
   await pause(600);
   await tap(a.page, a.page.getByRole("button", { name: "Отправить заявку" }));
   await a.page.waitForURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
@@ -309,6 +310,45 @@ let visaNumber;
   await pause(7000);
   await scrollBy(s.page, 300, 3000);
   await finish(s);
+}
+
+// ── 12 (в ролике — после 5). «Справка за 10 секунд»: Алиса получает справку сразу, у Ирины — счётчик ──
+{
+  const a = await sceneContext("s12-phone", PHONE, alisa);
+  const i = await sceneContext("s12-desk", DESK, irina);
+  await Promise.all([a.page.goto(`${BASE}/requests/new`), i.page.goto(`${BASE}/staff`)]);
+  ready(a);
+  ready(i);
+  await pause(1500);
+  await tap(a.page, a.page.getByRole("link", { name: /^Работа/ }));
+  await pause(1500);
+  await tap(
+    a.page,
+    a.page
+      .getByRole("list", { name: "Справки для цели «Работа»" })
+      .getByRole("link", { name: "Справка об обучении", exact: true }),
+  );
+  await pause(1200);
+  // Под голос: подсказка — пока звучит «данные уже есть в базе», мятный блок — всю фразу «готова сразу»
+  await glide(a.page, a.page.getByText(/обычно выдаём сразу/), 4500);
+  await tap(a.page, a.page.getByRole("button", { name: "Отправить заявку" }));
+  await a.page.waitForURL(/\/requests\/%D0%A1-\d{4}-\d{5}$/);
+  await pause(6500);
+  await tap(a.page, a.page.getByRole("link", { name: /Проверить подлинность/ }));
+  await a.page.waitForURL(/\/verify\//);
+  await pause(2500);
+  // Ирина: сводка дня обновилась — строка «Автоматически выдано…» → вкладка, справка Алисы сверху
+  await i.page.reload();
+  await pause(1200);
+  const line = i.page
+    .getByRole("region", { name: "Главное на сегодня" })
+    .getByRole("link", { name: /Автоматически выдано/ });
+  await glide(i.page, line, 2000);
+  await tap(i.page, line);
+  await i.page.waitForURL(/status=auto/);
+  await pause(4000);
+  await finish(a);
+  await finish(i);
 }
 
 // ── 6. Деканат: пачка + база ответов ──
