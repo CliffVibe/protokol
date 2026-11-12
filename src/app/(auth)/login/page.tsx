@@ -59,8 +59,9 @@ export default async function LoginPage({
             variant="outline"
             className="h-auto min-h-11 py-2 whitespace-normal lg:hidden"
           >
+            {/* Подпись — что делает ссылка: ведёт к кнопкам «Войти как…», а не входит сама (ux-reviewer) */}
             <a href="#demo-title">
-              Войти в демо одним нажатием
+              Демо-вход без пароля
               <ArrowDown aria-hidden className="size-4 shrink-0" />
             </a>
           </Button>

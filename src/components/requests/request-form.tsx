@@ -10,6 +10,7 @@ import { FormAlert } from "@/components/form-alert";
 import { FormField } from "@/components/form-field";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { mskDateKey } from "@/lib/msk";
 import { submitRequestAction, type SubmitState } from "@/server/actions/requests";
 import type { FieldSpec } from "@/server/services/request-rules";
 
@@ -99,6 +100,8 @@ export function RequestForm({
                       {...control}
                       id={id}
                       type="date"
+                      // Прошлые даты календарь не предлагает; порядок выезд ≤ возвращение проверит сервер
+                      min={mskDateKey(new Date())}
                       name={`f.${f.name}.${part}`}
                       defaultValue={state.values?.[`${f.name}.${part}`]}
                       required={f.required}

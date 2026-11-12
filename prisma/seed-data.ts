@@ -420,7 +420,7 @@ const REQUEST_TYPES = [
         label: "Даты поездки",
         type: "dates",
         required: true,
-        hint: "Как в заявлении на визу",
+        hint: "Если даты ещё не точны — укажите примерные",
       },
     ],
   },

@@ -3,7 +3,15 @@
 import Link from "next/link";
 import type { Route } from "next";
 import { CircleCheck, CircleX } from "lucide-react";
-import { formatDayMonth, formatDayRange, formatInDays, formatTime, plural } from "@/lib/dates";
+import {
+  formatDayMonth,
+  formatDayRange,
+  formatInDays,
+  formatRelativeDay,
+  formatTime,
+  plural,
+} from "@/lib/dates";
+import { mskStartOfDay } from "@/lib/msk";
 import type { GradeRow, SessionSummary, StudySummary } from "@/server/services/academics";
 import { ASSESSMENT_KIND, ASSESSMENT_PLURAL, resultLabel } from "./labels";
 import { disciplineHref } from "./discipline-row";
@@ -71,7 +79,11 @@ export function GradesSummary({
                   {/* Будущая дата у долга — назначенная пересдача (сид: Тимур, T14) */}
                   {g.examDate && g.examDate >= now ? (
                     <span className="text-sm font-bold text-ink">
-                      Пересдача — {formatDayMonth(g.examDate)}, {formatTime(g.examDate)}
+                      {/* Человеческая дата: день недели и «через N дней» (04-design, ux-reviewer T14) */}
+                      Пересдача — {formatRelativeDay(g.examDate, now)}, {formatTime(g.examDate)},{" "}
+                      {formatInDays(
+                        Math.round((+mskStartOfDay(g.examDate) - +mskStartOfDay(now)) / 86_400_000),
+                      )}
                     </span>
                   ) : null}
                 </li>
@@ -118,7 +130,9 @@ function SessionLine({ session, now }: { session: SessionSummary; now: Date }) {
       </p>
       {session.next ? (
         <p>
-          Ближайшее — {ASSESSMENT_KIND[session.next.kind].toLowerCase()} «{session.next.name}»,{" "}
+          {/* «в сессии»: пересдача долга может быть раньше — она выше, у самого долга (ux-reviewer, T14) */}
+          Ближайшее в сессии — {ASSESSMENT_KIND[session.next.kind].toLowerCase()} «
+          {session.next.name}»,{" "}
           <span className="font-bold">{formatInDays(session.next.inDays)}</span> (
           {formatDayMonth(session.next.at)}, {formatTime(session.next.at)}).
         </p>

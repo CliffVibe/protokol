@@ -37,7 +37,8 @@ export async function login(_prev: LoginState, formData: FormData): Promise<Logi
 export async function demoLogin(formData: FormData): Promise<void> {
   const ip = clientIpFrom((await headers()).get("x-forwarded-for"));
   const result = await authenticateDemo({ login: formData.get("login") }, ip);
-  if (!result.ok) redirect(result.reason === "wait" ? "/login?demo=wait" : "/login");
+  // #demo-title — сообщение стоит в демо-блоке, а он на телефоне ниже формы (ux-reviewer, T14)
+  if (!result.ok) redirect(result.reason === "wait" ? "/login?demo=wait#demo-title" : "/login");
   await createSession(result.userId);
   redirect(homeFor(result.role));
 }

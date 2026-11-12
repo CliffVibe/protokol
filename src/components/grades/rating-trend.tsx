@@ -30,16 +30,8 @@ export function RatingTrend({ points, current }: { points: TrendPoint[]; current
       <h2 id="trend-title" className="font-heading text-lg font-semibold text-ink">
         Средний рейтинг по семестрам
       </h2>
-      <svg
-        viewBox={`0 0 ${W} ${H}`}
-        className="h-auto w-full max-w-md text-ink-muted"
-        role="img"
-        aria-labelledby="trend-title trend-desc"
-      >
-        <desc id="trend-desc">
-          {points.map((p) => `${p.semester}-й семестр — ${p.average}`).join(", ")}. Порог стипендии
-          — {SCHOLARSHIP_MIN_RATING}.
-        </desc>
+      {/* Читалке — таблица ниже; сам график скрыт, чтобы данные не звучали дважды (ux-reviewer, T14) */}
+      <svg aria-hidden viewBox={`0 0 ${W} ${H}`} className="h-auto w-full max-w-md text-ink-muted">
         {/* Базовая линия и порог стипендии — тихие, данные громче */}
         <line x1={0} x2={W} y1={y(0)} y2={y(0)} className="stroke-line" strokeWidth={1} />
         <line
@@ -64,25 +56,27 @@ export function RatingTrend({ points, current }: { points: TrendPoint[]; current
               </title>
               {/* Невидимая цель наведения на всю колонку */}
               <rect x={slot * i} y={TOP} width={slot} height={PLOT} fill="transparent" />
-              {/* Столбец со скруглённым верхом у данных и прямым низом у базовой линии; текущий — светлее:
-                  рейтинг ещё набирается */}
+              {/* Столбец со скруглённым верхом у данных и прямым низом у базовой линии. Текущий — контуром:
+                  рейтинг ещё набирается; отличим без цвета и одинаков в обеих темах (прозрачность давала
+                  2,4–2,6:1 к фону и в тёмной теме выглядела темнее — ux-reviewer, T14) */}
               <path
                 d={`M${cx - bar / 2},${y(0)} V${top + 4} q0,-4 4,-4 H${cx + bar / 2 - 4} q4,0 4,4 V${y(0)} Z`}
-                className="fill-brand"
-                opacity={isCurrent ? 0.45 : 1}
+                className={isCurrent ? "fill-transparent stroke-brand" : "fill-brand"}
+                strokeWidth={isCurrent ? 2 : 0}
+                strokeDasharray={isCurrent ? "5 3" : undefined}
               />
               <text
                 x={cx}
                 y={top - 6}
                 textAnchor="middle"
                 className="fill-ink tabular"
-                fontSize={12}
+                fontSize={13}
                 fontWeight={700}
               >
                 {p.average}
               </text>
-              <text x={cx} y={H - 8} textAnchor="middle" className="fill-current" fontSize={11}>
-                {isCurrent ? `${p.semester} · сейчас` : `${p.semester} сем.`}
+              <text x={cx} y={H - 8} textAnchor="middle" className="fill-current" fontSize={12}>
+                {isCurrent ? `${p.semester} (сейчас)` : `${p.semester} сем.`}
               </text>
             </g>
           );
@@ -92,7 +86,7 @@ export function RatingTrend({ points, current }: { points: TrendPoint[]; current
         <svg viewBox="0 0 24 4" className="h-1 w-6 shrink-0 text-ink-muted">
           <line x1={0} x2={24} y1={2} y2={2} className="stroke-current" strokeDasharray="3 4" />
         </svg>
-        {SCHOLARSHIP_MIN_RATING} — порог стипендии; бледный столбец — текущий семестр, рейтинг
+        {SCHOLARSHIP_MIN_RATING} — порог стипендии; столбец контуром — текущий семестр, рейтинг
         набирается
       </p>
       {/* Таблица — для читалки. sr-only на обёртке, а не на <table>: у таблицы width 1px не действует,

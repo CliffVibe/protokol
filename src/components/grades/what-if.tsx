@@ -7,7 +7,7 @@
 // Радио неуправляемые, выбор читается из самой формы: касание до гидратации (медленный телефон) уже
 // отметило кнопку в DOM — при монтировании форма прочитается, и итог совпадёт с видимым выбором.
 import { useEffect, useMemo, useRef, useState } from "react";
-import { ShieldAlert, ShieldCheck } from "lucide-react";
+import { ShieldCheck, ShieldX } from "lucide-react";
 import { StatusChip } from "@/components/status-chip";
 import { Button } from "@/components/ui/button";
 import { plural } from "@/lib/dates";
@@ -250,7 +250,8 @@ function OutcomeChip({ kept }: { kept: boolean }) {
       {KEPT}
     </StatusChip>
   ) : (
-    <StatusChip tone="warn" icon={ShieldAlert} className="self-start">
+    // Прогноз «не назначат» — тот же статус, что «Стипендия не назначена» выше: danger и ShieldX (ux-reviewer, T14)
+    <StatusChip tone="danger" icon={ShieldX} className="self-start">
       {THREAT}
     </StatusChip>
   );

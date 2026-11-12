@@ -115,10 +115,11 @@ test.describe("05-security: обязательные тесты", () => {
     await expect(page.getByRole("heading", { name: "Очередь заявок" })).toHaveCount(0);
   });
 
-  test("3а. Студент открывает /staff/announcements и /staff/schedule → не видит кабинет (T09)", async ({
+  test("3а. Студент открывает /staff/announcements, /staff/schedule, /staff/answers → не видит кабинет", async ({
     page,
   }) => {
-    for (const route of ["/staff/announcements", "/staff/schedule"]) {
+    // /staff/answers — база ответов (T14+, замечание security-reviewer 12.11)
+    for (const route of ["/staff/announcements", "/staff/schedule", "/staff/answers"]) {
       const res = await page.goto(route);
       expect(res?.status(), route).toBeLessThan(500);
       await expect(page, route).toHaveURL(/\/$/);
@@ -523,7 +524,7 @@ test.describe("вход и сессии (T03)", () => {
     await page.keyboard.press("Tab"); // «Перейти к содержимому»
     await page.keyboard.press("Tab");
     // На телефоне до формы есть «Войти в демо одним нажатием» (T14) — ещё один шаг
-    if (await page.getByRole("link", { name: /Войти в демо/ }).isVisible())
+    if (await page.getByRole("link", { name: /Демо-вход без пароля/ }).isVisible())
       await page.keyboard.press("Tab");
     const login = page.getByLabel("Логин");
     await expect(login).toBeFocused();
