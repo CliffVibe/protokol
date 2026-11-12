@@ -150,7 +150,6 @@ export default async function NewRequestPage({ searchParams }: PageProps<"/reque
           />
         ) : (
           <EmptyState
-            stampPlace
             title="Под эту цель справок пока нет"
             description="Посмотрите полный список — возможно, подойдёт другая."
             action={

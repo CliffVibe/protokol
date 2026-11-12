@@ -1,6 +1,11 @@
 // Чистые части входа: токен сессии, флаги cookie, IP клиента, CSP, демо-аккаунты.
 import { describe, expect, it } from "vitest";
-import { DEMO_ACCOUNTS, DEMO_LOGINS, DEMO_SCENARIOS } from "@/lib/demo-accounts";
+import {
+  alisaSampleRequestNumber,
+  DEMO_ACCOUNTS,
+  DEMO_LOGINS,
+  demoScenarios,
+} from "@/lib/demo-accounts";
 import { clientIpFrom } from "@/lib/client-ip";
 import {
   SESSION_COOKIE,
@@ -11,7 +16,7 @@ import {
   isWellFormedToken,
 } from "@/server/auth/tokens";
 import { buildCsp } from "@/proxy";
-import { DEMO } from "../../prisma/seed-data";
+import { buildSeed, DEMO } from "../../prisma/seed-data";
 
 describe("токен сессии (S3)", () => {
   it("32 случайных байта в base64url, каждый раз новый", () => {
@@ -98,7 +103,12 @@ describe("демо-аккаунты", () => {
     );
     expect(DEMO_ACCOUNTS.map((a) => a.login)).toEqual([...DEMO_LOGINS]);
   });
-  it("ровно 6 сценариев — как в 01-concept", () => {
-    expect(DEMO_SCENARIOS).toHaveLength(6);
+  it("ровно 6 сценариев — как в 01-concept; в «Изоляции» — настоящий номер первой заявки Алисы", () => {
+    const now = new Date();
+    const scenarios = demoScenarios(now);
+    expect(scenarios).toHaveLength(6);
+    const first = buildSeed(now).requests.find((r) => r.studentId === DEMO.alisa.studentId);
+    expect(first?.number).toBe(alisaSampleRequestNumber(now));
+    expect(scenarios.at(-1)?.how).toContain(`/requests/${first?.number}`);
   });
 });

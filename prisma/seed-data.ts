@@ -418,10 +418,9 @@ const REQUEST_TYPES = [
       {
         name: "tripDates",
         label: "Даты поездки",
-        type: "text",
+        type: "dates",
         required: true,
-        maxLength: 80,
-        hint: "Например: с 12.01.2027 по 26.01.2027",
+        hint: "Как в заявлении на визу",
       },
     ],
   },
@@ -1404,7 +1403,7 @@ function buildRequests({
     studentKey: "koroleva",
     type: "embassy",
     language: "en",
-    payload: { country: "Италия", tripDates: "28.12 — 08.01" },
+    payload: { country: "Италия", tripDates: "с 28.12.2026 по 08.01.2027" },
     steps: [
       { status: "SUBMITTED", dayOffset: -2, time: "18:10" },
       { status: "IN_PROGRESS", dayOffset: -1, time: "09:45" },
@@ -1551,7 +1550,7 @@ function buildRequests({
     studentKey: "savelev",
     type: "embassy",
     language: "en",
-    payload: { country: "Франция", tripDates: "02.01 — 09.01" },
+    payload: { country: "Франция", tripDates: "с 02.01.2027 по 09.01.2027" },
     steps: [
       { status: "SUBMITTED", dayOffset: -12, time: "11:25" },
       { status: "ACCEPTED", dayOffset: -12, time: "15:00" },

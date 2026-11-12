@@ -259,7 +259,6 @@ export default async function DevUiPage() {
               </Panel>
               <Panel label="Пусто с действием">
                 <EmptyState
-                  stampPlace
                   title="Заявок пока нет — закажите первую справку"
                   action={
                     <Button asChild>

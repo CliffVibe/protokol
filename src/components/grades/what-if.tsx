@@ -46,7 +46,9 @@ const PICK_BY_VALUE = new Map(
 const fieldName = (disciplineId: string) => `what-if-${disciplineId}`;
 
 const KEPT = "После сессии стипендия сохранится";
-const THREAT = "После сессии стипендия под угрозой";
+// Прогноз на следующий семестр: долг или тройка в этой сессии — стипендию не назначат (T14: «под угрозой»
+// осталось только для рейтинга текущего семестра, в прогнозе его ещё нет)
+const THREAT = "После сессии стипендию не назначат";
 
 /** «Без выбора 3 дисциплины: считаем, что сдадите их на 4 и выше». */
 function unpickedText(unpicked: number, picked: number): string {

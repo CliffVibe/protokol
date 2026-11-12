@@ -28,7 +28,6 @@ export default async function RequestsPage() {
       <div className="flex flex-col gap-6">
         <PageHeader title="Заявки" />
         <EmptyState
-          stampPlace
           title="Заявок пока нет — закажите первую справку"
           description="Справки и заявления — как заказ с доставкой: видно, на каком шаге и когда будет готово."
           action={order}

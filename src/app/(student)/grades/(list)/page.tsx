@@ -4,6 +4,7 @@ import { PageHeader } from "@/components/page-header";
 import { DisciplineRow } from "@/components/grades/discipline-row";
 import { SemesterTabs } from "@/components/grades/semester-tabs";
 import { GradesSummary } from "@/components/grades/summary";
+import { RatingTrend } from "@/components/grades/rating-trend";
 import { WhatIf } from "@/components/grades/what-if";
 import { parseSemesterParam } from "@/lib/grades-params";
 import { isPending } from "@/lib/scholarship";
@@ -48,6 +49,11 @@ export default async function GradesPage({ searchParams }: PageProps<"/grades">)
     grades.filter((g) => g.semester === current),
     now,
   );
+  // Динамика: средний рейтинг каждого семестра по возрастанию (у текущего — набирается)
+  const trend = [...semesters].reverse().flatMap((s) => {
+    const avg = averageRating(grades.filter((g) => g.semester === s));
+    return avg === null ? [] : [{ semester: s, average: avg }];
+  });
 
   // ≥ 1024: слева семестры и дисциплины, справа «Как у меня дела» (sticky), как «Изменения недели».
   // В DOM сводка первая: на телефоне ответ сверху; порядок Tab — решение человека 06.11 (как в T05/T06).
@@ -100,6 +106,7 @@ export default async function GradesPage({ searchParams }: PageProps<"/grades">)
               В этом семестре оценок нет.
             </p>
           )}
+          <RatingTrend points={trend} current={current} />
           {isCurrent && whatIf ? <WhatIf grades={grades} semester={current} /> : null}
         </section>
       </div>

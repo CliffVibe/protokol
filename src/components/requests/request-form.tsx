@@ -81,7 +81,32 @@ export function RequestForm({
           error={errors[f.name]}
         >
           {(control) =>
-            f.type === "text" ? (
+            f.type === "dates" ? (
+              // Две даты вместо свободного текста (T14). У первого поля две подписи — «Даты поездки» и «Выезд»:
+              // читалка назовёт оба. Сервер соберёт «с … по …» и проверит порядок и прошлое
+              <div className="flex flex-wrap gap-3">
+                {(
+                  [
+                    ["from", "Выезд", control.id],
+                    ["to", "Возвращение", `${control.id}-to`],
+                  ] as const
+                ).map(([part, label, id]) => (
+                  <div key={part} className="flex min-w-[min(10rem,100%)] flex-1 flex-col gap-1">
+                    <label htmlFor={id} className="text-sm text-ink-muted">
+                      {label}
+                    </label>
+                    <Input
+                      {...control}
+                      id={id}
+                      type="date"
+                      name={`f.${f.name}.${part}`}
+                      defaultValue={state.values?.[`${f.name}.${part}`]}
+                      required={f.required}
+                    />
+                  </div>
+                ))}
+              </div>
+            ) : f.type === "text" ? (
               <Input
                 {...control}
                 name={`f.${f.name}`}

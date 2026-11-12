@@ -22,7 +22,7 @@ test("Алиса: экзамен на 3 — стипендия под угроз
   const name = (await exam.first().locator("legend").textContent())!.trim();
   await option(exam.first(), /^3/).click();
 
-  await expect(result).toContainText("После сессии стипендия под угрозой");
+  await expect(result).toContainText("После сессии стипендию не назначат");
   await expect(result).toContainText(`Оценка 3: ${name}`);
   // Пока есть невыбранные — средний «по выбранным», чтобы не спорить с допущением «остальные на 4+»
   await expect(result).toContainText("Средний балл по выбранным: 3");
@@ -67,7 +67,7 @@ test("Тимур: старый долг не исчезает от пятёро�
     await option(group, (await five.count()) ? /^5/ : /^Зачтено$/).click();
   }
   const result = section.getByRole("status");
-  await expect(result).toContainText("После сессии стипендия под угрозой");
+  await expect(result).toContainText("После сессии стипендию не назначат");
   await expect(result).toContainText("Долг:");
   await expect(result).toContainText("Средний балл сессии: 5");
 });

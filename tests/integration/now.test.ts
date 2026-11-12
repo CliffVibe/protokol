@@ -35,7 +35,10 @@ describe.skipIf(!url)("лента «Сейчас» в PostgreSQL", async () => {
   it("Алиса: перенос сегодня, заявка «Готова», стипендия сохраняется", async () => {
     const { feed } = await feedOf(DEMO.alisa.userId);
     expect(feed.firstName).toBe("Алиса");
-    expect(feed.changes.some((l) => l.change === "MOVED")).toBe(true);
+    // Перенос виден: в «Изменениях» или — если это ближайшая пара — в её карточке (дубль убран, T14)
+    const moved = [...feed.changes, ...(feed.next ? [feed.next.lesson] : [])];
+    expect(moved.some((l) => l.change === "MOVED")).toBe(true);
+    if (feed.next) expect(feed.changes.map((l) => l.id)).not.toContain(feed.next.lesson.id);
     expect(feed.requests[0]?.status).toBe("READY");
     expect(feed.study?.scholarship).toEqual({ kept: true });
     expect(feed.next).not.toBeNull();

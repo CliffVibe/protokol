@@ -30,6 +30,16 @@ export const fieldSpecSchema = z.discriminatedUnion("type", [
     required: z.boolean(),
     options: z.array(z.string().min(1).max(80)).min(1).max(20),
   }),
+  // Две даты — «Выезд» и «Возвращение» (T14, оценка «глазами жюри»: «Даты поездки» были свободным текстом).
+  // Форма шлёт f.<name>.from и f.<name>.to (ГГГГ-ММ-ДД), в заявку сохраняется строка «с ДД.ММ.ГГГГ по ДД.ММ.ГГГГ» —
+  // PDF, карточки и сотрудник видят то же, что раньше
+  z.object({
+    name: fieldName,
+    label: fieldLabel,
+    hint: fieldHint,
+    type: z.literal("dates"),
+    required: z.boolean(),
+  }),
 ]);
 export type FieldSpec = z.infer<typeof fieldSpecSchema>;
 
@@ -52,7 +62,66 @@ const emptyToUndefined = (v: unknown) => {
   return t === "" ? undefined : t;
 };
 
-function fieldSchema(f: FieldSpec): z.ZodType {
+const ISO_DATE = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+/** «2027-01-12» → «12.01.2027»; null — не дата или несуществующая (31.02). */
+function isoToRu(v: unknown): string | null {
+  if (typeof v !== "string") return null;
+  const m = ISO_DATE.exec(v.trim());
+  if (!m) return null;
+  const [, y, mo, d] = m;
+  const date = new Date(Date.UTC(Number(y), Number(mo) - 1, Number(d)));
+  if (date.getUTCMonth() !== Number(mo) - 1 || date.getUTCDate() !== Number(d)) return null;
+  return `${d}.${mo}.${y}`;
+}
+
+/** Две даты поездки → «с 12.01.2027 по 26.01.2027». Ошибка — у поля целиком (путь без from/to). */
+function datesSchema(today: string) {
+  return z
+    .object({ from: z.unknown().optional(), to: z.unknown().optional() })
+    .transform((v, ctx) => {
+      const from = isoToRu(v.from);
+      const to = isoToRu(v.to);
+      if (!from || !to) {
+        ctx.addIssue({ code: "custom", message: "Укажите даты выезда и возвращения" });
+        return z.NEVER;
+      }
+      const a = String(v.from).trim();
+      const b = String(v.to).trim();
+      if (b < a) {
+        ctx.addIssue({ code: "custom", message: "Возвращение — не раньше выезда" });
+        return z.NEVER;
+      }
+      if (a < today) {
+        ctx.addIssue({ code: "custom", message: "Дата выезда уже прошла" });
+        return z.NEVER;
+      }
+      return `с ${from} по ${to}`;
+    });
+}
+
+/** Поля-даты приходят парой f.<name>.from / f.<name>.to — собираем в объект до проверки. */
+function combineDates(fields: FieldSpec[], payload: unknown): unknown {
+  if (typeof payload !== "object" || payload === null) return payload;
+  const out: Record<string, unknown> = { ...(payload as Record<string, unknown>) };
+  for (const f of fields) {
+    if (f.type !== "dates") continue;
+    const from = out[`${f.name}.from`];
+    const to = out[`${f.name}.to`];
+    delete out[`${f.name}.from`];
+    delete out[`${f.name}.to`];
+    const empty = (x: unknown) => x === undefined || (typeof x === "string" && x.trim() === "");
+    out[f.name] = empty(from) && empty(to) ? undefined : { from, to };
+  }
+  return out;
+}
+
+function fieldSchema(f: FieldSpec, today: string): z.ZodType {
+  if (f.type === "dates") {
+    const value = datesSchema(today);
+    // Обязательное и пустое — та же ошибка «Укажите даты…» (from/to нет)
+    return f.required ? z.preprocess((v) => v ?? {}, value) : value.optional();
+  }
   const value =
     f.type === "text"
       ? z
@@ -69,9 +138,14 @@ function fieldSchema(f: FieldSpec): z.ZodType {
  * zod-схема заявки по описанию полей и языкам типа. Строится на сервере: клиент получает только
  * описание для отрисовки. Лишние поля отбрасываются, пустые необязательные — не сохраняются.
  */
-export function buildPayloadSchema(fields: FieldSpec[], languages: string[]) {
+export function buildPayloadSchema(
+  fields: FieldSpec[],
+  languages: string[],
+  /** Сегодня по Москве, ГГГГ-ММ-ДД — для «дата выезда уже прошла» (параметр — ради тестов) */
+  today = mskDateKey(new Date()),
+) {
   const shape: Record<string, z.ZodType> = {};
-  for (const f of fields) shape[f.name] = fieldSchema(f);
+  for (const f of fields) shape[f.name] = fieldSchema(f, today);
   const [first, ...rest] = languages;
   const language = first
     ? z.preprocess(
@@ -79,7 +153,8 @@ export function buildPayloadSchema(fields: FieldSpec[], languages: string[]) {
         z.enum([first, ...rest] as [string, ...string[]], { error: "Выберите язык справки" }),
       )
     : z.never();
-  return z.object({ language, payload: z.object(shape) }).transform(({ language, payload }) => ({
+  const payloadSchema = z.preprocess((p) => combineDates(fields, p), z.object(shape));
+  return z.object({ language, payload: payloadSchema }).transform(({ language, payload }) => ({
     language,
     // Только заполненные поля — как Record<string, string>
     payload: Object.fromEntries(

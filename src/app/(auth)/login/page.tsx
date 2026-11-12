@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { ArrowDown } from "lucide-react";
+import { Button } from "@/components/ui/button";
 import { ConceptBanner } from "@/components/concept-banner";
 import { LogoMark } from "@/components/logo-mark";
 import { ClearOfflineData } from "@/components/pwa/clear-offline-data";
-import { DEMO_ACCOUNTS, DEMO_SCENARIOS } from "@/lib/demo-accounts";
+import { DEMO_ACCOUNTS, demoScenarios } from "@/lib/demo-accounts";
 import { demoLogin } from "@/server/actions/auth";
 import { homeFor } from "@/server/auth/guards";
 import { getSession } from "@/server/auth/session";
@@ -48,6 +50,21 @@ export default async function LoginPage({
         <ConceptBanner />
         {/* После выхода — стереть офлайн-копию расписания (T11): общий компьютер */}
         <ClearOfflineData />
+
+        {/* На телефоне демо-кнопки — ниже формы, за первым экраном (оценка «глазами жюри», T14): заметная
+            ссылка к ним сразу под плашкой. С lg демо-блок стоит колонкой рядом — ссылка не нужна */}
+        {demo ? (
+          <Button
+            asChild
+            variant="outline"
+            className="h-auto min-h-11 py-2 whitespace-normal lg:hidden"
+          >
+            <a href="#demo-title">
+              Войти в демо одним нажатием
+              <ArrowDown aria-hidden className="size-4 shrink-0" />
+            </a>
+          </Button>
+        ) : null}
 
         <LoginForm />
 
@@ -112,12 +129,13 @@ function DemoPanel({ wait }: { wait: boolean }) {
       <div className="flex flex-col gap-3">
         <h2 className="font-heading text-lg font-semibold text-ink">6 сценариев для проверки</h2>
         <ol className="flex flex-col divide-y divide-line border-y border-line">
-          {DEMO_SCENARIOS.map((s, i) => (
+          {demoScenarios(new Date()).map((s, i) => (
             <li key={s.title} className="flex gap-3 py-3">
               <span aria-hidden className="w-5 shrink-0 text-base font-bold text-ink-muted">
                 {i + 1}
               </span>
-              <p className="text-base text-ink">
+              {/* break-words: адрес /requests/С-… в «Изоляции» при тексте 200% на 360 */}
+              <p className="min-w-0 text-base break-words text-ink">
                 <span className="font-bold">{s.title}.</span> {s.how}
               </p>
             </li>

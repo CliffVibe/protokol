@@ -68,6 +68,12 @@ export function GradesSummary({
                   <span className="text-sm text-ink-muted">
                     {g.semester}-й семестр, {resultLabel(g)?.toLowerCase()}
                   </span>
+                  {/* Будущая дата у долга — назначенная пересдача (сид: Тимур, T14) */}
+                  {g.examDate && g.examDate >= now ? (
+                    <span className="text-sm font-bold text-ink">
+                      Пересдача — {formatDayMonth(g.examDate)}, {formatTime(g.examDate)}
+                    </span>
+                  ) : null}
                 </li>
               ))}
             </ul>

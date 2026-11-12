@@ -73,7 +73,11 @@ export default async function NowPage() {
         <SoonBlock soon={feed.soon} now={now} deadlinesFailed={feed.deadlinesFailed} />
         {studyAlert ? <StudyBlock study={feed.study} className="lg:hidden" /> : null}
         <RequestsBlock requests={feed.requests} now={now} />
-        <AnnouncementsBlock announcements={feed.announcements} now={now} />
+        <AnnouncementsBlock
+          announcements={feed.announcements}
+          total={feed.announcementsTotal}
+          now={now}
+        />
         {studyAlert ? null : <StudyBlock study={feed.study} className="lg:hidden" />}
       </div>
 

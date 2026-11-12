@@ -96,6 +96,37 @@ describe("buildPayloadSchema — заявка из формы", () => {
     expect(r.error!.issues.map((i) => i.message)).toContain("Заполните поле");
   });
 
+  it("даты поездки (T14): пара from/to → «с … по …», порядок, прошлое, несуществующая дата", () => {
+    const trip: FieldSpec[] = [
+      { name: "tripDates", label: "Даты поездки", type: "dates", required: true },
+    ];
+    expect(parseFields(trip)).toEqual(trip);
+    const s = buildPayloadSchema(trip, ["ru"], "2026-11-12");
+    const parse = (from: string, to: string) =>
+      s.safeParse({ payload: { "tripDates.from": from, "tripDates.to": to } });
+    expect(parse("2027-01-12", "2027-01-26").data?.payload).toEqual({
+      tripDates: "с 12.01.2027 по 26.01.2027",
+    });
+    const message = (from: string, to: string) => {
+      const r = parse(from, to);
+      return r.error?.issues.map((i) => [i.path.join("."), i.message]);
+    };
+    expect(message("2027-01-26", "2027-01-12")).toEqual([
+      ["payload.tripDates", "Возвращение — не раньше выезда"],
+    ]);
+    expect(message("2026-11-01", "2026-11-20")).toEqual([
+      ["payload.tripDates", "Дата выезда уже прошла"],
+    ]);
+    expect(message("2027-02-31", "2027-03-02")).toEqual([
+      ["payload.tripDates", "Укажите даты выезда и возвращения"],
+    ]);
+    expect(message("", "")).toEqual([["payload.tripDates", "Укажите даты выезда и возвращения"]]);
+    // Один день — можно; лишние ключи не протекают в заявку
+    expect(parse("2026-11-12", "2026-11-12").data?.payload).toEqual({
+      tripDates: "с 12.11.2026 по 12.11.2026",
+    });
+  });
+
   it("один язык — можно не присылать, берётся он", () => {
     const one = buildPayloadSchema([], ["ru"]);
     expect(one.parse({ payload: {} })).toEqual({ language: "ru", payload: {} });

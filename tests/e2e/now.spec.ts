@@ -29,8 +29,13 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
     await expect(page.getByRole("article", { name: /пара|Идёт сейчас/ })).toBeVisible();
     // first(): reschedule.spec (T09) параллельно переносит пару группы Алисы и возвращает её — на время
     // теста переносов бывает два (поймал первый прогон на своей базе e2e, T13)
+    // T14: перенос ближайшей пары — в её карточке, в «Изменениях» его второй раз нет; вечером так и выходит
     await expect(
-      page.getByRole("region", { name: "Изменения" }).getByText("Перенос").first(),
+      page
+        .getByRole("article", { name: /пара|Идёт сейчас/ })
+        .or(page.getByRole("region", { name: "Изменения" }))
+        .getByText(/Перенос/)
+        .first(),
     ).toBeVisible();
     // first(): параллельные тесты заявок (T08) могут ненадолго добавить Алисе свою «Готова»
     await expect(page.getByText("Готова — заберите").first()).toBeVisible();
@@ -47,8 +52,16 @@ test.describe("«Сейчас» у Алисы (сценарий 1)", () => {
   ] as const) {
     test(`блок ведёт в раздел за 1 касание: «${link}» → ${path}`, async ({ page }) => {
       await page.goto("/");
+      // «Всё расписание» — у «Изменений»; вечером, когда перенесённая пара и есть ближайшая, блока нет (T14)
+      if (link === "Всё расписание")
+        test.skip(
+          (await page.getByRole("region", { name: "Изменения" }).count()) === 0,
+          "изменений, кроме ближайшей пары, нет",
+        );
       // first(): «Всё расписание» есть и в NowCard (главный блок), и в «Изменениях»
-      await page.getByRole("main").getByRole("link", { name: link, exact: true }).first().click();
+      // T14: в подписи может быть число — «Все объявления (5)», «Ещё 1 — все заявки»
+      const name = new RegExp(`(^|— )${link}( \\(\\d+\\))?$`, "i");
+      await page.getByRole("main").getByRole("link", { name }).first().click();
       await expect(page).toHaveURL(new RegExp(`${path.replace(/[?]/g, "\\?")}$`));
     });
   }

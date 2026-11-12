@@ -122,16 +122,24 @@ export function SoonBlock({
   );
 }
 
+/** На «Сейчас» — две самые нужные заявки («Готова» — первой), остальные по ссылке (оценка «глазами жюри», T14) */
+export const NOW_REQUESTS_LIMIT = 2;
+
 export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now: Date }) {
+  const shown = requests.slice(0, NOW_REQUESTS_LIMIT);
+  const more = requests.length - shown.length;
   return (
     <FeedSection
       id="requests-title"
       title="Мои заявки"
-      link={{ href: "/requests", label: "Все заявки" }}
+      link={{
+        href: "/requests",
+        label: more > 0 ? `Ещё ${more} — все заявки` : "Все заявки",
+      }}
     >
       {requests.length ? (
         <FeedList label="Активные заявки">
-          {requests.map((r) => {
+          {shown.map((r) => {
             const s = requestStatus(r.status);
             return (
               // Строка — ссылка целиком (как в списке заявок T08): мятный «Готова — заберите» похож на кнопку,
@@ -161,7 +169,6 @@ export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now:
       ) : (
         <EmptyState
           headingLevel={3}
-          stampPlace
           title="Заявок пока нет"
           description="Справку можно заказать онлайн — статус будет виден здесь."
           action={
@@ -177,17 +184,24 @@ export function RequestsBlock({ requests, now }: { requests: FeedRequest[]; now:
 
 export function AnnouncementsBlock({
   announcements,
+  total = announcements?.length ?? 0,
   now,
 }: {
   /** null — объявления не загрузились */
   announcements: NowFeed["announcements"];
+  /** Сколько всего: если на «Сейчас» показаны не все — число в ссылке */
+  total?: number;
   now: Date;
 }) {
+  const hidden = total - (announcements?.length ?? 0);
   return (
     <FeedSection
       id="announcements-title"
       title="Объявления"
-      link={{ href: "/notifications?tab=announcements", label: "Все объявления" }}
+      link={{
+        href: "/notifications?tab=announcements",
+        label: hidden > 0 ? `Все объявления (${total})` : "Все объявления",
+      }}
     >
       {announcements === null ? (
         <p className="border-t border-line pt-3 text-base text-ink-muted">

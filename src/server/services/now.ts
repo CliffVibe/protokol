@@ -47,6 +47,8 @@ export type NowFeed = {
         youSaid: boolean;
       }[]
     | null;
+  /** Сколько объявлений всего (на «Сейчас» — не больше двух, остальное по ссылке) */
+  announcementsTotal: number;
   /** Дедлайны не загрузились — «Скоро» показывает только экзамены и честно об этом говорит */
   deadlinesFailed: boolean;
   study: StudySummary | null;
@@ -123,17 +125,24 @@ export async function getNowFeed(ctx: StudentCtx, now: Date = new Date()): Promi
         .catch(() => [])
     : [];
 
-  const pinned = announcements?.filter((a) => a.pinned) ?? [];
+  // Не больше двух: свежее закреплённое и свежее обычное — остальное по ссылке «Все объявления (N)».
+  // Раньше шли все закреплённые, и «Сейчас» на 360 вытягивался почти в четыре экрана (оценка «глазами жюри»)
+  const pinned = announcements?.find((a) => a.pinned);
   const latest = announcements?.find((a) => !a.pinned);
-  const shownAnnouncements = announcements ? [...pinned, ...(latest ? [latest] : [])] : null;
+  const shownAnnouncements = announcements
+    ? [pinned, latest].filter((a): a is NonNullable<typeof a> => a !== undefined)
+    : null;
 
+  const next = pickNext(lessons, now);
   return {
     firstName: reader.firstName,
-    next: pickNext(lessons, now),
-    changes: pickChanges(lessons, now),
+    next,
+    // Перенос ближайшей пары уже виден в её карточке — второй раз в «Изменениях» не повторяем (T14)
+    changes: pickChanges(lessons, now).filter((l) => l.id !== next?.lesson.id),
     soon,
     requests: sortRequests(requests),
     announcements: shownAnnouncements,
+    announcementsTotal: announcements?.length ?? 0,
     deadlinesFailed: ddlResult.status === "rejected",
     study,
     offers,

@@ -411,6 +411,18 @@ test.describe("T13: пересдача из долга и подсказки п�
     await first.getByRole("link").click();
     await expect(page.getByText("Язык справки: английский")).toBeVisible();
     await expect(page.getByLabel("Страна")).toHaveAccessibleDescription(/например: Франция/);
-    await expect(page.getByLabel("Даты поездки")).toHaveAccessibleDescription(/12\.01\.2027/);
+    // T14: даты — два календаря, а не свободный текст; сервер собирает «с … по …» и проверяет порядок
+    const from = page.getByLabel("Выезд");
+    const to = page.getByLabel("Возвращение");
+    await expect(from).toHaveAttribute("type", "date");
+    await expect(to).toHaveAttribute("type", "date");
+    await expect(from).toHaveAccessibleName(/Даты поездки/);
+    await page.getByLabel("Страна").fill("Франция");
+    await from.fill("2099-01-26");
+    await to.fill("2099-01-12");
+    await page.getByRole("button", { name: "Отправить заявку" }).click();
+    await expect(page.getByText("Возвращение — не раньше выезда")).toBeVisible();
+    // Значения не потерялись после ответа сервера
+    await expect(from).toHaveValue("2099-01-26");
   });
 });

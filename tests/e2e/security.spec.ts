@@ -5,6 +5,7 @@ import { join } from "node:path";
 import { randomBytes } from "node:crypto";
 import { expect, test, type Browser, type BrowserContext, type Page } from "@playwright/test";
 import { STORAGE } from "../../playwright.config";
+import { alisaSampleRequestNumber } from "../../src/lib/demo-accounts";
 import { ACCOUNTS, ANON, fillLogin, loginAs, randomIpHeaders } from "./helpers/auth";
 import { deleteTestRequests, withDb } from "./helpers/db";
 import { setTextScale } from "./helpers/text-scale";
@@ -60,13 +61,14 @@ test.describe("05-security: обязательные тесты", () => {
     expect(await timur.title()).not.toContain(number);
 
     // Номер, набранный руками с латинской C (T14): своя заявка открывается, чужая — тот же 404.
-    // Иначе 404 на свою заявку выдал бы проверку изоляции за «404 показывают всегда»
-    const latin = `/requests/${encodeURIComponent(number.replace(/^С/u, "C"))}`;
-    expect(latin).not.toBe(href);
+    // Иначе 404 на свою заявку выдал бы проверку изоляции за «404 показывают всегда». Номер — тот, что
+    // назван в сценарии «Изоляция» на /login (заявка из сида): первую в списке мог удалить параллельный тест
+    const sample = alisaSampleRequestNumber(new Date());
+    const latin = `/requests/${encodeURIComponent(sample.replace(/^С/u, "C"))}`;
     expect((await page.goto(latin))?.status()).toBe(200);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     expect((await timur.goto(latin))?.status()).toBe(404);
-    await expect(timur.getByRole("main")).not.toContainText(number);
+    await expect(timur.getByRole("main")).not.toContainText(sample);
   });
 
   test("2. Студент Б вызывает Server Action отмены заявки А → ошибка, заявка не изменилась", async ({
@@ -520,6 +522,9 @@ test.describe("вход и сессии (T03)", () => {
     await page.goto("/login");
     await page.keyboard.press("Tab"); // «Перейти к содержимому»
     await page.keyboard.press("Tab");
+    // На телефоне до формы есть «Войти в демо одним нажатием» (T14) — ещё один шаг
+    if (await page.getByRole("link", { name: /Войти в демо/ }).isVisible())
+      await page.keyboard.press("Tab");
     const login = page.getByLabel("Логин");
     await expect(login).toBeFocused();
     const outline = await login.evaluate((el) => {

@@ -233,7 +233,6 @@ export default async function StaffQueuePage({ searchParams }: PageProps<"/staff
       {items.length && batchable ? <BatchBar forward={BATCH_FORWARD} /> : null}
       {items.length ? null : (
         <EmptyState
-          stampPlace
           title={
             due === "new"
               ? "Новых заявок нет"

@@ -66,10 +66,11 @@ test("сценарий 1 «Утро»: вход → «Сейчас»: пара �
   await expect(card).toContainText("Кто ведёт:");
   await expect(card).toContainText(/через \d+\s(мин|ч)|идёт, до конца \d+/);
 
-  // Перенос подсвечен не только цветом: слово «Перенос» и «было ЧЧ:ММ»
-  const changes = page.getByRole("region", { name: "Изменения" });
-  await expect(changes.getByText("Перенос").first()).toBeVisible();
-  await expect(changes).toContainText(/было \d{2}:\d{2}/i);
+  // Перенос подсвечен не только цветом: слово «Перенос» и «было ЧЧ:ММ». Если перенесённая пара — ближайшая,
+  // он в её плашке, а «Изменения» его не повторяют (T14); иначе — в «Изменениях»
+  const changes = card.or(page.getByRole("region", { name: "Изменения" }));
+  await expect(changes.getByText(/Перенос/).first()).toBeVisible();
+  await expect(changes.filter({ hasText: /Перенос/ }).first()).toContainText(/было \d{2}:\d{2}/i);
 
   // Ближайший дедлайн (сид: через 2 дня)
   const soon = page.getByRole("list", { name: "Ближайшие дедлайны и экзамены" });
