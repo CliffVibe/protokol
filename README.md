@@ -10,7 +10,7 @@
 |---|---|
 | Работающий прототип | https://141-133-186-165.sslip.io |
 | Отчёт для жюри (PDF) | [docs/report/protokol-report.pdf](docs/report/protokol-report.pdf) |
-| Видео-демонстрация (4:15) | https://disk.yandex.ru/i/oNWdh70eplmvcQ |
+| Видео-демонстрация (4:59) | https://disk.yandex.ru/i/_RsLIdwqxM1OMg |
 
 ## Тестовые аккаунты
 
